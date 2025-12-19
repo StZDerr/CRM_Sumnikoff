@@ -1,0 +1,19 @@
+@extends('layouts.app')
+
+@section('content')
+    <div class="max-w-3xl mx-auto">
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-xl font-semibold">Пользователь #{{ $user->id }}</h1>
+            <a href="{{ route('users.index') }}"
+                class="px-3 py-2 border rounded text-sm text-gray-700 hover:bg-gray-100">Назад</a>
+        </div>
+
+        <div class="bg-white rounded shadow p-4">
+            <p><strong>Имя:</strong> {{ $user->name }}</p>
+            <p><strong>Логин:</strong> {{ $user->login }}</p>
+            <p><strong>Email:</strong> {{ $user->email ?? '-' }}</p>
+            <p><strong>Роль:</strong> {{ $user->role === 'admin' ? 'Администратор' : 'Менеджер' }}</p>
+            <p><strong>Создан:</strong> {{ $user->created_at->format('d.m.Y H:i') }}</p>
+        </div>
+    </div>
+@endsection
