@@ -124,16 +124,22 @@ class PaymentController extends Controller
         }
 
         // Пересчитываем сумму поступлений
+        // Учёт платежей: если payment_date не задан — используем created_at
         $sum = Payment::where('project_id', $projectId)
-            ->whereNotNull('payment_date')
+            ->where(function ($q) {
+                $q->whereNotNull('payment_date')
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('payment_date')->whereNotNull('created_at');
+                    });
+            })
             ->sum('amount');
 
         // Берём текущий ожидаемый долг (debt) — если не заполнен, используем 0
         $project = Project::find($projectId);
         $debt = $project->debt ?? 0;
 
-        // balance = debt - received_total
-        $balance = round((float) $debt - (float) $sum, 2);
+        // balance = received_total - debt (положительное — переплата)
+        $balance = round((float) $sum - (float) $debt, 2);
 
         Project::where('id', $projectId)->update([
             'received_total' => $sum,

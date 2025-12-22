@@ -22,7 +22,8 @@
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
         <div class="flex min-h-screen">
-            <aside class="w-64 bg-gray-900 text-white hidden sm:flex flex-col">
+            <aside
+                class="hidden sm:flex sm:w-64 sm:flex-col sm:fixed sm:inset-y-0 bg-gray-900 text-white sm:h-screen sm:overflow-auto">
                 @include('layouts.navigation')
             </aside>
 
@@ -55,7 +56,7 @@
                 </div>
             </div>
 
-            <div class="flex-1">
+            <div class="flex-1 sm:ml-64">
                 <!-- Toast notifications -->
                 <div class="fixed top-4 right-4 z-50 space-y-2" aria-live="polite" aria-atomic="true">
                     @if (session('success'))

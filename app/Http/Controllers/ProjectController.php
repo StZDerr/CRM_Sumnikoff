@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\Stage;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 
 class ProjectController extends Controller
 {
@@ -27,6 +28,8 @@ class ProjectController extends Controller
         $marketer = $request->query('marketer');
         $importance = $request->query('importance');
         $contract_date = $request->query('contract_date'); // <- фильтр по дате
+
+        $balance_status = $request->query('balance_status');
 
         $query = Project::with(['organization', 'marketer', 'paymentMethod', 'stages', 'importance']);
 
@@ -50,14 +53,29 @@ class ProjectController extends Controller
             $query->whereDate('contract_date', $contract_date);
         }
 
-        $projects = $query->orderBy('title')->paginate(25)->withQueryString();
+        if ($balance_status === 'debt') {
+            $query->whereNotNull('balance')->where('balance', '<', 0);
+        } elseif ($balance_status === 'paid') {
+            // сравниваем округлённый баланс с нулём
+            $query->whereNotNull('balance')->whereRaw('ROUND(balance, 2) = 0');
+        } elseif ($balance_status === 'overpaid') {
+            $query->whereNotNull('balance')->where('balance', '>', 0);
+        }
+
+        // Сортировка: 1) должники (balance < 0) первыми, 2) по balance (самые большие долги — самые маленькие значения, т.е. -15000 перед -500), 3) по названию
+        $projects = $query
+            ->orderByRaw('(COALESCE(balance, 0) < 0) DESC')
+            ->orderByRaw('COALESCE(balance, 0) ASC')
+            ->orderBy('title')
+            ->paginate(25)
+            ->withQueryString();
 
         $organizations = Organization::orderBy('name_full')->pluck('name_full', 'id');
         $marketers = User::orderBy('name')->pluck('name', 'id');
         $importances = Importance::ordered()->pluck('name', 'id');
 
         return view('admin.projects.index', compact(
-            'projects', 'q', 'organizations', 'marketers', 'org', 'marketer', 'importances', 'importance', 'contract_date'
+            'projects', 'q', 'organizations', 'marketers', 'org', 'marketer', 'importances', 'importance', 'contract_date', 'balance_status'
         ));
     }
 
@@ -84,6 +102,7 @@ class ProjectController extends Controller
             'title' => 'required|string|max:255',
             'organization_id' => 'nullable|exists:organizations,id',
             'city' => 'nullable|string|max:255',
+            'closed_at' => 'nullable|date|after_or_equal:contract_date',
             'marketer_id' => 'nullable|exists:users,id',
             'importance_id' => 'nullable|exists:importances,id',
             'contract_amount' => 'nullable|numeric|min:0',
@@ -105,6 +124,9 @@ class ProjectController extends Controller
             }
             $project->stages()->sync($sync);
         }
+
+        // Запустить пересчёт долгов/поступлений для этого проекта
+        Artisan::call('projects:update-debts', ['--project' => $project->id]);
 
         return redirect()->route('projects.index')->with('success', 'Проект создан.');
     }
@@ -147,6 +169,7 @@ class ProjectController extends Controller
             'title' => 'required|string|max:255',
             'organization_id' => 'nullable|exists:organizations,id',
             'city' => 'nullable|string|max:255',
+            'closed_at' => 'nullable|date|after_or_equal:contract_date',
             'marketer_id' => 'nullable|exists:users,id',
             'importance_id' => 'nullable|exists:importances,id',
             'contract_amount' => 'nullable|numeric|min:0',
@@ -167,6 +190,11 @@ class ProjectController extends Controller
                 $sync[$stageId] = ['sort_order' => $idx + 1];
             }
             $project->stages()->sync($sync);
+        }
+
+        // Если изменилось contract_amount/contract_date/closed_at — пересчитать для проекта
+        if (array_key_exists('contract_amount', $data) || array_key_exists('contract_date', $data) || array_key_exists('closed_at', $data)) {
+            Artisan::call('projects:update-debts', ['--project' => $project->id]);
         }
 
         return redirect()->route('projects.index')->with('success', 'Проект обновлён.');

@@ -29,6 +29,10 @@
                 Поступления
             </x-nav-link>
 
+            <x-nav-link :href="route('expense-categories.index')" :active="request()->routeIs('expense-categories.*')">
+                Статьи расходов
+            </x-nav-link>
+
             @php
                 $active = request()->routeIs('projects.*', 'stages.*', 'payment-methods.*', 'importances.*');
             @endphp

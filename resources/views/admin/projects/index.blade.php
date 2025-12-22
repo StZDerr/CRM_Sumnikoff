@@ -34,6 +34,12 @@
                             <option value="{{ $id }}" @selected((string) ($marketer ?? '') === (string) $id)>{{ $name }}</option>
                         @endforeach
                     </select>
+                    <select name="balance_status" class="border rounded px-3 py-2 text-sm w-36">
+                        <option value="">Статус баланса</option>
+                        <option value="debt" @selected((string) ($balance_status ?? '') === 'debt')>Должники</option>
+                        <option value="paid" @selected((string) ($balance_status ?? '') === 'paid')>Оплачено</option>
+                        <option value="overpaid" @selected((string) ($balance_status ?? '') === 'overpaid')>Переплата</option>
+                    </select>
                     <button class="px-3 py-2 bg-gray-100 rounded text-sm">Фильтровать</button>
                     <a href="{{ route('projects.index') }}" class="text-sm text-gray-500 ml-2">Сброс</a>
                 </form>
@@ -58,14 +64,48 @@
                                 <div class="text-right">
                                     <div class="text-sm text-gray-500">{{ $project->marketer?->name ?? '-' }}</div>
                                     <div class="text-sm text-gray-400 mt-1">
-                                        {{ $project->contract_amount ? number_format($project->contract_amount, 2) . ' ₽' : '-' }}
+                                        @php
+                                            $bal = $project->balance;
+                                        @endphp
+
+                                        @if (!is_null($bal) && $bal < 0)
+                                            <button type="button"
+                                                class="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded text-sm"
+                                                data-tippy
+                                                data-tippy-content="Долг: {{ number_format(abs($bal), 2, '.', ' ') }} ₽{{ $project->balance_calculated_at ? ' (на ' . \Illuminate\Support\Carbon::make($project->balance_calculated_at)->format('Y-m-d') . ')' : '' }}">
+                                                Долг
+                                            </button>
+                                        @elseif (!is_null($bal) && $bal > 0)
+                                            <button type="button"
+                                                class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-sm"
+                                                data-tippy
+                                                data-tippy-content="Переплата: {{ number_format($bal, 2, '.', ' ') }} ₽{{ $project->balance_calculated_at ? ' (на ' . \Illuminate\Support\Carbon::make($project->balance_calculated_at)->format('Y-m-d') . ')' : '' }}">
+                                                Переплата
+                                            </button>
+                                        @elseif (!is_null($bal) && $bal > 0)
+                                            <button type="button"
+                                                class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-sm"
+                                                data-tippy
+                                                data-tippy-content="Переплата: {{ number_format($bal, 2, '.', ' ') }} ₽{{ $project->balance_calculated_at ? ' (на ' . \Illuminate\Support\Carbon::make($project->balance_calculated_at)->format('Y-m-d') . ')' : '' }}">
+                                                Переплата
+                                            </button>
+                                        @elseif (!is_null($bal) && round($bal, 2) == 0)
+                                            <button type="button"
+                                                class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-sm"
+                                                data-tippy
+                                                data-tippy-content="Оплачено: {{ number_format($project->received_total ?? 0, 2, '.', ' ') }} ₽{{ $project->received_calculated_at ? ' (на ' . \Illuminate\Support\Carbon::make($project->received_calculated_at)->format('Y-m-d') . ')' : '' }}">
+                                                Оплаченно
+                                            </button>
+                                        @else
+                                            <span class="text-sm text-gray-400">—</span>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
 
                             @if ($project->stages->count())
                                 <div class="text-xs text-gray-500 mt-2">
-                                    Этапы: {{ $project->stages->pluck('name')->join(' → ') }}
+                                    Виды продвижения: {{ $project->stages->pluck('name')->join(' • ') }}
                                 </div>
                             @endif
                         </div>

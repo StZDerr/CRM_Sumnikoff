@@ -4,6 +4,7 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CampaignSourceController;
 use App\Http\Controllers\CampaignStatusController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ImportanceController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrganizationController;
@@ -41,6 +42,7 @@ Route::middleware('auth')->group(function () {
         'projects' => ProjectController::class,
         'invoices' => InvoiceController::class,
         'payments' => PaymentController::class,
+        'expense-categories' => ExpenseCategoryController::class,
     ]);
     // endpoint для сохранения порядка (название: importances.reorder)
     Route::post('importances/reorder', [ImportanceController::class, 'reorder'])->name('importances.reorder');
@@ -63,6 +65,8 @@ Route::middleware('auth')->group(function () {
         ->name('projects.comments.destroy');
 
     Route::get('projects/{project}/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+
+    Route::post('expense-categories/reorder', [ExpenseCategoryController::class, 'reorder'])->name('expense-categories.reorder');
 
 });
 

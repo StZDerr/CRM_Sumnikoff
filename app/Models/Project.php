@@ -27,6 +27,7 @@ class Project extends Model
         'balance',
         'balance_calculated_at',
         'debt',
+        'closed_at',
     ];
 
     protected $casts = [
@@ -40,6 +41,7 @@ class Project extends Model
         'received_total' => 'decimal:2',
         'received_calculated_at' => 'datetime',
         'balance_calculated_at' => 'datetime',
+        'closed_at' => 'datetime',
     ];
 
     // Organization

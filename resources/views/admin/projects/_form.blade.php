@@ -84,6 +84,12 @@
         <x-input-error :messages="$errors->get('payment_due_day')" class="mt-2" />
     </div>
 
+    <div>
+        <x-input-label for="closed_at" :value="'Дата закрытия (опционально)'" />
+        <x-text-input id="closed_at" name="closed_at" type="date" :value="old('closed_at', isset($project) && $project->closed_at ? $project->closed_at->format('Y-m-d') : '')" class="mt-1 block w-48" />
+        <x-input-error :messages="$errors->get('closed_at')" class="mt-2" />
+    </div>
+
     <!-- Stages: sortable list + selection -->
     <div class="col-span-2">
         <x-input-label :value="'Этапы (перетаскивайте для порядка, клик чтобы выбрать)'" />
