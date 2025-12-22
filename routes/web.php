@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CampaignSourceController;
 use App\Http\Controllers\CampaignStatusController;
@@ -43,6 +44,7 @@ Route::middleware('auth')->group(function () {
         'invoices' => InvoiceController::class,
         'payments' => PaymentController::class,
         'expense-categories' => ExpenseCategoryController::class,
+        'bank-accounts' => BankAccountController::class,
     ]);
     // endpoint для сохранения порядка (название: importances.reorder)
     Route::post('importances/reorder', [ImportanceController::class, 'reorder'])->name('importances.reorder');

@@ -33,6 +33,10 @@
                 Статьи расходов
             </x-nav-link>
 
+            <x-nav-link :href="route('bank-accounts.index')" :active="request()->routeIs('bank-accounts.*')">
+                Банковские счета
+            </x-nav-link>
+
             @php
                 $active = request()->routeIs('projects.*', 'stages.*', 'payment-methods.*', 'importances.*');
             @endphp
