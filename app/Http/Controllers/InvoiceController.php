@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
+use App\Models\InvoiceStatus;
 use App\Models\PaymentMethod;
 use App\Models\Project;
 use Illuminate\Http\Request;
@@ -32,10 +33,11 @@ class InvoiceController extends Controller
     {
         $projects = Project::orderBy('title')->get();
         $paymentMethods = PaymentMethod::orderBy('sort_order')->get();
+        $invoiceStatuses = InvoiceStatus::ordered()->get();
 
         $selectedProjectId = $request->query('project') ? (int) $request->query('project') : null;
 
-        return view('admin.invoices.create', compact('projects', 'paymentMethods', 'selectedProjectId'));
+        return view('admin.invoices.create', compact('projects', 'paymentMethods', 'invoiceStatuses', 'selectedProjectId'));
     }
 
     public function store(Request $request)
@@ -47,6 +49,7 @@ class InvoiceController extends Controller
             'contract_number' => 'nullable|string|max:255',
             'amount' => 'required|numeric|min:0',
             'payment_method_id' => 'nullable|exists:payment_methods,id',
+            'invoice_status_id' => 'nullable|exists:invoice_statuses,id',
             'attachments' => 'nullable|array|max:10',
             'attachments.*' => 'file|mimes:pdf,jpeg,png,jpg,gif,webp|max:10240',
             'transaction_id' => 'nullable|string|max:255',
@@ -83,8 +86,9 @@ class InvoiceController extends Controller
     {
         $projects = Project::orderBy('title')->get();
         $paymentMethods = PaymentMethod::orderBy('sort_order')->get();
+        $invoiceStatuses = InvoiceStatus::ordered()->get();
 
-        return view('admin.invoices.edit', compact('invoice', 'projects', 'paymentMethods'));
+        return view('admin.invoices.edit', compact('invoice', 'projects', 'paymentMethods', 'invoiceStatuses'));
     }
 
     public function update(Request $request, Invoice $invoice)
@@ -96,6 +100,7 @@ class InvoiceController extends Controller
             'contract_number' => 'nullable|string|max:255',
             'amount' => 'required|numeric|min:0',
             'payment_method_id' => 'nullable|exists:payment_methods,id',
+            'invoice_status_id' => 'nullable|exists:invoice_statuses,id',
             'attachments' => 'nullable|array|max:10',
             'attachments.*' => 'file|mimes:pdf,jpeg,png,jpg,gif,webp|max:10240',
             'transaction_id' => 'nullable|string|max:255',
@@ -129,5 +134,30 @@ class InvoiceController extends Controller
         $invoice->delete();
 
         return redirect()->route('invoices.index')->with('success', 'Счёт удалён.');
+    }
+
+    public function invoicesByProject(Project $project)
+    {
+        // Exclude invoices whose status name == 'Оплаченно полностью'
+        $excludeStatusIds = InvoiceStatus::where('name', 'Оплачен полностью')->pluck('id')->all();
+
+        $query = Invoice::where('project_id', $project->id)
+            ->orderByDesc('issued_at');
+
+        if (! empty($excludeStatusIds)) {
+            $query->where(function ($q) use ($excludeStatusIds) {
+                $q->whereNull('invoice_status_id')
+                    ->orWhereNotIn('invoice_status_id', $excludeStatusIds);
+            });
+        }
+
+        // allow including a specific invoice even if it's excluded (param include)
+        if ($inc = request()->query('include')) {
+            $query->orWhere('id', $inc);
+        }
+
+        $invoices = $query->get(['id', 'number', 'issued_at', 'amount', 'transaction_id', 'invoice_status_id']);
+
+        return response()->json($invoices);
     }
 }

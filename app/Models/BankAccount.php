@@ -17,7 +17,10 @@ class BankAccount extends Model
         'inn',
         'bank_name',
         'notes',
+        'balance',
     ];
+
+    protected $casts = ['balance' => 'decimal:2'];
 
     /**
      * Удобное отображение для списка: $bankAccount->display_name

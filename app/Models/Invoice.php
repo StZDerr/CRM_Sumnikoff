@@ -19,6 +19,7 @@ class Invoice extends Model
         'payment_method_id',
         'attachments',
         'transaction_id',
+        'invoice_status_id',
     ];
 
     protected $casts = [
@@ -59,5 +60,11 @@ class Invoice extends Model
     public function scopeForProject($query, $projectId)
     {
         return $query->where('project_id', $projectId);
+    }
+
+    // и после paymentMethod() добавьте:
+    public function invoiceStatus()
+    {
+        return $this->belongsTo(\App\Models\InvoiceStatus::class);
     }
 }

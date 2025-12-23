@@ -17,6 +17,7 @@ class Payment extends Model
         'invoice_id',
         'transaction_id',
         'note',
+        'bank_account_id',
     ];
 
     protected $casts = [
@@ -44,5 +45,10 @@ class Payment extends Model
     public function scopeForProject($query, $projectId)
     {
         return $query->where('project_id', $projectId);
+    }
+
+    public function bankAccount()
+    {
+        return $this->belongsTo(\App\Models\BankAccount::class);
     }
 }

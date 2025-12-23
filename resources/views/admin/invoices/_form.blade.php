@@ -54,6 +54,21 @@
         <x-input-error :messages="$errors->get('payment_method_id')" />
     </div>
 
+    @php
+        $invoiceStatuses = $invoiceStatuses ?? \App\Models\InvoiceStatus::ordered()->get();
+    @endphp
+
+    <div>
+        <label class="text-xs text-gray-500">Статус счёта</label>
+        <select name="invoice_status_id" class="w-full border rounded p-2">
+            <option value="">— без статуса —</option>
+            @foreach ($invoiceStatuses as $s)
+                <option value="{{ $s->id }}" @selected((string) old('invoice_status_id', $invoice->invoice_status_id ?? '') === (string) $s->id)>{{ $s->name }}</option>
+            @endforeach
+        </select>
+        <x-input-error :messages="$errors->get('invoice_status_id')" />
+    </div>
+
     <div class="md:col-span-2">
         <label class="text-xs text-gray-500">Вложения (PDF / изображения) — можно несколько</label>
         <input type="file" name="attachments[]" multiple accept=".pdf,image/*" class="w-full mt-1" />

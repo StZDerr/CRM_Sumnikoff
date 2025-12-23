@@ -6,8 +6,10 @@ use App\Http\Controllers\CampaignSourceController;
 use App\Http\Controllers\CampaignStatusController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ExpenseCategoryController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ImportanceController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\InvoiceStatusController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentMethodController;
@@ -22,9 +24,9 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 })->middleware(['auth', 'verified']);
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -45,6 +47,8 @@ Route::middleware('auth')->group(function () {
         'payments' => PaymentController::class,
         'expense-categories' => ExpenseCategoryController::class,
         'bank-accounts' => BankAccountController::class,
+        'expenses' => ExpenseController::class,
+        'invoice-statuses' => InvoiceStatusController::class,
     ]);
     // endpoint для сохранения порядка (название: importances.reorder)
     Route::post('importances/reorder', [ImportanceController::class, 'reorder'])->name('importances.reorder');
@@ -70,6 +74,15 @@ Route::middleware('auth')->group(function () {
 
     Route::post('expense-categories/reorder', [ExpenseCategoryController::class, 'reorder'])->name('expense-categories.reorder');
 
+    // Получить проекты организации в JSON
+    Route::get('organizations/{organization}/projects', [OrganizationController::class, 'projectsList'])
+        ->name('organizations.projects');
+
+    Route::post('invoice-statuses/reorder', [InvoiceStatusController::class, 'reorder'])->name('invoice-statuses.reorder');
+
+    // Получить счета проекта в JSON
+    Route::get('projects/{project}/invoices', [InvoiceController::class, 'invoicesByProject'])
+        ->name('projects.invoices');
 });
 
 require __DIR__.'/auth.php';

@@ -12,6 +12,7 @@
     <!-- Links -->
     <nav class="flex-1 px-2 py-4 overflow-y-auto space-y-1">
 
+
         @if (auth()->user()->isAdmin())
             <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 Панель управления
@@ -21,21 +22,42 @@
                 Пользователи
             </x-nav-link>
 
-            <x-nav-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
-                Счета
-            </x-nav-link>
+            @php
+                $active = request()->routeIs(
+                    'invoices.*',
+                    'payments.*',
+                    'expenses.*',
+                    'expense-categories.*',
+                    'bank-accounts.*',
+                );
+            @endphp
 
-            <x-nav-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
-                Поступления
-            </x-nav-link>
+            <x-buttons-dropdawn :active="$active" title="Финансы">
+                <x-dropdown-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
+                    Счета
+                </x-dropdown-link>
 
-            <x-nav-link :href="route('expense-categories.index')" :active="request()->routeIs('expense-categories.*')">
-                Статьи расходов
-            </x-nav-link>
+                <x-dropdown-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
+                    Поступления
+                </x-dropdown-link>
 
-            <x-nav-link :href="route('bank-accounts.index')" :active="request()->routeIs('bank-accounts.*')">
-                Банковские счета
-            </x-nav-link>
+                <x-dropdown-link :href="route('expenses.index')" :active="request()->routeIs('expenses.*')">
+                    Расходы
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('expense-categories.index')" :active="request()->routeIs('expense-categories.*')">
+                    Статьи расходов
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('bank-accounts.index')" :active="request()->routeIs('bank-accounts.*')">
+                    Банковские счета
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('invoice-statuses.index')" :active="request()->routeIs('invoice-statuses.*')">
+                    Статусы счетов
+                </x-dropdown-link>
+            </x-buttons-dropdawn>
+
 
             @php
                 $active = request()->routeIs('projects.*', 'stages.*', 'payment-methods.*', 'importances.*');

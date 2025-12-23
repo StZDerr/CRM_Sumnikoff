@@ -150,4 +150,14 @@ class OrganizationController extends Controller
 
         return redirect()->route('organizations.index')->with('success', 'Организация удалена.');
     }
+
+    /**
+     * Вернуть проекты организации в JSON (id, title)
+     */
+    public function projectsList(Organization $organization)
+    {
+        $projects = $organization->projects()->orderBy('title')->get(['id', 'title']);
+
+        return response()->json($projects);
+    }
 }

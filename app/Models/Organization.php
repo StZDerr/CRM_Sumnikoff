@@ -95,4 +95,21 @@ class Organization extends Model
     {
         return $this->name_short ?: $this->name_full;
     }
+
+    /**
+     * Scope: упорядочить организации по name_short или name_full
+     */
+    public function scopeOrdered($query)
+    {
+        // COALESCE возвращает первое ненулевое значение
+        return $query->orderByRaw('COALESCE(name_short, name_full) ASC');
+    }
+
+    /**
+     * Удобное отображение для списка: $organization->title
+     */
+    public function getTitleAttribute(): ?string
+    {
+        return $this->name_short ?: $this->name_full;
+    }
 }
