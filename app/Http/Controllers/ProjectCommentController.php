@@ -12,10 +12,28 @@ class ProjectCommentController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Project $project)
+    public function index(Request $request, Project $project)
     {
-        // Загружаем авторов комментариев
-        $project->load(['comments.user']);
+        $month = $request->query('month');
+
+        // Загружаем комментарии с юзером и фото; если указан месяц — фильтруем
+        $query = $project->comments()->with(['user', 'photos'])->orderByDesc('created_at');
+
+        if (! empty($month)) {
+            // Допустим формат YYYY-MM
+            $query->where('month', $month);
+        }
+
+        $comments = $query->get();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'html' => view('admin.projects._comments', compact('project', 'comments'))->render(),
+            ]);
+        }
+
+        // Для обычного запроса вернём фрагмент (или можно оставить как прежде)
+        $project->setRelation('comments', $comments);
 
         return view('admin.projects._comments', compact('project'));
     }
@@ -37,11 +55,13 @@ class ProjectCommentController extends Controller
             'body' => 'required|string|max:2000',
             'photos' => 'nullable|array|max:5', // макс 5 файлов
             'photos.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB
+            'month' => ['nullable', 'regex:/^\d{4}-\d{2}$/'],
         ]);
 
         $comment = $project->comments()->create([
             'user_id' => $request->user()->id,
             'body' => $data['body'],
+            'month' => $data['month'] ?? null,
         ]);
 
         if ($request->hasFile('photos')) {
@@ -57,10 +77,15 @@ class ProjectCommentController extends Controller
 
         $comment->load('user', 'photos');
 
+        $redirect = $request->input('redirect');
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'html' => view('admin.projects._comment', compact('comment', 'project'))->render(),
             ]);
+        }
+
+        if ($redirect) {
+            return redirect()->to($redirect)->with('success', 'Комментарий добавлен.');
         }
 
         return redirect()->route('projects.show', $project)->with('success', 'Комментарий добавлен.');
@@ -85,9 +110,27 @@ class ProjectCommentController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, ProjectComment $projectComment)
+    public function update(Request $request, Project $project, ProjectComment $comment)
     {
-        //
+        $user = $request->user();
+        if (! ($user->isAdmin() || $user->id === $comment->user_id)) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'body' => 'required|string|max:2000',
+        ]);
+
+        $comment->update(['body' => $data['body']]);
+        $comment->load('user', 'photos');
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'html' => view('admin.projects._comment', compact('comment', 'project'))->render(),
+            ]);
+        }
+
+        return redirect()->route('projects.show', $project)->with('success', 'Комментарий обновлён.');
     }
 
     /**

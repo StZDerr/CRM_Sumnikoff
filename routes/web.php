@@ -10,7 +10,9 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ImportanceController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceStatusController;
+use App\Http\Controllers\OperationController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\PaymentCategoryController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ProfileController;
@@ -49,11 +51,14 @@ Route::middleware('auth')->group(function () {
         'bank-accounts' => BankAccountController::class,
         'expenses' => ExpenseController::class,
         'invoice-statuses' => InvoiceStatusController::class,
+        'payment-categories' => PaymentCategoryController::class,
     ]);
     // endpoint для сохранения порядка (название: importances.reorder)
     Route::post('importances/reorder', [ImportanceController::class, 'reorder'])->name('importances.reorder');
 
     Route::post('stages/reorder', [StageController::class, 'reorder'])->name('stages.reorder');
+
+    Route::post('payment-categories/reorder', [PaymentCategoryController::class, 'reorder'])->name('payment-categories.reorder');
 
     Route::post('payment-methods/reorder', [PaymentMethodController::class, 'reorder'])->name('payment-methods.reorder');
 
@@ -70,6 +75,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('projects/{project}/comments/{comment}', [ProjectCommentController::class, 'destroy'])
         ->name('projects.comments.destroy');
 
+    Route::patch('projects/{project}/comments/{comment}', [ProjectCommentController::class, 'update'])
+        ->name('projects.comments.update');
+
+    Route::get('calendar', [CalendarController::class, 'allProjects'])->name('calendar.all-projects');
+
     Route::get('projects/{project}/calendar', [CalendarController::class, 'index'])->name('calendar.index');
 
     Route::post('expense-categories/reorder', [ExpenseCategoryController::class, 'reorder'])->name('expense-categories.reorder');
@@ -80,9 +90,13 @@ Route::middleware('auth')->group(function () {
 
     Route::post('invoice-statuses/reorder', [InvoiceStatusController::class, 'reorder'])->name('invoice-statuses.reorder');
 
+    Route::get('operation', [OperationController::class, 'index'])
+        ->name('operation.index');
+
     // Получить счета проекта в JSON
     Route::get('projects/{project}/invoices', [InvoiceController::class, 'invoicesByProject'])
         ->name('projects.invoices');
+
 });
 
 require __DIR__.'/auth.php';

@@ -41,18 +41,24 @@
 
     async function fetchComments() {
         if (document.hidden) return;
-        // If the user is viewing a photo in the lightbox, skip refreshing comments
         if (isLightboxOpen()) return;
+
         try {
             const res = await fetch(commentsUrl, {
                 headers: { "X-Requested-With": "XMLHttpRequest" },
             });
-            if (res.ok) {
+            if (!res.ok) return;
+
+            const ct = (res.headers.get("content-type") || "").toLowerCase();
+            if (ct.includes("application/json")) {
+                const json = await res.json();
+                commentsList.innerHTML = json.html;
+            } else {
                 const html = await res.text();
                 commentsList.innerHTML = html;
-                // re-init lightbox for newly injected content
-                initLightbox();
             }
+
+            initLightbox();
         } catch (err) {
             console.error(err);
         }

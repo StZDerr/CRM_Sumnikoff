@@ -13,6 +13,7 @@ class ProjectComment extends Model
         'project_id',
         'user_id',
         'body',
+        'month',
     ];
 
     public function project()

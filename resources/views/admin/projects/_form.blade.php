@@ -8,26 +8,40 @@
         <x-input-error :messages="$errors->get('title')" class="mt-2" />
     </div>
 
-    <div>
-        <x-input-label for="organization_id" :value="'Организация'" />
-        <select id="organization_id" name="organization_id" class="mt-1 block w-full rounded border px-3 py-2">
+    <div class="space-y-1">
+        <x-input-label for="organization_id" value="Организация" />
+
+        <select id="organization_id" name="organization_id"
+            class="js-org-select block w-full rounded-md border-gray-300 shadow-sm
+               focus:border-indigo-500 focus:ring-indigo-500
+               @error('organization_id') border-red-500 @enderror">
             <option value="">—</option>
             @foreach ($organizations ?? [] as $id => $name)
-                <option value="{{ $id }}" @selected((string) old('organization_id', isset($project) ? $project->organization_id : '') === (string) $id)>{{ $name }}</option>
+                <option value="{{ $id }}" @selected((string) old('organization_id', $project->organization_id ?? '') === (string) $id)>
+                    {{ $name }}
+                </option>
             @endforeach
         </select>
-        <x-input-error :messages="$errors->get('organization_id')" class="mt-2" />
+
+        <x-input-error :messages="$errors->get('organization_id')" />
     </div>
 
-    <div>
-        <x-input-label for="marketer_id" :value="'Маркетолог'" />
-        <select id="marketer_id" name="marketer_id" class="mt-1 block w-full rounded border px-3 py-2">
+    <div class="space-y-1">
+        <x-input-label for="marketer_id" value="Маркетолог" />
+
+        <select id="marketer_id" name="marketer_id"
+            class="block w-full rounded-md border-gray-300 shadow-sm
+               focus:border-indigo-500 focus:ring-indigo-500
+               @error('marketer_id') border-red-500 @enderror">
             <option value="">—</option>
             @foreach ($marketers ?? [] as $id => $name)
-                <option value="{{ $id }}" @selected((string) old('marketer_id', isset($project) ? $project->marketer_id : '') === (string) $id)>{{ $name }}</option>
+                <option value="{{ $id }}" @selected((string) old('marketer_id', $project->marketer_id ?? '') === (string) $id)>
+                    {{ $name }}
+                </option>
             @endforeach
         </select>
-        <x-input-error :messages="$errors->get('marketer_id')" class="mt-2" />
+
+        <x-input-error :messages="$errors->get('marketer_id')" />
     </div>
 
     <div>
@@ -77,22 +91,22 @@
         <x-input-error :messages="$errors->get('city')" class="mt-2" />
     </div>
 
-    <div>
+    {{-- <div>
         <x-input-label for="payment_due_day" :value="'Срок оплаты (день месяца)'" />
         <x-text-input id="payment_due_day" name="payment_due_day" type="number" min="1" max="31"
             class="mt-1 block w-40" :value="old('payment_due_day', isset($project) ? $project->payment_due_day : '')" />
         <x-input-error :messages="$errors->get('payment_due_day')" class="mt-2" />
-    </div>
+    </div> --}}
 
     <div>
-        <x-input-label for="closed_at" :value="'Дата закрытия (опционально)'" />
+        <x-input-label for="closed_at" :value="'Дата закрытия'" />
         <x-text-input id="closed_at" name="closed_at" type="date" :value="old('closed_at', isset($project) && $project->closed_at ? $project->closed_at->format('Y-m-d') : '')" class="mt-1 block w-48" />
         <x-input-error :messages="$errors->get('closed_at')" class="mt-2" />
     </div>
 
     <!-- Stages: sortable list + selection -->
     <div class="col-span-2">
-        <x-input-label :value="'Этапы (перетаскивайте для порядка, клик чтобы выбрать)'" />
+        <x-input-label :value="'Виды (перетаскивайте для порядка, клик чтобы выбрать)'" />
         <div id="stages-list" class="mt-2 rounded border bg-white/50 p-2">
             @foreach ($stages ?? [] as $id => $name)
                 @php $selected = in_array($id, $currentStages ?? old('stages', [])); @endphp
@@ -115,7 +129,7 @@
                 </div>
             @endforeach
         </div>
-        <div class="text-xs text-gray-500 mt-2">Выбранные этапы и их порядок отправляются при сохранении.</div>
+        <div class="text-xs text-gray-500 mt-2">Выбранные Виды и их порядок отправляются при сохранении.</div>
     </div>
 
     <div class="col-span-2">

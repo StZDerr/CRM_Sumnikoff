@@ -2,68 +2,50 @@
 
 @section('content')
     <div class="max-w-6xl mx-auto py-6">
-        {{-- Кнопка Назад --}}
         <div class="mb-4">
             <a href="{{ url()->previous() }}"
-                class="inline-flex items-center px-4 py-2 rounded-md border border-indigo-500 text-indigo-600 text-sm font-medium
-          hover:bg-indigo-50 transition">
+                class="inline-flex items-center px-4 py-2 rounded-md border border-indigo-500 text-indigo-600 text-sm font-medium hover:bg-indigo-50 transition">
                 ← Назад
             </a>
         </div>
-        <h1 class="text-2xl font-semibold mb-4">Проекты по месяцам</h1>
 
+        <h1 class="text-2xl font-semibold mb-4">Календарь — все проекты</h1>
 
-
-        <div class="overflow-x-auto">
-            @if (empty($project->contract_date) || empty($months))
-                <div class="bg-yellow-50 border border-yellow-200 rounded p-4 text-sm text-gray-700">
-                    У проекта не задана дата заключения договора — нет данных для календаря.
-                </div>
-            @else
+        @if (empty($months))
+            <div class="bg-yellow-50 border border-yellow-200 rounded p-4 text-sm text-gray-700">
+                Нет проектов с датой договора — нечего отображать.
+            </div>
+        @else
+            <div class="overflow-x-auto">
                 <table class="min-w-full border-collapse border border-gray-200">
                     <thead class="bg-gray-100">
                         <tr>
-                            <th class="border border-gray-200 p-2 text-left">Проект</th>
+                            <th class="border border-gray-200 p-2 text-left">Объект</th>
                             @foreach ($months as $m)
                                 <th class="border border-gray-200 p-2 text-center">{{ $m['label'] }}</th>
                             @endforeach
-                            <th class="border border-gray-200 p-2 text-center"
-                                style="width:80px; position:sticky; right:170px; background:#fff; z-index:10;">К оплате
-                            </th>
-                            <th class="border border-gray-200 p-2 text-center"
-                                style="width:80px; position:sticky; right:80px; background:#fff; z-index:20;">Оплачено
-                            </th>
-                            <th class="border border-gray-200 p-2 text-center"
-                                style="width:80px; position:sticky; right:0; background:#fff; z-index:30;">Разница</th>
+                            <th class="border border-gray-200 p-2 text-center">Ожидается</th>
+                            <th class="border border-gray-200 p-2 text-center">Оплачено</th>
+                            <th class="border border-gray-200 p-2 text-center">Разница</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        <tr class="hover:bg-gray-50">
-                            <td class="border border-gray-200 p-2 font-medium">{{ $project->title }}</td>
+                        <tr>
+                            <td class="border border-gray-200 p-2 font-medium">Все проекты</td>
 
                             @foreach ($months as $m)
                                 @php
                                     $key = $m['ym'];
                                     $paid = (float) ($paymentsByMonth[$key] ?? 0);
-                                    $expected = (float) ($project->contract_amount ?? 0);
+                                    $expected = (float) ($expectedByMonth[$key] ?? 0);
                                     $diff = $paid - $expected;
                                 @endphp
-
-                                <td class="relative border border-gray-200 p-2 text-center cursor-pointer"
-                                    data-month="{{ $key }}" data-month-label="{{ $m['label'] }}" data-tippy
-                                    data-tippy-content="Оплачено: {{ number_format($paid, 0, '.', ' ') }} ₽<br>Ожидалось: {{ number_format($expected, 0, '.', ' ') }} ₽">
-                                    @if ($expected <= 0)
+                                <td class="border border-gray-200 p-2 text-center" data-tippy
+                                    data-tippy-content="Оплачено: {{ number_format($paid, 0, '.', ' ') }} ₽&#10;Ожидалось: {{ number_format($expected, 0, '.', ' ') }} ₽">
+                                    @if ($expected <= 0 && $paid == 0)
                                         —
                                     @else
-                                        {{-- уголок, если есть комментарии за месяц --}}
-                                        @if (!empty($commentsByMonth[$key] ?? 0))
-                                            <span title="Комментарии: {{ $commentsByMonth[$key] }}"
-                                                class="absolute top-0 right-0 w-3 h-3 bg-blue-500"
-                                                style="clip-path: polygon(100% 0, 0 0, 100% 100%);"
-                                                aria-hidden="true"></span>
-                                        @endif
-
                                         @if ($diff > 0)
                                             <span
                                                 class="text-green-600 font-semibold">+{{ number_format($diff, 0, '.', ' ') }}
@@ -80,78 +62,97 @@
                                 </td>
                             @endforeach
 
-                            {{-- Итоги --}}
-                            <td class="border border-gray-200 p-2 text-center font-medium"
-                                style="width:80px; position:sticky; right:170px; background:#fff; z-index:10;">
-                                @if (!is_null($project->debt))
-                                    {{ number_format($project->debt, 0, '.', ' ') }} ₽
-                                    @if ($project->debt_calculated_at)
-                                        <div class="text-xs text-gray-400">as of
-                                            {{ \Illuminate\Support\Carbon::make($project->debt_calculated_at)->format('Y-m-d H:i') }}
-                                        </div>
-                                    @endif
-                                @else
-                                    —
-                                @endif
-                            </td>
-
-                            <td class="border border-gray-200 p-2 text-center font-medium"
-                                style="width:80px; position:sticky; right:80px; background:#fff; z-index:20;">
-                                @if (!is_null($project->received_total))
-                                    {{ number_format($project->received_total, 0, '.', ' ') }} ₽
-                                    @if ($project->received_calculated_at)
-                                        <div class="text-xs text-gray-400">as of
-                                            {{ \Illuminate\Support\Carbon::make($project->received_calculated_at)->format('Y-m-d H:i') }}
-                                        </div>
-                                    @endif
-                                @else
-                                    —
-                                @endif
-                            </td>
-
-                            @php
-                                $bal =
-                                    $project->balance ??
-                                    (isset($project->debt, $project->received_total)
-                                        ? $project->debt - $project->received_total
-                                        : null);
-                                $diffClass =
-                                    $bal < 0 ? 'text-red-600' : ($bal > 0 ? 'text-green-600' : 'text-gray-900');
-                            @endphp
-                            <td class="border border-gray-200 p-2 text-center font-semibold {{ $diffClass }}"
-                                style="width:160px; position:sticky; right:0; background:#fff; z-index:30;">
-                                @if (!is_null($bal))
-                                    {{ number_format($bal, 0, '.', ' ') }} ₽
-                                    @if ($project->balance_calculated_at)
-                                        <div class="text-xs text-gray-400">as of
-                                            {{ \Illuminate\Support\Carbon::make($project->balance_calculated_at)->format('Y-m-d H:i') }}
-                                        </div>
-                                    @endif
-                                @else
-                                    —
-                                @endif
-                            </td>
+                            <td class="border border-gray-200 p-2 text-center font-medium">
+                                {{ number_format($owedTotal, 0, '.', ' ') }} ₽</td>
+                            <td class="border border-gray-200 p-2 text-center font-medium">
+                                {{ number_format($periodTotal, 0, '.', ' ') }} ₽</td>
+                            @php $diffClass = $difference < 0 ? 'text-red-600' : ($difference > 0 ? 'text-green-600' : 'text-gray-900'); @endphp
+                            <td class="border border-gray-200 p-2 text-center font-semibold {{ $diffClass }}">
+                                {{ number_format($difference, 0, '.', ' ') }} ₽</td>
                         </tr>
                     </tbody>
-                </table>
-            @endif
-        </div>
-    </div>
-    <!-- Offcanvas -->
-    <div id="month-offcanvas" class="fixed inset-0 z-50 hidden">
-        <div id="offcanvas-overlay" class="absolute inset-0 bg-black/50"></div>
+                    <tbody>
+                        {{-- Сводная строка (All projects) уже есть выше --}}
+                        {{-- Детализированный разбор по каждому проекту --}}
+                        @foreach ($projectRows as $row)
+                            @php $proj = $row['project']; @endphp
+                            <tr class="hover:bg-gray-50">
+                                <td class="border border-gray-200 p-2 font-medium">
+                                    <a href="{{ route('projects.show', $proj) }}" class="text-indigo-600 hover:underline">
+                                        {{ $proj->title }}
+                                    </a>
+                                </td>
 
-        <div id="offcanvas-panel"
+                                @foreach ($months as $m)
+                                    @php
+                                        $ym = $m['ym'];
+                                        $cell = $row['months'][$ym] ?? ['paid' => 0, 'expected' => 0, 'diff' => 0];
+                                        $paid = $cell['paid'];
+                                        $expected = $cell['expected'];
+                                        $diff = $cell['diff'];
+                                        $commentsCount = $commentsMap[$proj->id][$ym] ?? 0;
+                                    @endphp
+
+                                    <td class="relative border border-gray-200 p-2 text-center cursor-pointer"
+                                        data-project-id="{{ $proj->id }}" data-project-title="{{ e($proj->title) }}"
+                                        data-month="{{ $ym }}" data-month-label="{{ $m['label'] }}" data-tippy
+                                        data-tippy-content="Оплачено: {{ number_format($paid, 0, '.', ' ') }} ₽&#10;Ожидалось: {{ number_format($expected, 0, '.', ' ') }} ₽">
+
+                                        @if ($commentsCount > 0)
+                                            <span title="Комментарии: {{ $commentsCount }}" aria-hidden="true"
+                                                class="absolute top-0 right-0 w-3 h-3 bg-blue-500"
+                                                style="clip-path: polygon(100% 0, 0 0, 100% 100%);"></span>
+                                        @endif
+
+                                        @if ($expected <= 0 && $paid == 0)
+                                            —
+                                        @else
+                                            @if ($diff > 0)
+                                                <span
+                                                    class="text-green-600 font-semibold">+{{ number_format($diff, 0, '.', ' ') }}
+                                                    ₽</span>
+                                            @elseif ($diff < 0)
+                                                <span
+                                                    class="text-red-600 font-semibold">-{{ number_format(abs($diff), 0, '.', ' ') }}
+                                                    ₽</span>
+                                            @else
+                                                <span
+                                                    class="text-gray-900 font-semibold">{{ number_format(0, 0, '.', ' ') }}
+                                                    ₽</span>
+                                            @endif
+                                        @endif
+                                    </td>
+                                @endforeach
+
+                                <td class="border border-gray-200 p-2 text-center">
+                                    {{ number_format($row['owed'], 0, '.', ' ') }} ₽</td>
+                                <td class="border border-gray-200 p-2 text-center">
+                                    {{ number_format($row['paid'], 0, '.', ' ') }} ₽</td>
+                                @php $cls = $row['diff'] < 0 ? 'text-red-600' : ($row['diff'] > 0 ? 'text-green-600' : 'text-gray-900'); @endphp
+                                <td class="border border-gray-200 p-2 text-center font-semibold {{ $cls }}">
+                                    {{ number_format($row['diff'], 0, '.', ' ') }} ₽</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
+
+    <!-- Offcanvas for all-projects -->
+    <div id="ap-month-offcanvas" class="fixed inset-0 z-50 hidden">
+        <div id="ap-offcanvas-overlay" class="absolute inset-0 bg-black/50"></div>
+
+        <div id="ap-offcanvas-panel"
             class="absolute right-0 top-0 h-full w-full sm:w-96 bg-white shadow-lg transform translate-x-full transition-transform">
             <div class="p-4 flex items-center justify-between border-b">
-                <h3 class="text-lg font-medium">Добавить комментарий — <span id="offcanvas-month-label"></span></h3>
-                <button id="offcanvas-close" class="text-gray-600">✕</button>
+                <h3 class="text-lg font-medium">Комментарии — <span id="ap-offcanvas-title"></span></h3>
+                <button id="ap-offcanvas-close" class="text-gray-600">✕</button>
             </div>
 
-            <form action="{{ route('projects.comments.store', $project) }}" method="POST" enctype="multipart/form-data"
-                class="p-4">
+            <form id="ap-offcanvas-form" action="" method="POST" enctype="multipart/form-data" class="p-4">
                 @csrf
-                <input type="hidden" name="month" id="offcanvas-month-input" value="">
+                <input type="hidden" name="month" id="ap-offcanvas-month-input" value="">
                 <input type="hidden" name="redirect" value="{{ url()->full() }}" />
 
                 <div class="mb-3">
@@ -165,42 +166,45 @@
                 </div>
 
                 <div class="flex justify-end gap-2">
-                    <button type="button" id="offcanvas-cancel" class="px-3 py-2 border rounded">Отмена</button>
+                    <button type="button" id="ap-offcanvas-cancel" class="px-3 py-2 border rounded">Отмена</button>
                     <button type="submit" class="px-3 py-2 bg-indigo-600 text-white rounded">Добавить</button>
                 </div>
             </form>
+
             <!-- Comments area (загружается по AJAX) -->
-            <div id="offcanvas-comments" class="p-4 border-t">
+            <div id="ap-offcanvas-comments" class="p-4 border-t">
                 <div class="text-sm text-gray-500">Загрузка комментариев...</div>
             </div>
         </div>
-
     </div>
 
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                const offcanvas = document.getElementById('month-offcanvas');
-                const panel = document.getElementById('offcanvas-panel');
-                const overlay = document.getElementById('offcanvas-overlay');
-                const monthInput = document.getElementById('offcanvas-month-input');
-                const monthLabel = document.getElementById('offcanvas-month-label');
-                const cancelBtn = document.getElementById('offcanvas-cancel');
-                const closeBtn = document.getElementById('offcanvas-close');
+                const offcanvas = document.getElementById('ap-month-offcanvas');
+                const panel = document.getElementById('ap-offcanvas-panel');
+                const overlay = document.getElementById('ap-offcanvas-overlay');
+                const monthInput = document.getElementById('ap-offcanvas-month-input');
+                const titleEl = document.getElementById('ap-offcanvas-title');
+                const cancelBtn = document.getElementById('ap-offcanvas-cancel');
+                const closeBtn = document.getElementById('ap-offcanvas-close');
+                const form = document.getElementById('ap-offcanvas-form');
+                const commentsContainer = document.getElementById('ap-offcanvas-comments');
 
                 const commentsUrlTemplate =
-                    "{{ route('projects.comments.index', ['project' => $project->id, 'month' => 'MONTH_PLACEHOLDER']) }}";
-                const commentsContainer = document.getElementById('offcanvas-comments');
-                const form = offcanvas.querySelector('form');
+                    "{{ route('projects.comments.index', ['project' => 'PROJECT_ID', 'month' => 'MONTH_PLACEHOLDER']) }}";
+                const storeUrlTemplate = "{{ route('projects.comments.store', 'PROJECT_ID') }}";
 
-                function openOffcanvas(month, label) {
+                function openOffcanvas(projectId, projectTitle, month) {
                     monthInput.value = month;
-                    monthLabel.textContent = label || month;
+                    titleEl.textContent = projectTitle + ' — ' + month;
                     offcanvas.classList.remove('hidden');
                     requestAnimationFrame(() => panel.classList.remove('translate-x-full'));
+                    // set form action
+                    form.action = storeUrlTemplate.replace('PROJECT_ID', projectId);
+                    loadComments(projectId, month);
                     const ta = offcanvas.querySelector('textarea[name="body"]');
                     if (ta) setTimeout(() => ta.focus(), 200);
-                    loadComments(month);
                 }
 
                 function closeOffcanvas() {
@@ -208,15 +212,19 @@
                     setTimeout(() => offcanvas.classList.add('hidden'), 240);
                 }
 
-                // Attach click handlers to month cells
-                document.querySelectorAll('td[data-month]').forEach(td => {
-                    td.addEventListener('click', function() {
-                        openOffcanvas(td.getAttribute('data-month'), td.getAttribute(
-                            'data-month-label'));
+                // attach click handlers to project-month cells (entire cell clickable)
+                document.querySelectorAll('td[data-project-id]').forEach(td => {
+                    td.addEventListener('click', function(e) {
+                        // avoid triggering when clicking links inside cell
+                        if (e.target.closest('a')) return;
+                        const pid = td.getAttribute('data-project-id');
+                        const ptitle = td.getAttribute('data-project-title') || td.querySelector('a')
+                            ?.textContent?.trim() || '';
+                        const month = td.getAttribute('data-month');
+                        openOffcanvas(pid, ptitle, month);
                     });
                 });
 
-                // Close handlers
                 overlay.addEventListener('click', closeOffcanvas);
                 if (cancelBtn) cancelBtn.addEventListener('click', closeOffcanvas);
                 if (closeBtn) closeBtn.addEventListener('click', closeOffcanvas);
@@ -224,11 +232,11 @@
                     if (e.key === 'Escape') closeOffcanvas();
                 });
 
-                // Load comments (AJAX JSON expected { html: '...' })
-                async function loadComments(month) {
+                async function loadComments(projectId, month) {
                     if (!commentsContainer) return;
                     commentsContainer.innerHTML = '<div class="text-sm text-gray-500">Загрузка комментариев…</div>';
-                    const url = commentsUrlTemplate.replace('MONTH_PLACEHOLDER', encodeURIComponent(month));
+                    const url = commentsUrlTemplate.replace('PROJECT_ID', projectId).replace('MONTH_PLACEHOLDER',
+                        encodeURIComponent(month));
                     try {
                         const res = await fetch(url, {
                             headers: {
@@ -240,10 +248,6 @@
                         const json = await res.json();
                         commentsContainer.innerHTML = json.html ||
                             '<div class="text-sm text-gray-500">Нет комментариев.</div>';
-                        // init features for loaded content
-                        if (window.GLightbox) window.GLightbox({
-                            selector: '.glightbox'
-                        });
                         initAjaxDeletes();
                         initAjaxEdits();
                     } catch (err) {
@@ -253,7 +257,6 @@
                     }
                 }
 
-                // Delete (delegated)
                 function initAjaxDeletes() {
                     const list = document.getElementById('month-comments-list');
                     if (!list) return;
@@ -290,7 +293,6 @@
                     });
                 }
 
-                // Inline edit (delegated)
                 function initAjaxEdits() {
                     const list = document.getElementById('month-comments-list');
                     if (!list) return;
@@ -313,12 +315,12 @@
                         const formEl = document.createElement('form');
                         formEl.className = 'edit-comment-form mt-3';
                         formEl.innerHTML = `
-                <textarea name="body" rows="3" class="w-full border rounded p-2">${escapeHtml(originalText)}</textarea>
-                <div class="mt-2 flex gap-2 justify-end">
-                    <button type="button" class="px-3 py-1 border rounded cancel-edit-btn">Отмена</button>
-                    <button type="submit" class="px-3 py-1 bg-indigo-600 text-white rounded save-edit-btn">Сохранить</button>
-                </div>
-            `;
+                            <textarea name="body" rows="3" class="w-full border rounded p-2">${escapeHtml(originalText)}</textarea>
+                            <div class="mt-2 flex gap-2 justify-end">
+                                <button type="button" class="px-3 py-1 border rounded cancel-edit-btn">Отмена</button>
+                                <button type="submit" class="px-3 py-1 bg-indigo-600 text-white rounded save-edit-btn">Сохранить</button>
+                            </div>
+                        `;
                         bodyEl.parentNode.insertBefore(formEl, bodyEl.nextSibling);
 
                         formEl.querySelector('.cancel-edit-btn').addEventListener('click', function() {
@@ -353,16 +355,11 @@
                                 if (res.ok) {
                                     const json = await res.json();
                                     if (json.html) {
-                                        // заменим весь элемент
                                         const wrapper = document.createElement('div');
                                         wrapper.innerHTML = json.html;
                                         item.replaceWith(wrapper.firstElementChild);
-                                        // реинициализация
                                         initAjaxDeletes();
                                         initAjaxEdits();
-                                        if (window.GLightbox) window.GLightbox({
-                                            selector: '.glightbox'
-                                        });
                                     } else {
                                         bodyEl.innerText = body;
                                         formEl.remove();
@@ -420,9 +417,6 @@
                                 form.reset();
                                 initAjaxDeletes();
                                 initAjaxEdits();
-                                if (window.GLightbox) window.GLightbox({
-                                    selector: '.glightbox'
-                                });
                             } else {
                                 window.location.reload();
                             }
@@ -433,7 +427,6 @@
                     });
                 }
 
-                // Escape helper to avoid double-encoding in textarea (keeps plain text safe)
                 function escapeHtml(text) {
                     const div = document.createElement('div');
                     div.textContent = text;
@@ -442,4 +435,4 @@
             });
         </script>
     @endpush
-@endsection
+    </div>

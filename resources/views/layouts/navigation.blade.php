@@ -22,6 +22,14 @@
                 Пользователи
             </x-nav-link>
 
+            <x-nav-link :href="route('calendar.all-projects')" :active="request()->routeIs('calendar.all-projects')">
+                Календарь
+            </x-nav-link>
+
+            <x-nav-link :href="route('operation.index')" :active="request()->routeIs('operation.index')">
+                Операции
+            </x-nav-link>
+
             @php
                 $active = request()->routeIs(
                     'invoices.*',
@@ -39,6 +47,10 @@
 
                 <x-dropdown-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
                     Поступления
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('payment-categories.index')" :active="request()->routeIs('payment-categories.*')">
+                    Статьи поступлений
                 </x-dropdown-link>
 
                 <x-dropdown-link :href="route('expenses.index')" :active="request()->routeIs('expenses.*')">

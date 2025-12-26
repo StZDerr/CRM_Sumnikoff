@@ -7,13 +7,21 @@
         </div>
 
         @if (auth()->user() && (auth()->user()->isAdmin() || auth()->id() === $comment->user_id))
-            <form class="delete-comment-form" action="{{ route('projects.comments.destroy', [$project, $comment]) }}"
-                method="POST" onsubmit="return false;">
-                @csrf
-                @method('DELETE')
-                <button class="text-xs text-red-600 hover:text-red-800 hover:underline transition">Удалить</button>
-            </form>
+            <div class="flex items-center gap-3">
+                <form class="delete-comment-form" action="{{ route('projects.comments.destroy', [$project, $comment]) }}"
+                    method="POST" onsubmit="return false;">
+                    @csrf
+                    @method('DELETE')
+                    <button class="text-xs text-red-600 hover:text-red-800 hover:underline transition">Удалить</button>
+                </form>
+
+                <button class="text-xs text-indigo-600 hover:text-indigo-800 edit-comment-btn" type="button"
+                    data-update-url="{{ route('projects.comments.update', [$project, $comment]) }}">
+                    Редактировать
+                </button>
+            </div>
         @endif
+
     </div>
 
     <!-- Фотографии комментария -->
@@ -31,7 +39,7 @@
     @endif
 
     <!-- Текст комментария -->
-    <div class="mt-3 text-gray-800 whitespace-pre-line leading-relaxed">
+    <div class="mt-3 text-gray-800 whitespace-pre-line leading-relaxed comment-body">
         {{ $comment->body }}
     </div>
 </div>

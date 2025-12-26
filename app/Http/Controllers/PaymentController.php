@@ -6,6 +6,7 @@ use App\Models\BankAccount;
 use App\Models\Invoice;
 use App\Models\InvoiceStatus;
 use App\Models\Payment;
+use App\Models\PaymentCategory;
 use App\Models\PaymentMethod;
 use App\Models\Project;
 use Illuminate\Http\Request;
@@ -33,6 +34,7 @@ class PaymentController extends Controller
         $projects = Project::orderBy('title')->get();
         $paymentMethods = PaymentMethod::orderBy('sort_order')->get();
         $bankAccounts = BankAccount::orderBy('title')->get();
+        $paymentCategories = PaymentCategory::ordered()->get();
 
         // exclude invoices with status 'Оплаченно полностью'
         $excludeStatusIds = InvoiceStatus::where('name', 'Оплаченно полностью')->pluck('id')->all();
@@ -48,7 +50,7 @@ class PaymentController extends Controller
 
         $selectedProjectId = $request->query('project') ? (int) $request->query('project') : null;
 
-        return view('admin.payments.create', compact('projects', 'paymentMethods', 'invoices', 'invoiceStatuses', 'selectedProjectId', 'bankAccounts'));
+        return view('admin.payments.create', compact('projects', 'paymentMethods', 'invoices', 'invoiceStatuses', 'selectedProjectId', 'bankAccounts', 'paymentCategories'));
     }
 
     public function store(Request $request)
@@ -63,6 +65,7 @@ class PaymentController extends Controller
             'transaction_id' => 'nullable|string|max:255',
             'note' => 'nullable|string|max:2000',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'payment_category_id' => 'nullable|exists:payment_categories,id',
         ]);
 
         // Use current timestamp if payment_date not provided
@@ -89,7 +92,7 @@ class PaymentController extends Controller
 
     public function show(Payment $payment)
     {
-        $payment->load(['project', 'paymentMethod', 'invoice']);
+        $payment->load(['project', 'paymentMethod', 'invoice', 'paymentCategory']);
 
         return view('admin.payments.show', compact('payment'));
     }
@@ -99,6 +102,7 @@ class PaymentController extends Controller
         $projects = Project::orderBy('title')->get();
         $paymentMethods = PaymentMethod::orderBy('sort_order')->get();
         $bankAccounts = BankAccount::orderBy('title')->get();
+        $paymentCategories = PaymentCategory::ordered()->get();
 
         // exclude invoices with status 'Оплаченно полностью' but make sure to include the invoice currently linked to the payment (if any)
         $excludeStatusIds = InvoiceStatus::where('name', 'Оплаченно полностью')->pluck('id')->all();
@@ -120,7 +124,7 @@ class PaymentController extends Controller
 
         $invoiceStatuses = InvoiceStatus::ordered()->get(); // <-- добавлено
 
-        return view('admin.payments.edit', compact('payment', 'projects', 'paymentMethods', 'invoices', 'invoiceStatuses', 'bankAccounts'));
+        return view('admin.payments.edit', compact('payment', 'projects', 'paymentMethods', 'invoices', 'invoiceStatuses', 'bankAccounts', 'paymentCategories'));
     }
 
     public function update(Request $request, Payment $payment)
@@ -135,6 +139,7 @@ class PaymentController extends Controller
             'transaction_id' => 'nullable|string|max:255',
             'note' => 'nullable|string|max:2000',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'payment_category_id' => 'nullable|exists:payment_categories,id',
         ]);
 
         if (empty($data['payment_date'])) {

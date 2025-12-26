@@ -18,12 +18,18 @@ class Payment extends Model
         'transaction_id',
         'note',
         'bank_account_id',
+        'payment_category_id',
     ];
 
     protected $casts = [
         'payment_date' => 'datetime',
         'amount' => 'decimal:2',
     ];
+
+    public function paymentCategory()
+    {
+        return $this->belongsTo(\App\Models\PaymentCategory::class);
+    }
 
     // Связи
     public function project()

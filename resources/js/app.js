@@ -6,6 +6,9 @@ import GLightbox from "glightbox";
 import tippy from "tippy.js";
 import "tippy.js/dist/tippy.css";
 
+import TomSelect from "tom-select";
+import "tom-select/dist/css/tom-select.css";
+
 window.GLightbox = GLightbox;
 
 window.Alpine = Alpine;
@@ -46,4 +49,22 @@ document.addEventListener("DOMContentLoaded", () => {
         theme: "light",
         animation: "shift-away",
     });
+    document.querySelectorAll(".js-org-select").forEach((el) => {
+        new TomSelect(el, {
+            allowEmptyOption: true,
+            placeholder: "Выберите организацию",
+            searchField: ["text"],
+            maxOptions: 100,
+        });
+    });
+    // Для селекта маркетологов
+    const marketerSelect = document.getElementById("marketer_id");
+    if (marketerSelect) {
+        new TomSelect(marketerSelect, {
+            allowEmptyOption: true,
+            placeholder: "Выберите маркетолога",
+            searchField: ["text"],
+            maxOptions: 100,
+        });
+    }
 });

@@ -16,7 +16,6 @@
             <a href="{{ route('payments.create', $createParams) }}"
                 class="px-4 py-2 bg-indigo-600 text-white rounded">Добавить</a>
         </div>
-
         <div class="bg-white shadow rounded p-4">
             <table class="w-full text-sm">
                 <thead class="text-left text-xs text-gray-500">

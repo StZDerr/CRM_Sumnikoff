@@ -84,8 +84,8 @@ class ProjectController extends Controller
      */
     public function create()
     {
-        $organizations = Organization::orderBy('name_full')->pluck('name_full', 'id');
-        $marketers = User::orderBy('name')->pluck('name', 'id');
+        $organizations = Organization::orderBy('name_short')->pluck('name_short', 'id');
+        $marketers = User::where('role', 'manager')->orderBy('name')->pluck('name', 'id');
         $stages = Stage::ordered()->pluck('name', 'id');
         $paymentMethods = PaymentMethod::ordered()->pluck('title', 'id');
         $importances = Importance::ordered()->pluck('name', 'id');
@@ -100,13 +100,13 @@ class ProjectController extends Controller
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
-            'organization_id' => 'nullable|exists:organizations,id',
-            'city' => 'nullable|string|max:255',
+            'organization_id' => 'required|exists:organizations,id',
+            'city' => 'required|string|max:255',
             'closed_at' => 'nullable|date|after_or_equal:contract_date',
-            'marketer_id' => 'nullable|exists:users,id',
-            'importance_id' => 'nullable|exists:importances,id',
-            'contract_amount' => 'nullable|numeric|min:0',
-            'contract_date' => 'nullable|date', // <- валидация даты
+            'marketer_id' => 'required|exists:users,id',
+            'importance_id' => 'required|exists:importances,id',
+            'contract_amount' => 'required|numeric|min:0',
+            'contract_date' => 'required|date',
             'payment_method_id' => 'nullable|exists:payment_methods,id',
             'payment_due_day' => 'nullable|integer|min:1|max:31',
             'comment' => 'nullable|string',
@@ -146,8 +146,8 @@ class ProjectController extends Controller
      */
     public function edit(Project $project)
     {
-        $organizations = Organization::orderBy('name_full')->pluck('name_full', 'id');
-        $marketers = User::orderBy('name')->pluck('name', 'id');
+        $organizations = Organization::orderBy('name_short')->pluck('name_short', 'id');
+        $marketers = User::where('role', 'manager')->orderBy('name')->pluck('name', 'id');
         $stages = Stage::ordered()->pluck('name', 'id');
         $paymentMethods = PaymentMethod::ordered()->pluck('title', 'id');
         $importances = Importance::ordered()->pluck('name', 'id');
@@ -167,13 +167,13 @@ class ProjectController extends Controller
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
-            'organization_id' => 'nullable|exists:organizations,id',
-            'city' => 'nullable|string|max:255',
+            'organization_id' => 'required|exists:organizations,id',
+            'city' => 'required|string|max:255',
             'closed_at' => 'nullable|date|after_or_equal:contract_date',
-            'marketer_id' => 'nullable|exists:users,id',
-            'importance_id' => 'nullable|exists:importances,id',
-            'contract_amount' => 'nullable|numeric|min:0',
-            'contract_date' => 'nullable|date', // <- валидация даты
+            'marketer_id' => 'required|exists:users,id',
+            'importance_id' => 'required|exists:importances,id',
+            'contract_amount' => 'required|numeric|min:0',
+            'contract_date' => 'required|date',
             'payment_method_id' => 'nullable|exists:payment_methods,id',
             'payment_due_day' => 'nullable|integer|min:1|max:31',
             'comment' => 'nullable|string',

@@ -22,6 +22,17 @@
     </div>
 
     <div>
+        <label class="text-xs text-gray-500">Категория платежа</label>
+        <select name="payment_category_id" class="w-full border rounded p-2">
+            <option value="">— не указано —</option>
+            @foreach ($paymentCategories as $cat)
+                <option value="{{ $cat->id }}" @selected(old('payment_category_id', $payment->payment_category_id ?? '') == $cat->id)>{{ $cat->title }}</option>
+            @endforeach
+        </select>
+        <x-input-error :messages="$errors->get('payment_category_id')" />
+    </div>
+
+    <div>
         <label class="text-xs text-gray-500">Банковский счёт (куда оплата)</label>
         <select name="bank_account_id" class="w-full border rounded p-2">
             <option value="">— не указан —</option>
@@ -67,7 +78,7 @@
 
     <div>
         <label class="text-xs text-gray-500">Статус счёта</label>
-        <select id="invoice-status-select" name="invoice_status_id" class="w-full border rounded p-2" disabled>
+        <select id="invoice-status-select" name="invoice_status_id" class="w-full border rounded p-2">
             <option value="">— без статуса —</option>
             @foreach ($invoiceStatuses ?? \App\Models\InvoiceStatus::ordered()->get() as $s)
                 <option value="{{ $s->id }}" @selected(old('invoice_status_id', $payment->invoice_status_id ?? '') == $s->id)>{{ $s->name }}</option>
@@ -98,6 +109,8 @@
             const invoiceSelect = document.getElementById('invoice-select');
             const txInput = document.getElementById('transaction_id');
             const projectSelect = document.querySelector('select[name="project_id"]');
+            // Флаг, указывающий, сделал ли пользователь ручной выбор статуса счёта
+            let manualInvoiceStatus = false;
 
             // ранее существующая логика
             function updateTxState() {
@@ -195,21 +208,38 @@
                 if (!invoiceStatusSelect) return;
                 const noteEl = document.getElementById('invoice-status-note');
                 const sel = invoiceSelect.selectedOptions[0];
-                const invoiceSelected = invoiceSelect.value !== '';
+                const invoiceSelected = invoiceSelect && invoiceSelect.value !== '';
 
                 if (!invoiceSelected) {
-                    invoiceStatusSelect.value = '';
-                    invoiceStatusSelect.disabled = true;
+                    // доступен для ручного выбора, но приглушён визуально
                     invoiceStatusSelect.classList.add('opacity-60');
-                    if (noteEl) noteEl.textContent = '';
+                    invoiceStatusSelect.classList.remove('opacity-100');
+
+                    if (!manualInvoiceStatus) {
+                        // нет привязанного счёта и пользователь не выбирал статус вручную — очистим
+                        invoiceStatusSelect.value = '';
+                        if (noteEl) {
+                            noteEl.textContent = 'Нет привязанного счёта — можно выбрать статус вручную.';
+                            noteEl.classList.remove('text-yellow-600');
+                            noteEl.classList.add('text-gray-500');
+                        }
+                    } else {
+                        // оставим выбор пользователя
+                        if (noteEl) {
+                            noteEl.textContent = 'Выбран вручную.';
+                            noteEl.classList.remove('text-yellow-600');
+                            noteEl.classList.add('text-gray-500');
+                        }
+                    }
                     return;
                 }
 
-                const status = String(sel?.dataset?.status || '');
-                invoiceStatusSelect.disabled = false;
+                // есть выбранный счёт — показываем его статус
+                manualInvoiceStatus = false;
                 invoiceStatusSelect.classList.remove('opacity-60');
+                invoiceStatusSelect.classList.add('opacity-100');
 
-                // Найдем опцию со значением status (строковое сравнение)
+                const status = String(sel?.dataset?.status || '');
                 let found = false;
                 for (const opt of invoiceStatusSelect.options) {
                     if (String(opt.value) === status) {
@@ -219,10 +249,8 @@
                     }
                 }
 
-                // Если не нашли — оставим пустым
                 if (!found) invoiceStatusSelect.value = '';
 
-                // Покажем подсказку с текущим статусом из счёта
                 if (noteEl) {
                     const selOpt = invoiceStatusSelect.selectedOptions[0];
                     if (selOpt && selOpt.value) {
@@ -246,6 +274,7 @@
             if (projectSelect) {
                 projectSelect.addEventListener('change', function(e) {
                     // при смене проекта очищаем выбранный счёт
+                    manualInvoiceStatus = false;
                     loadInvoicesForProject(e.target.value, false);
                 });
             }
@@ -253,6 +282,7 @@
             // Слушаем смену селекта счетов
             if (invoiceSelect) {
                 invoiceSelect.addEventListener('change', function() {
+                    manualInvoiceStatus = false;
                     updateTxState();
                     updateInvoiceStatusState();
                 });
@@ -262,7 +292,8 @@
             if (invoiceStatusSelect) {
                 const noteEl = document.getElementById('invoice-status-note');
                 invoiceStatusSelect.addEventListener('change', function() {
-                    const sel = invoiceSelect.selectedOptions[0];
+                    manualInvoiceStatus = true;
+                    const sel = invoiceSelect ? invoiceSelect.selectedOptions[0] : undefined;
                     const invoiceStatusFromInvoice = String(sel?.dataset?.status || '');
                     const current = String(invoiceStatusSelect.value || '');
                     if (current && invoiceStatusFromInvoice && current !== invoiceStatusFromInvoice) {
@@ -271,8 +302,11 @@
                             noteEl.classList.add('text-yellow-600');
                         }
                     } else {
-                        // вернуть стандартную подсказку
-                        updateInvoiceStatusState();
+                        if (noteEl) {
+                            noteEl.textContent = 'Выбран вручную.';
+                            noteEl.classList.remove('text-yellow-600');
+                            noteEl.classList.add('text-gray-500');
+                        }
                     }
                 });
             }
