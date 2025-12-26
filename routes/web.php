@@ -18,6 +18,7 @@ use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectCommentController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\StageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -97,6 +98,8 @@ Route::middleware('auth')->group(function () {
     Route::get('projects/{project}/invoices', [InvoiceController::class, 'invoicesByProject'])
         ->name('projects.invoices');
 
+    // внутри middleware('auth') группы
+    Route::get('search', [SearchController::class, 'index'])->name('search');
 });
 
 require __DIR__.'/auth.php';

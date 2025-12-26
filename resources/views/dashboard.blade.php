@@ -2,11 +2,13 @@
     {{-- ================= HEADER ================= --}}
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
             <h2 class="font-semibold text-xl text-gray-800">
                 📈 Динамика доходов
             </h2>
 
             <form method="GET" class="flex items-center gap-2">
+
                 <input type="month" name="month" value="{{ $monthParam ?? now()->format('Y-m') }}"
                     class="border rounded-lg px-3 py-1.5 text-sm
                            focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
@@ -32,6 +34,42 @@
     {{-- ================= CONTENT ================= --}}
     <div class="py-8">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6">
+
+            {{-- ===== QUICK SEARCH ===== --}}
+            <div class="bg-white rounded-xl shadow p-5">
+                <label for="site-search" class="block text-sm font-medium text-gray-700 mb-2">
+                    🔍 Быстрый поиск
+                </label>
+
+                <div class="relative">
+                    <input id="site-search" type="search" autocomplete="off"
+                        placeholder="Поиск проектов и организаций…"
+                        class="w-full rounded-lg border-gray-300
+                   focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500
+                   text-sm px-4 py-2 pr-10" />
+
+                    {{-- иконка --}}
+                    <div class="absolute inset-y-0 right-3 flex items-center text-gray-400 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z" />
+                        </svg>
+                    </div>
+
+                    {{-- результаты --}}
+                    <div id="site-search-results"
+                        class="hidden absolute left-0 right-0 mt-2 bg-white
+                   border border-gray-200 rounded-lg shadow-lg z-50
+                   max-h-72 overflow-y-auto">
+                        <div id="site-search-list" class="divide-y"></div>
+
+                        <div id="site-search-empty" class="p-3 text-sm text-gray-500 text-center hidden">
+                            Ничего не найдено
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {{-- ===== KPI CARDS ===== --}}
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -64,6 +102,8 @@
                     </div>
                 </div>
             </div>
+
+
 
             {{-- ===== CHART ===== --}}
             <div class="bg-white rounded-xl shadow p-6">
@@ -427,5 +467,90 @@
             }
 
         })();
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('site-search');
+            const resultsWrap = document.getElementById('site-search-results');
+            const resultsList = document.getElementById('site-search-list');
+            const emptyEl = document.getElementById('site-search-empty');
+            let timer = null;
+            const delay = 300;
+
+            function hideResults() {
+                resultsWrap.classList.add('hidden');
+            }
+
+            function showResults() {
+                resultsWrap.classList.remove('hidden');
+            }
+
+            function renderResults(items) {
+                resultsList.innerHTML = '';
+                if (!items || items.length === 0) {
+                    emptyEl.classList.remove('hidden');
+                    return;
+                }
+                emptyEl.classList.add('hidden');
+
+                for (const it of items) {
+                    const div = document.createElement('div');
+                    div.className = 'px-3 py-2 hover:bg-gray-50';
+                    const a = document.createElement('a');
+                    a.href = it.url;
+                    a.className = 'block text-sm text-gray-900';
+                    a.textContent = (it.type === 'project' ? 'Проект: ' : 'Организация: ') + it.label;
+                    div.appendChild(a);
+                    resultsList.appendChild(div);
+                }
+            }
+
+            function doSearch(q) {
+                if (!q || q.trim().length === 0) {
+                    hideResults();
+                    return;
+                }
+                const url = '{{ route('search') }}' + '?q=' + encodeURIComponent(q);
+                fetch(url, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }).then(res => res.json())
+                    .then(json => {
+                        if (json.results && json.results.length) {
+                            renderResults(json.results);
+                            showResults();
+                        } else {
+                            renderResults([]);
+                            showResults();
+                        }
+                    }).catch(err => {
+                        console.error('Search error', err);
+                        hideResults();
+                    });
+            }
+
+            input.addEventListener('input', function(e) {
+                clearTimeout(timer);
+                const q = e.target.value;
+                timer = setTimeout(() => doSearch(q), delay);
+            });
+
+            // Close on outside click or ESC
+            document.addEventListener('click', function(e) {
+                if (!resultsWrap.contains(e.target) && e.target !== input) {
+                    hideResults();
+                }
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') hideResults();
+            });
+
+            // Show on focus if there's existing results
+            input.addEventListener('focus', function() {
+                if (resultsList.children.length || !emptyEl.classList.contains('hidden')) {
+                    showResults();
+                }
+            });
+        });
     </script>
 </x-app-layout>

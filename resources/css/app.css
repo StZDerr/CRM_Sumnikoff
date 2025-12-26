@@ -29,3 +29,8 @@
     border-color: rgb(239 68 68); /* red-500 */
     box-shadow: 0 0 0 1px rgb(239 68 68);
 }
+/* если нужно */
+#site-search-results {
+    max-height: 320px;
+    overflow: auto;
+}
