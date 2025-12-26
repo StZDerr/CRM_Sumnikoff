@@ -81,4 +81,9 @@ class Project extends Model
     {
         return $this->hasMany(\App\Models\ProjectComment::class)->orderBy('created_at', 'desc');
     }
+
+    public function vacationAssignments()
+    {
+        return $this->hasMany(\App\Models\VacationProject::class);
+    }
 }

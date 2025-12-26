@@ -21,6 +21,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\StageController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VacationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -53,7 +54,10 @@ Route::middleware('auth')->group(function () {
         'expenses' => ExpenseController::class,
         'invoice-statuses' => InvoiceStatusController::class,
         'payment-categories' => PaymentCategoryController::class,
+        'vacations' => VacationController::class,
     ]);
+
+    Route::post('vacations/{vacation}/end', [VacationController::class, 'end'])->name('vacations.end');
     // endpoint для сохранения порядка (название: importances.reorder)
     Route::post('importances/reorder', [ImportanceController::class, 'reorder'])->name('importances.reorder');
 

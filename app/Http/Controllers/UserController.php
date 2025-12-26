@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UserRequest;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
@@ -19,8 +21,10 @@ class UserController extends Controller
     public function index(Request $request): View
     {
         $users = User::orderBy('id', 'desc')->paginate(15);
+        // список маркетологов для селекта в офкэнвасе
+        $marketers = User::where('role', 'manager')->orderBy('name')->pluck('name', 'id');
 
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', compact('users', 'marketers'));
     }
 
     public function create(): View
@@ -71,8 +75,60 @@ class UserController extends Controller
                 ->with('error', 'Вы не можете удалить свой аккаунт');
         }
 
-        $user->delete();
+        DB::transaction(function () use ($user, &$reassignedCount, &$note) {
+            // Найдём проекты, привязанные к удаляемому пользователю
+            $projects = Project::where('marketer_id', $user->id)->get();
 
-        return redirect()->route('users.index')->with('success', 'Пользователь удалён');
+            $reassignedCount = 0;
+            $note = null;
+
+            if ($projects->isNotEmpty()) {
+                // Получим доступных маркетологов (role = manager) кроме удаляемого
+                $marketers = User::where('role', 'manager')
+                    ->where('id', '<>', $user->id)
+                    ->withCount('projects') // для балансировки
+                    ->orderBy('projects_count', 'asc')
+                    ->get()
+                    ->values();
+
+                if ($marketers->isEmpty()) {
+                    // Нет маркетологов — обнулим поле marketer_id
+                    foreach ($projects as $p) {
+                        $p->update(['marketer_id' => null]);
+                    }
+                    $note = 'Проекты оставлены без маркетолога (нет доступных маркетологов).';
+                } else {
+                    // Распределим проекты по маркетологам в порядке минимальной загруженности
+                    $idx = 0;
+                    $mCount = $marketers->count();
+                    // локальная карта загрузки (чтобы не ре-запрашивать каждый раз)
+                    $loads = $marketers->pluck('projects_count')->toArray();
+
+                    foreach ($projects as $p) {
+                        // найдём индекс маркетолога с минимальной загрузкой
+                        $minIdx = array_keys($loads, min($loads))[0];
+                        $assignee = $marketers[$minIdx];
+                        $p->update(['marketer_id' => $assignee->id]);
+                        // увеличим локальную загрузку
+                        $loads[$minIdx]++;
+                        $reassignedCount++;
+                    }
+
+                    $note = "Проекты перераспределены между {$mCount} маркетологами.";
+                }
+            }
+
+            // Удаляем пользователя (soft или hard в зависимости от модели)
+            $user->delete();
+        });
+
+        $msg = 'Пользователь удалён.';
+        if (! empty($reassignedCount)) {
+            $msg .= " Переназначено проектов: {$reassignedCount}.";
+        } elseif (! empty($note)) {
+            $msg .= ' '.$note;
+        }
+
+        return redirect()->route('users.index')->with('success', $msg);
     }
 }
