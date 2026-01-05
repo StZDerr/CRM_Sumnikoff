@@ -50,7 +50,13 @@ class PaymentController extends Controller
 
         $selectedProjectId = $request->query('project') ? (int) $request->query('project') : null;
 
+        // If request is AJAX, return only the form wrapper for offcanvas
+        if ($request->ajax()) {
+            return view('admin.payments._form_offcanvas', compact('projects', 'paymentMethods', 'invoices', 'invoiceStatuses', 'selectedProjectId', 'bankAccounts', 'paymentCategories'));
+        }
+
         return view('admin.payments.create', compact('projects', 'paymentMethods', 'invoices', 'invoiceStatuses', 'selectedProjectId', 'bankAccounts', 'paymentCategories'));
+
     }
 
     public function store(Request $request)
@@ -86,6 +92,15 @@ class PaymentController extends Controller
         // обновим received_total у проекта
         $this->recalcProjectReceived($payment->project_id);
         $this->recalcBankBalance($payment->bank_account_id ?? null);
+
+        // If AJAX request, return JSON for client-side handling
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'payment_id' => $payment->id,
+                'redirect' => route('payments.show', $payment),
+            ], 201);
+        }
 
         return redirect()->route('payments.show', $payment)->with('success', 'Поступление добавлено.');
     }

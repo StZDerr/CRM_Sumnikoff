@@ -42,14 +42,10 @@ if (document.readyState === "loading") {
     loadProjectCommentsIfNeeded();
 }
 
-// Инициализация (в конце файла)
-document.addEventListener("DOMContentLoaded", () => {
-    tippy("[data-tippy]", {
-        allowHTML: true,
-        theme: "light",
-        animation: "shift-away",
-    });
-    document.querySelectorAll(".js-org-select").forEach((el) => {
+// Функция инициализации Tom Select (для использования после AJAX-загрузки)
+window.initTomSelect = function (container = document) {
+    container.querySelectorAll(".js-org-select").forEach((el) => {
+        if (el.tomselect) return; // уже инициализирован
         new TomSelect(el, {
             allowEmptyOption: true,
             placeholder: "Выберите организацию",
@@ -57,9 +53,22 @@ document.addEventListener("DOMContentLoaded", () => {
             maxOptions: 100,
         });
     });
+
+    container.querySelectorAll(".js-project-select").forEach((select) => {
+        if (select.tomselect) return; // уже инициализирован
+        new TomSelect(select, {
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc",
+            },
+            placeholder: "— Выберите проект —",
+        });
+    });
+
     // Для селекта маркетологов
-    const marketerSelect = document.getElementById("marketer_id");
-    if (marketerSelect) {
+    const marketerSelect = container.querySelector("#marketer_id");
+    if (marketerSelect && !marketerSelect.tomselect) {
         new TomSelect(marketerSelect, {
             allowEmptyOption: true,
             placeholder: "Выберите маркетолога",
@@ -67,4 +76,16 @@ document.addEventListener("DOMContentLoaded", () => {
             maxOptions: 100,
         });
     }
+};
+
+// Инициализация (в конце файла)
+document.addEventListener("DOMContentLoaded", () => {
+    tippy("[data-tippy]", {
+        allowHTML: true,
+        theme: "light",
+        animation: "shift-away",
+    });
+
+    // Инициализация Tom Select при загрузке страницы
+    window.initTomSelect(document);
 });

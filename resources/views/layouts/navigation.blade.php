@@ -45,22 +45,6 @@
                     Счета
                 </x-dropdown-link>
 
-                <x-dropdown-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
-                    Поступления
-                </x-dropdown-link>
-
-                <x-dropdown-link :href="route('payment-categories.index')" :active="request()->routeIs('payment-categories.*')">
-                    Статьи поступлений
-                </x-dropdown-link>
-
-                <x-dropdown-link :href="route('expenses.index')" :active="request()->routeIs('expenses.*')">
-                    Расходы
-                </x-dropdown-link>
-
-                <x-dropdown-link :href="route('expense-categories.index')" :active="request()->routeIs('expense-categories.*')">
-                    Статьи расходов
-                </x-dropdown-link>
-
                 <x-dropdown-link :href="route('bank-accounts.index')" :active="request()->routeIs('bank-accounts.*')">
                     Банковские счета
                 </x-dropdown-link>
@@ -68,6 +52,24 @@
                 <x-dropdown-link :href="route('invoice-statuses.index')" :active="request()->routeIs('invoice-statuses.*')">
                     Статусы счетов
                 </x-dropdown-link>
+
+                {{-- <x-dropdown-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
+                    Поступления
+                </x-dropdown-link> --}}
+
+                <x-dropdown-link :href="route('payment-categories.index')" :active="request()->routeIs('payment-categories.*')">
+                    Статьи поступлений
+                </x-dropdown-link>
+
+                {{-- <x-dropdown-link :href="route('expenses.index')" :active="request()->routeIs('expenses.*')">
+                    Расходы
+                </x-dropdown-link> --}}
+
+                <x-dropdown-link :href="route('expense-categories.index')" :active="request()->routeIs('expense-categories.*')">
+                    Статьи расходов
+                </x-dropdown-link>
+
+
             </x-buttons-dropdawn>
 
 

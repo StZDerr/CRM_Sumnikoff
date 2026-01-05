@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Importance;
 use Illuminate\Database\Seeder;
 
 class ImportanceSeeder extends Seeder
@@ -12,6 +12,13 @@ class ImportanceSeeder extends Seeder
      */
     public function run(): void
     {
-        //
+        $names = ['Низкая', 'Средняя', 'Высокая'];
+
+        foreach ($names as $i => $name) {
+            Importance::updateOrCreate(
+                ['name' => $name],
+                ['sort_order' => $i + 1]
+            );
+        }
     }
 }

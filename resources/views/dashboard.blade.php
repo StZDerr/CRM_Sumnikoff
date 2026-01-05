@@ -217,61 +217,62 @@
                         }
                     }
                 });
-                console.info('No income/expense data for selected month');
-                return;
-            }
+                console.info('No income/expense data for selected month — continuing to render other charts');
+            } else {
+                // Рисуем график доходов/расходов только если есть данные
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                                label: 'Доходы',
+                                data: income,
+                                borderColor: '#10B981',
+                                backgroundColor: 'rgba(16,185,129,0.12)',
+                                tension: 0.3,
+                                fill: true,
+                            },
+                            {
+                                label: 'Расходы',
+                                data: expense,
+                                borderColor: '#EF4444',
+                                backgroundColor: 'rgba(239,68,68,0.08)',
+                                tension: 0.3,
+                                fill: true,
+                            },
 
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                            label: 'Доходы',
-                            data: income,
-                            borderColor: '#10B981',
-                            backgroundColor: 'rgba(16,185,129,0.12)',
-                            tension: 0.3,
-                            fill: true,
-                        },
-                        {
-                            label: 'Расходы',
-                            data: expense,
-                            borderColor: '#EF4444',
-                            backgroundColor: 'rgba(239,68,68,0.08)',
-                            tension: 0.3,
-                            fill: true,
-                        },
-
-                    ]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            min: yMin,
-                            max: yMax,
-                            ticks: {
-                                stepSize: yStep,
-                                callback: function(val) {
-                                    if (val === 0) return '0k';
-                                    return (val / 1000) + 'k';
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                min: yMin,
+                                max: yMax,
+                                ticks: {
+                                    stepSize: yStep,
+                                    callback: function(val) {
+                                        if (val === 0) return '0k';
+                                        return (val / 1000) + 'k';
+                                    }
                                 }
                             }
-                        }
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(ctx) {
-                                    const v = ctx.parsed.y;
-                                    return ctx.dataset.label + ': ' + Number(v).toLocaleString('ru-RU', {
-                                        minimumFractionDigits: 2
-                                    }) + ' ₽';
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        const v = ctx.parsed.y;
+                                        return ctx.dataset.label + ': ' + Number(v).toLocaleString(
+                                        'ru-RU', {
+                                            minimumFractionDigits: 2
+                                        }) + ' ₽';
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
+            }
 
             // --- Top projects chart (horizontal bars) ---
             const topCanvas = document.getElementById('topProjectsChart');

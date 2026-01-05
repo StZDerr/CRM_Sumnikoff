@@ -23,7 +23,7 @@ class ExpenseController extends Controller
         return view('admin.expenses.index', compact('items'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $categories = ExpenseCategory::ordered()->get();
         $organizations = Organization::ordered()->get();
@@ -32,6 +32,11 @@ class ExpenseController extends Controller
         $projects = Project::orderBy('title')->get();
 
         $expense = new Expense;
+
+        // If request is AJAX, return only the form wrapper for offcanvas
+        if ($request->ajax()) {
+            return view('admin.expenses._form_offcanvas', compact('expense', 'categories', 'organizations', 'paymentMethods', 'bankAccounts', 'projects'));
+        }
 
         return view('admin.expenses.create', compact('expense', 'categories', 'organizations', 'paymentMethods', 'bankAccounts', 'projects'));
     }
@@ -69,6 +74,15 @@ class ExpenseController extends Controller
         // пересчёт баланса банка (если указан)
         if ($expense->bank_account_id) {
             $this->recalcBankBalance($expense->bank_account_id);
+        }
+
+        // If AJAX request, return JSON for client-side handling
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'expense_id' => $expense->id,
+                'redirect' => route('expenses.show', $expense),
+            ], 201);
         }
 
         return redirect()->route('expenses.index')->with('success', 'Расход сохранён.');

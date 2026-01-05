@@ -26,7 +26,7 @@
         @enderror
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-1 ">
         <div>
             <label class="block text-sm font-medium text-gray-700">Категория</label>
             <select name="expense_category_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
@@ -40,7 +40,7 @@
             @enderror
         </div>
 
-        <div>
+        {{-- <div>
             <label class="block text-sm font-medium text-gray-700">Контрагент / Получатель</label>
             <select name="organization_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                 <option value="">— без контрагента —</option>
@@ -51,7 +51,7 @@
             @error('organization_id')
                 <div class="text-sm text-red-600 mt-1">{{ $message }}</div>
             @enderror
-        </div>
+        </div> --}}
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -75,14 +75,20 @@
             </select>
         </div>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Проект / Отдел</label>
-            <select name="project_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+        <div class="space-y-1">
+            <x-input-label for="project_id" value="Проект / Отдел" />
+
+            <select id="project_id" name="project_id"
+                class="js-project-select block w-full rounded-md border-gray-300 shadow-sm
+                       focus:border-indigo-500 focus:ring-indigo-500
+                       @error('project_id') border-red-500 @enderror">
                 <option value="">— без проекта —</option>
                 @foreach ($projects as $p)
                     <option value="{{ $p->id }}" @selected((int) old('project_id', $expense->project_id ?? 0) === $p->id)>{{ $p->title }}</option>
                 @endforeach
             </select>
+
+            <x-input-error :messages="$errors->get('project_id')" />
         </div>
     </div>
 

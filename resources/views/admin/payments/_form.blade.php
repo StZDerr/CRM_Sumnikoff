@@ -1,16 +1,21 @@
 {{-- resources/views/admin/payments/_form.blade.php --}}
 @csrf
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-        <label class="text-xs text-gray-500">Проект</label>
-        <select name="project_id" required class="w-full border rounded p-2">
+    <div class="space-y-1">
+        <x-input-label for="project_id" value="Проект" />
 
+        <select id="project_id" name="project_id" required
+            class="js-project-select block w-full rounded-md border-gray-300 shadow-sm
+                   focus:border-indigo-500 focus:ring-indigo-500
+                   @error('project_id') border-red-500 @enderror">
+            <option value="">—</option>
             @foreach ($projects as $proj)
                 <option value="{{ $proj->id }}" @selected((string) old('project_id', $payment->project_id ?? ($selectedProjectId ?? '')) === (string) $proj->id)>
                     {{ $proj->title ?? ($proj->name_short ?? $proj->name_full) }}
                 </option>
             @endforeach
         </select>
+
         <x-input-error :messages="$errors->get('project_id')" />
     </div>
 
@@ -104,31 +109,33 @@
 
 @once
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const invoiceStatusSelect = document.getElementById('invoice-status-select');
-            const invoiceSelect = document.getElementById('invoice-select');
-            const txInput = document.getElementById('transaction_id');
-            const projectSelect = document.querySelector('select[name="project_id"]');
+        function initPaymentForm(container = document) {
+            const invoiceStatusSelect = container.querySelector('#invoice-status-select');
+            const invoiceSelect = container.querySelector('#invoice-select');
+            const txInput = container.querySelector('#transaction_id');
+            const projectSelect = container.querySelector('select[name="project_id"]');
             // Флаг, указывающий, сделал ли пользователь ручной выбор статуса счёта
             let manualInvoiceStatus = false;
 
             // ранее существующая логика
             function updateTxState() {
-                const sel = invoiceSelect.selectedOptions[0];
-                const invoiceSelected = invoiceSelect.value !== '';
+                const sel = invoiceSelect && invoiceSelect.selectedOptions[0];
+                const invoiceSelected = invoiceSelect && invoiceSelect.value !== '';
 
                 if (!invoiceSelected) {
-                    txInput.readOnly = false;
-                    txInput.classList.remove('bg-gray-50', 'opacity-80');
+                    if (txInput) {
+                        txInput.readOnly = false;
+                        txInput.classList.remove('bg-gray-50', 'opacity-80');
+                    }
                     return;
                 }
 
                 const tx = sel?.dataset?.transaction || '';
-                if (tx) {
+                if (tx && txInput) {
                     txInput.value = tx;
                     txInput.readOnly = true;
                     txInput.classList.add('bg-gray-50', 'opacity-80');
-                } else {
+                } else if (txInput) {
                     txInput.readOnly = false;
                     txInput.classList.remove('bg-gray-50', 'opacity-80');
                 }
@@ -180,15 +187,22 @@
             }
 
             function renderInvoices(items, preserveSelected = true) {
-                const prev = invoiceSelect.value;
+                const prev = invoiceSelect ? invoiceSelect.value : '';
+                if (!invoiceSelect) return;
+
+                // Client-side filter: exclude invoices whose status name contains 'оплач' (case-insensitive)
+                const filtered = (items || []).filter(inv => {
+                    const name = (inv.invoice_status_name || '').toString().toLowerCase();
+                    return !name.includes('оплач');
+                });
+
                 invoiceSelect.innerHTML = '<option value="">— без счёта —</option>';
-                items.forEach(inv => {
+                filtered.forEach(inv => {
                     const opt = document.createElement('option');
                     opt.value = inv.id;
                     opt.dataset.transaction = inv.transaction_id ?? '';
                     opt.dataset.status = inv.invoice_status_id ?? '';
-                    const issued = inv.issued_at ? (new Date(inv.issued_at)).toISOString().slice(0, 10) :
-                        '';
+                    const issued = inv.issued_at ? inv.issued_at : '';
                     opt.textContent = `${inv.number} — ${issued} (${formatMoney(inv.amount)})`;
                     invoiceSelect.appendChild(opt);
                 });
@@ -206,8 +220,8 @@
 
             function updateInvoiceStatusState() {
                 if (!invoiceStatusSelect) return;
-                const noteEl = document.getElementById('invoice-status-note');
-                const sel = invoiceSelect.selectedOptions[0];
+                const noteEl = container.querySelector('#invoice-status-note');
+                const sel = invoiceSelect && invoiceSelect.selectedOptions[0];
                 const invoiceSelected = invoiceSelect && invoiceSelect.value !== '';
 
                 if (!invoiceSelected) {
@@ -290,7 +304,7 @@
 
             // Слушаем ручное изменение статуса — показываем примечание "Выбран вручную"
             if (invoiceStatusSelect) {
-                const noteEl = document.getElementById('invoice-status-note');
+                const noteEl = container.querySelector('#invoice-status-note');
                 invoiceStatusSelect.addEventListener('change', function() {
                     manualInvoiceStatus = true;
                     const sel = invoiceSelect ? invoiceSelect.selectedOptions[0] : undefined;
@@ -314,6 +328,15 @@
             // Инициалная инициализация tx state и статуса счёта
             updateTxState();
             updateInvoiceStatusState();
-        });
+        }
+
+        // auto-init on full page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initPaymentForm(document);
+            });
+        } else {
+            initPaymentForm(document);
+        }
     </script>
 @endonce
