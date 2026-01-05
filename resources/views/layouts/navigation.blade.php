@@ -40,10 +40,10 @@
                 );
             @endphp
 
-            <x-buttons-dropdawn :active="$active" title="Финансы">
-                <x-dropdown-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
+            <x-buttons-dropdawn :active="$active" title="Настройки Финансов">
+                {{-- <x-dropdown-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
                     Счета
-                </x-dropdown-link>
+                </x-dropdown-link> --}}
 
                 <x-dropdown-link :href="route('bank-accounts.index')" :active="request()->routeIs('bank-accounts.*')">
                     Банковские счета

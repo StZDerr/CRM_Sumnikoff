@@ -21,9 +21,21 @@
 
     <div>
         <label class="text-xs text-gray-500">Сумма</label>
-        <input type="number" name="amount" step="0.01" required class="w-full border rounded p-2"
+        <input id="amount_input" type="number" name="amount" step="0.01" required class="w-full border rounded p-2"
             value="{{ old('amount', $payment->amount ?? '') }}" />
         <x-input-error :messages="$errors->get('amount')" />
+    </div>
+
+    <div>
+        <label class="text-xs text-gray-500">НДС (5%)</label>
+        <input id="vat_amount" type="text" readonly class="w-full border rounded p-2 bg-gray-50"
+            value="{{ old('vat_amount', isset($payment) ? number_format($payment->vat_amount ?? 0, 2, '.', '') : '0.00') }}" />
+    </div>
+
+    <div>
+        <label class="text-xs text-gray-500">УСН (7%)</label>
+        <input id="usn_amount" type="text" readonly class="w-full border rounded p-2 bg-gray-50"
+            value="{{ old('usn_amount', isset($payment) ? number_format($payment->usn_amount ?? 0, 2, '.', '') : '0.00') }}" />
     </div>
 
     <div>
@@ -328,6 +340,32 @@
             // Инициалная инициализация tx state и статуса счёта
             updateTxState();
             updateInvoiceStatusState();
+
+            // --- TAXS (VAT 5% / USN 7%) realtime calculation ---
+            const amountInput = container.querySelector('#amount_input');
+            const vatInput = container.querySelector('#vat_amount');
+            const usnInput = container.querySelector('#usn_amount');
+
+            function formatNumber(val) {
+                return Number(val).toLocaleString('ru-RU', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+
+            function recalcTaxes() {
+                const val = parseFloat(amountInput?.value || 0);
+                const vat = Math.round(val * 0.05 * 100) / 100;
+                const usn = Math.round(val * 0.07 * 100) / 100;
+                if (vatInput) vatInput.value = formatNumber(vat);
+                if (usnInput) usnInput.value = formatNumber(usn);
+            }
+
+            if (amountInput) {
+                amountInput.addEventListener('input', recalcTaxes);
+                // initial
+                recalcTaxes();
+            }
         }
 
         // auto-init on full page load

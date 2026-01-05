@@ -14,6 +14,15 @@ class VacationProject extends Model
         'project_id',
         'original_marketer_id',
         'reassigned_to_id',
+        'reassigned_at',
+        'restored_at',
+        'restored_by',
+        'note',
+    ];
+
+    protected $casts = [
+        'reassigned_at' => 'datetime',
+        'restored_at' => 'datetime',
     ];
 
     public function vacation()
@@ -34,5 +43,23 @@ class VacationProject extends Model
     public function reassignedTo()
     {
         return $this->belongsTo(User::class, 'reassigned_to_id');
+    }
+
+    public function restoredBy()
+    {
+        return $this->belongsTo(User::class, 'restored_by');
+    }
+
+    public function isRestored(): bool
+    {
+        return (bool) $this->restored_at;
+    }
+
+    public function markRestored(?User $by = null): void
+    {
+        $this->update([
+            'restored_at' => now(),
+            'restored_by' => $by?->id,
+        ]);
     }
 }

@@ -58,6 +58,9 @@ Route::middleware('auth')->group(function () {
     ]);
 
     Route::post('vacations/{vacation}/end', [VacationController::class, 'end'])->name('vacations.end');
+
+    // Получить отпуска пользователя (HTML partial для offcanvas)
+    Route::get('users/{user}/vacations', [VacationController::class, 'userVacations'])->name('users.vacations');
     // endpoint для сохранения порядка (название: importances.reorder)
     Route::post('importances/reorder', [ImportanceController::class, 'reorder'])->name('importances.reorder');
 

@@ -103,6 +103,33 @@
                 </div>
             </div>
 
+            {{-- ===== TAXES SUMMARY (VAT + USN) ===== --}}
+            <div class="bg-white rounded-xl shadow p-4 mt-4">
+                <div class="text-sm text-gray-500 mb-2">Налоги за выбранный месяц</div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-gray-50 rounded-lg p-4 text-center">
+                        <div class="text-xs text-gray-500">НДС (5%)</div>
+                        <div class="text-lg font-semibold mt-1 text-indigo-700">
+                            {{ number_format($monthVatTotal ?? 0, 2, '.', ' ') }} ₽
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4 text-center">
+                        <div class="text-xs text-gray-500">УСН (7%)</div>
+                        <div class="text-lg font-semibold mt-1 text-indigo-700">
+                            {{ number_format($monthUsnTotal ?? 0, 2, '.', ' ') }} ₽
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4 text-center">
+                        <div class="text-xs text-gray-500">Итого налогов</div>
+                        <div class="text-2xl font-bold mt-1 text-indigo-600">
+                            {{ number_format(($monthVatTotal ?? 0) + ($monthUsnTotal ?? 0), 2, '.', ' ') }} ₽
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 
             {{-- ===== CHART ===== --}}
@@ -263,9 +290,9 @@
                                     label: function(ctx) {
                                         const v = ctx.parsed.y;
                                         return ctx.dataset.label + ': ' + Number(v).toLocaleString(
-                                        'ru-RU', {
-                                            minimumFractionDigits: 2
-                                        }) + ' ₽';
+                                            'ru-RU', {
+                                                minimumFractionDigits: 2
+                                            }) + ' ₽';
                                     }
                                 }
                             }

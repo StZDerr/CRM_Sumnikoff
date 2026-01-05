@@ -79,6 +79,11 @@ class PaymentController extends Controller
             $data['payment_date'] = now();
         }
 
+        // TAX calculation from gross amount: VAT 5%, USN 7%
+        $amount = (float) ($data['amount'] ?? 0);
+        $data['vat_amount'] = round($amount * 0.05, 2);
+        $data['usn_amount'] = round($amount * 0.07, 2);
+
         // Создадим платёж и обновим статус счёта в транзакции
         DB::transaction(function () use ($data, &$payment) {
             $payment = Payment::create($data);
@@ -160,6 +165,11 @@ class PaymentController extends Controller
         if (empty($data['payment_date'])) {
             $data['payment_date'] = now();
         }
+
+        // TAX recalculation when updating amount
+        $amount = (float) ($data['amount'] ?? 0);
+        $data['vat_amount'] = round($amount * 0.05, 2);
+        $data['usn_amount'] = round($amount * 0.07, 2);
 
         $oldProjectId = $payment->getOriginal('project_id');
         $oldBankId = $payment->getOriginal('bank_account_id');

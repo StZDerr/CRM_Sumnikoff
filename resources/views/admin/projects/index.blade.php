@@ -68,6 +68,16 @@
                                             $bal = $project->balance;
                                         @endphp
 
+                                        {{-- Пометка закрытого проекта --}}
+                                        @if (!empty($project->closed_at))
+                                            <button type="button"
+                                                class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
+                                                data-tippy
+                                                data-tippy-content="Дата закрытия: {{ \Illuminate\Support\Carbon::make($project->closed_at)->format('Y-m-d') }}">
+                                                Закрыт
+                                            </button>
+                                        @endif
+
                                         @if (!is_null($bal) && $bal < 0)
                                             <button type="button"
                                                 class="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded text-sm"

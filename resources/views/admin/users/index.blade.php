@@ -14,7 +14,7 @@
                         <th class="p-3 text-left">ID</th>
                         <th class="p-3 text-left">Имя</th>
                         <th class="p-3 text-left">Логин</th>
-                        <th class="p-3 text-left">Email</th>
+                        <th class="p-3 text-left">Статус</th>
                         <th class="p-3 text-left">Роль</th>
                         <th class="p-3 text-left">Действия</th>
                     </tr>
@@ -25,20 +25,43 @@
                             <td class="p-3">{{ $user->id }}</td>
                             <td class="p-3">{{ $user->name }}</td>
                             <td class="p-3">{{ $user->login }}</td>
-                            <td class="p-3">{{ $user->email ?? '-' }}</td>
-                            <td class="p-3">{{ $user->role === 'admin' ? 'Администратор' : 'Менеджер' }}</td>
                             <td class="p-3">
+                                @if ($user->activeVacation)
+                                    <span
+                                        class="inline-flex items-center px-2 py-1 rounded text-yellow-800 bg-yellow-100 text-sm font-medium">
+                                        В отпуске с {{ $user->activeVacation->start_date->format('d.m.Y') }} по
+                                        {{ $user->activeVacation->end_date->format('d.m.Y') }}
+                                    </span>
+                                @else
+                                    <span
+                                        class="inline-flex items-center px-2 py-1 rounded text-green-800 bg-green-100 text-sm font-medium">В
+                                        работе</span>
+                                @endif
+                            </td>
+                            <td class="p-3">{{ $user->role === 'admin' ? 'Администратор' : 'Менеджер' }}</td>
+                            <td class="p-3 flex gap-2">
                                 <a href="{{ route('users.edit', $user) }}"
-                                    class="text-indigo-600 hover:underline">Редактировать</a>
-                                <a href="#" class="text-indigo-600 hover:underline open-vacation"
-                                    data-user-id="{{ $user->id }}" data-user-name="{{ e($user->name) }}">Отпуск</a>
-                                <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline-block ms-3"
-                                    onsubmit="return confirm('Удалить пользователя? Проекты пользователя будут перераспре')">
+                                    class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition">
+                                    Редактировать
+                                </a>
+
+                                <button type="button"
+                                    class="px-3 py-1 rounded-md bg-yellow-400 text-yellow-900 text-sm font-medium hover:bg-yellow-500 transition open-vacation"
+                                    data-user-id="{{ $user->id }}" data-user-name="{{ e($user->name) }}">
+                                    Отпуск
+                                </button>
+
+                                <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline-block"
+                                    onsubmit="return confirm('Удалить пользователя? Проекты пользователя будут перераспределены.')">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="text-red-600 hover:underline">Удалить</button>
+                                    <button type="submit"
+                                        class="px-3 py-1 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition">
+                                        Удалить
+                                    </button>
                                 </form>
                             </td>
+
                         </tr>
                     @endforeach
                 </tbody>
@@ -58,6 +81,11 @@
             <div class="p-4 flex items-center justify-between border-b">
                 <h3 class="text-lg font-medium">Добавить отпуск — <span id="vacation-user-name"></span></h3>
                 <button id="vacation-close" class="text-gray-600">✕</button>
+            </div>
+
+            <!-- Список отпусков пользователя (подгружается по AJAX) -->
+            <div id="vacation-user-vacations" class="p-4 border-b text-sm text-gray-600">
+                <div class="text-sm text-gray-500">Загрузка отпусков...</div>
             </div>
 
             <form id="vacation-form" action="{{ route('vacations.store') }}" method="POST" class="p-4">
@@ -110,12 +138,37 @@
             const cancelBtn = document.getElementById('vacation-cancel');
             const form = document.getElementById('vacation-form');
 
+            function loadUserVacations(userId) {
+                const container = document.getElementById('vacation-user-vacations');
+                if (!container) return;
+                container.innerHTML = '<div class="text-sm text-gray-500">Загрузка отпусков...</div>';
+
+                fetch(`/users/${encodeURIComponent(userId)}/vacations`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Network response was not ok');
+                        return res.text();
+                    })
+                    .then(html => {
+                        container.innerHTML = html;
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        container.innerHTML =
+                            '<div class="text-sm text-red-500">Не удалось загрузить отпуска.</div>';
+                    });
+            }
+
             function openOffcanvas(userId, userName) {
                 userIdInput.value = userId;
                 userNameEl.textContent = userName;
                 offcanvas.classList.remove('hidden');
                 requestAnimationFrame(() => panel.classList.remove('translate-x-full'));
                 form.querySelector('input[name="start_date"]')?.focus();
+                loadUserVacations(userId);
             }
 
             function closeOffcanvas() {
@@ -131,6 +184,18 @@
                     openOffcanvas(userId, userName);
                 });
             });
+
+            // date constraints
+            const startInput = form.querySelector('input[name="start_date"]');
+            const endInput = form.querySelector('input[name="end_date"]');
+            if (startInput && endInput) {
+                startInput.addEventListener('change', () => {
+                    endInput.min = startInput.value;
+                    if (endInput.value && endInput.value < startInput.value) {
+                        endInput.value = startInput.value;
+                    }
+                });
+            }
 
             overlay.addEventListener('click', closeOffcanvas);
             if (closeBtn) closeBtn.addEventListener('click', closeOffcanvas);

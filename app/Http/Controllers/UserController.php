@@ -20,8 +20,7 @@ class UserController extends Controller
 
     public function index(Request $request): View
     {
-        $users = User::orderBy('id', 'desc')->paginate(15);
-        // список маркетологов для селекта в офкэнвасе
+        $users = User::with('activeVacation')->orderBy('id', 'desc')->paginate(15);
         $marketers = User::where('role', 'manager')->orderBy('name')->pluck('name', 'id');
 
         return view('admin.users.index', compact('users', 'marketers'));

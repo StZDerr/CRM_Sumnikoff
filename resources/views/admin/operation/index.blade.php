@@ -31,7 +31,7 @@
                 {{-- Выставить счёт --}}
                 <a href="{{ route('invoices.create') }}"
                     class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white
-        hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -74,42 +74,93 @@
 
 
         <div class="bg-white shadow rounded p-4">
-            <table class="w-full text-sm">
-                <thead class="text-left text-xs text-gray-500">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider">
                     <tr>
-                        <th>Дата</th>
-                        <th>Тип</th>
-                        <th>Проект</th>
-                        <th>Описание</th>
-                        <th class="text-right">Сумма</th>
-                        <th></th>
+                        <th class="px-4 py-3 text-left">Время</th>
+                        <th class="px-4 py-3 text-left">Тип</th>
+                        <th class="px-4 py-3 text-left">Проект</th>
+                        <th class="px-4 py-3 text-left">Описание</th>
+                        <th class="px-4 py-3 text-right">Сумма</th>
+                        <th class="px-4 py-3"></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y">
-                    @foreach ($operations as $op)
-                        @php $m = $op['model']; @endphp
-                        <tr class="hover:bg-gray-50">
-                            <td class="py-2">{{ optional($op['date'])->format('Y-m-d H:i') ?? '-' }}</td>
-                            <td>{{ $op['type'] === 'payment' ? 'Поступление' : 'Расход' }}</td>
-                            <td>{{ $m->project?->title ?? '-' }}</td>
-                            <td class="max-w-xs truncate">
-                                {{ $op['type'] === 'payment' ? $m->note ?? '' : $m->description ?? '' }}</td>
-                            <td class="text-right {{ $op['type'] === 'payment' ? 'text-green-600' : 'text-red-600' }}">
-                                {{ number_format($op['amount'], 2, '.', ' ') }} ₽
-                            </td>
-                            <td class="text-right">
-                                @if ($op['type'] === 'payment')
-                                    <a href="{{ route('payments.show', $m) }}"
-                                        class="text-indigo-600 hover:underline">Открыть</a>
-                                @else
-                                    <a href="{{ route('expenses.show', $m) }}"
-                                        class="text-indigo-600 hover:underline">Открыть</a>
-                                @endif
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @php
+                        $items =
+                            is_object($operations) && method_exists($operations, 'items')
+                                ? collect($operations->items())
+                                : collect($operations);
+                        $groups = $items->groupBy(fn($op) => optional($op['date'])->format('Y-m-d') ?? 'Без даты');
+                    @endphp
+
+                    @foreach ($groups as $date => $rows)
+                        @php
+                            $label =
+                                $date === 'Без даты'
+                                    ? 'Без даты'
+                                    : \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $date);
+                            $labelText =
+                                $label instanceof \Illuminate\Support\Carbon
+                                    ? ($label->isToday()
+                                        ? 'Сегодня'
+                                        : ($label->isYesterday()
+                                            ? 'Вчера'
+                                            : $label->format('d.m.Y')))
+                                    : $label;
+                        @endphp
+
+                        <tr>
+                            <td colspan="6" class="bg-indigo-50 py-2">
+                                <div class="mx-auto max-w-prose text-center">
+                                    <span
+                                        class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-indigo-100 text-indigo-700 text-sm font-semibold shadow-sm">
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
+                                        </svg>
+                                        {{ $labelText }}
+                                    </span>
+                                </div>
                             </td>
                         </tr>
+
+                        @foreach ($rows as $op)
+                            @php $m = $op['model']; @endphp
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-4 py-2 font-medium text-gray-700">
+                                    {{ optional($op['date'])->format('H:i') ?? '-' }}</td>
+                                <td class="px-4 py-2">
+                                    @if ($op['type'] === 'payment')
+                                        <span
+                                            class="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold shadow-sm">
+                                            Поступление
+                                        </span>
+                                    @else
+                                        <span
+                                            class="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold shadow-sm">
+                                            Расход
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-2 text-gray-700 font-medium">{{ $m->project?->title ?? '-' }}</td>
+                                <td class="px-4 py-2 max-w-xs truncate text-gray-600">
+                                    {{ $op['type'] === 'payment' ? $m->note ?? '' : $m->description ?? '' }}</td>
+                                <td
+                                    class="px-4 py-2 text-right font-semibold {{ $op['type'] === 'payment' ? 'text-green-600' : 'text-red-600' }}">
+                                    {{ number_format($op['amount'], 2, '.', ' ') }} ₽
+                                </td>
+                                <td class="px-4 py-2 text-right">
+                                    <a href="{{ $op['type'] === 'payment' ? route('payments.show', $m) : route('expenses.show', $m) }}"
+                                        class="text-indigo-600 hover:text-indigo-800 font-medium transition">Открыть</a>
+                                </td>
+                            </tr>
+                        @endforeach
                     @endforeach
                 </tbody>
             </table>
+
 
             <div class="mt-4">
                 {{ $operations->links() }}

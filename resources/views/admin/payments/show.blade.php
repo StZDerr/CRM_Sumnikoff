@@ -36,6 +36,22 @@
                     <div class="font-medium">{{ number_format($payment->amount, 2) }} ₽</div>
                 </div>
                 <div>
+                    <div class="text-xs text-gray-500">НДС (5%)</div>
+                    <div class="font-medium">{{ number_format($payment->vat_amount ?? 0, 2) }} ₽</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500">УСН (7%)</div>
+                    <div class="font-medium">{{ number_format($payment->usn_amount ?? 0, 2) }} ₽</div>
+                </div>
+
+                <div>
+                    <div class="text-xs text-gray-500">Чистая сумма</div>
+                    <div class="font-medium">
+                        {{ number_format($payment->amount - ($payment->vat_amount ?? 0) - ($payment->usn_amount ?? 0), 2) }}
+                        ₽</div>
+                </div>
+
+                <div>
                     <div class="text-xs text-gray-500">Способ оплаты</div>
                     <div class="font-medium">{{ $payment->paymentMethod?->title ?? '-' }}</div>
                 </div>

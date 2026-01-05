@@ -252,6 +252,10 @@ class DashboardController extends Controller
         $debtorStep = max(10000, $this->niceStep($debtorMax));
         $debtorMaxChart = (int) (max($debtorStep, ceil($debtorMax / $debtorStep) * $debtorStep) + $debtorStep);
 
+        // Taxes totals for the selected period (or full range if period=all)
+        $monthVatTotal = (float) Payment::whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])->sum('vat_amount');
+        $monthUsnTotal = (float) Payment::whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])->sum('usn_amount');
+
         return view('dashboard', compact(
             'labels', 'incomeData', 'expenseData', 'netData',
             'monthTotalIncome', 'monthTotalExpense', 'monthTotalNet',
@@ -259,7 +263,8 @@ class DashboardController extends Controller
             'monthLabel', 'monthParam', 'yMax', 'yMin', 'step',
             'topProjectsLabels', 'topProjectsData', 'topMaxChart', 'topStep',
             'activeData', 'activeStep',
-            'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep'
+            'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
+            'monthVatTotal', 'monthUsnTotal'
         ));
     }
 

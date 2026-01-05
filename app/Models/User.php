@@ -72,4 +72,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(\App\Models\Vacation::class);
     }
+
+    public function activeVacation()
+    {
+        return $this->hasOne(\App\Models\Vacation::class)->where('active', true);
+    }
+
+    // статус (в отпуске с .. по .. или В работе)
+    public function getStatusAttribute(): string
+    {
+        $vac = $this->relationLoaded('activeVacation') ? $this->activeVacation : $this->activeVacation()->first();
+        if ($vac) {
+            return sprintf('В отпуске с %s по %s', $vac->start_date->format('d.m.Y'), $vac->end_date->format('d.m.Y'));
+        }
+
+        return 'В работе';
+    }
 }

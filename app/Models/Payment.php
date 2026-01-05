@@ -19,12 +19,24 @@ class Payment extends Model
         'note',
         'bank_account_id',
         'payment_category_id',
+        'vat_amount',   // << added
+        'usn_amount',   // << added
     ];
 
     protected $casts = [
         'payment_date' => 'datetime',
         'amount' => 'decimal:2',
+        'vat_amount' => 'decimal:2',
+        'usn_amount' => 'decimal:2',
     ];
+
+    /**
+     * Net amount after taxes (вычитая VAT и USN).
+     */
+    public function getNetAmountAttribute(): float
+    {
+        return round((float) $this->amount - (float) $this->vat_amount - (float) $this->usn_amount, 2);
+    }
 
     public function paymentCategory()
     {
