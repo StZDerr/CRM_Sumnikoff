@@ -119,6 +119,7 @@ class CalendarController extends Controller
         $paidTotal = 0;
         $difference = 0;
         $commentsMap = [];
+        $projectRows = [];
 
         // найдём самую раннюю дату контракта
         $minContract = Project::whereNotNull('contract_date')->min('contract_date');
