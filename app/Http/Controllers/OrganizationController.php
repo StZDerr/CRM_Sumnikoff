@@ -73,7 +73,7 @@ class OrganizationController extends Controller
             'name_short' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
-            'inn' => 'nullable|string|max:64|unique:organizations,inn',
+            'inn' => 'required|string|max:64|unique:organizations,inn',
             'ogrnip' => 'nullable|string|max:64|unique:organizations,ogrnip',
             'legal_address' => 'nullable|string',
             'actual_address' => 'nullable|string',
@@ -85,6 +85,8 @@ class OrganizationController extends Controller
             'campaign_status_id' => 'nullable|exists:campaign_statuses,id',
             'campaign_source_id' => 'nullable|exists:campaign_sources,id',
         ]);
+
+        $data['created_by'] = auth()->id();
 
         Organization::create($data);
 
@@ -123,7 +125,7 @@ class OrganizationController extends Controller
             'name_short' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
-            'inn' => ['nullable', 'string', 'max:64', Rule::unique('organizations', 'inn')->ignore($organization->id)],
+            'inn' => ['required', 'string', 'max:64', Rule::unique('organizations', 'inn')->ignore($organization->id)],
             'ogrnip' => ['nullable', 'string', 'max:64', Rule::unique('organizations', 'ogrnip')->ignore($organization->id)],
             'legal_address' => 'nullable|string',
             'actual_address' => 'nullable|string',
@@ -135,6 +137,8 @@ class OrganizationController extends Controller
             'campaign_status_id' => 'nullable|exists:campaign_statuses,id',
             'campaign_source_id' => 'nullable|exists:campaign_sources,id',
         ]);
+
+        $data['updated_by'] = auth()->id();
 
         $organization->update($data);
 

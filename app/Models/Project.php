@@ -28,6 +28,8 @@ class Project extends Model
         'balance_calculated_at',
         'debt',
         'closed_at',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
@@ -85,5 +87,15 @@ class Project extends Model
     public function vacationAssignments()
     {
         return $this->hasMany(\App\Models\VacationProject::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

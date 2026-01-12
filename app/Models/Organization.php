@@ -27,6 +27,8 @@ class Organization extends Model
         'notes',
         'campaign_status_id',
         'campaign_source_id',
+        'created_by',
+        'updated_by',
     ];
 
     /** Приведения типов */
@@ -111,5 +113,15 @@ class Organization extends Model
     public function getTitleAttribute(): ?string
     {
         return $this->name_short ?: $this->name_full;
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'updated_by');
     }
 }

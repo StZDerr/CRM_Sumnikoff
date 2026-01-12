@@ -74,6 +74,8 @@ class PaymentController extends Controller
             'payment_category_id' => 'nullable|exists:payment_categories,id',
         ]);
 
+        $data['created_by'] = auth()->id();
+
         // Use current timestamp if payment_date not provided
         if (empty($data['payment_date'])) {
             $data['payment_date'] = now();
@@ -112,7 +114,7 @@ class PaymentController extends Controller
 
     public function show(Payment $payment)
     {
-        $payment->load(['project', 'paymentMethod', 'invoice', 'paymentCategory']);
+        $payment->load(['project', 'paymentMethod', 'invoice', 'paymentCategory', 'createdBy', 'updatedBy']);
 
         return view('admin.payments.show', compact('payment'));
     }
@@ -165,6 +167,8 @@ class PaymentController extends Controller
         if (empty($data['payment_date'])) {
             $data['payment_date'] = now();
         }
+
+        $data['updated_by'] = auth()->id();
 
         // TAX recalculation when updating amount
         $amount = (float) ($data['amount'] ?? 0);

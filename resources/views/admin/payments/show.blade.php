@@ -74,6 +74,26 @@
                         <div class="font-medium whitespace-pre-line">{{ $payment->note }}</div>
                     </div>
                 @endif
+
+                <div>
+                    <div class="text-xs text-gray-500">Создал</div>
+                    <div class="font-medium">
+                        {{ $payment->createdBy?->name ?? '-' }}
+                        @if ($payment->created_at)
+                            <div class="text-xs text-gray-400 mt-1">{{ $payment->created_at->format('d.m.Y H:i') }}</div>
+                        @endif
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-xs text-gray-500">Последнее обновление</div>
+                    <div class="font-medium">
+                        {{ $payment->updatedBy?->name ?? '-' }}
+                        @if ($payment->updated_at)
+                            <div class="text-xs text-gray-400 mt-1">{{ $payment->updated_at->format('d.m.Y H:i') }}</div>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
     </div>

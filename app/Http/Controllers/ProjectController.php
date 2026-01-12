@@ -114,6 +114,8 @@ class ProjectController extends Controller
             'stages.*' => 'integer|exists:stages,id',
         ]);
 
+        $data['created_by'] = auth()->id();
+
         $project = Project::create($data);
 
         // Синхронизируем этапы с порядком (если передали)
@@ -180,6 +182,8 @@ class ProjectController extends Controller
             'stages' => 'nullable|array',
             'stages.*' => 'integer|exists:stages,id',
         ]);
+
+        $data['updated_by'] = auth()->id();
 
         $project->update($data);
 

@@ -21,6 +21,8 @@ class Payment extends Model
         'payment_category_id',
         'vat_amount',   // << added
         'usn_amount',   // << added
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
@@ -68,5 +70,15 @@ class Payment extends Model
     public function bankAccount()
     {
         return $this->belongsTo(\App\Models\BankAccount::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'updated_by');
     }
 }

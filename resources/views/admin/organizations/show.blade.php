@@ -73,6 +73,28 @@
                     <div class="text-sm text-gray-500">Примечание</div>
                     <div class="font-medium whitespace-pre-line">{{ $organization->notes ?? '-' }}</div>
                 </div>
+
+                <div>
+                    <div class="text-sm text-gray-500">Создал</div>
+                    <div class="font-medium">
+                        {{ $organization->createdBy?->name ?? '-' }}
+                        @if ($organization->created_at)
+                            <div class="text-xs text-gray-400 mt-1">{{ $organization->created_at->format('d.m.Y H:i') }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-sm text-gray-500">Последнее обновление</div>
+                    <div class="font-medium">
+                        {{ $organization->updatedBy?->name ?? '-' }}
+                        @if ($organization->updated_at)
+                            <div class="text-xs text-gray-400 mt-1">{{ $organization->updated_at->format('d.m.Y H:i') }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </div>
 
             <hr>

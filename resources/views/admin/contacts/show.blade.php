@@ -50,6 +50,25 @@
                     <div class="text-sm text-gray-500">Комментарий</div>
                     <div class="font-medium whitespace-pre-line">{{ $contact->comment ?? '-' }}</div>
                 </div>
+                <div>
+                    <div class="text-sm text-gray-500">Создал</div>
+                    <div class="font-medium">
+                        {{ $contact->createdBy?->name ?? '-' }}
+                        @if ($contact->created_at)
+                            <div class="text-xs text-gray-400 mt-1">{{ $contact->created_at->format('d.m.Y H:i') }}</div>
+                        @endif
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-sm text-gray-500">Последнее обновление</div>
+                    <div class="font-medium">
+                        {{ $contact->updatedBy?->name ?? '-' }}
+                        @if ($contact->updated_at)
+                            <div class="text-xs text-gray-400 mt-1">{{ $contact->updated_at->format('d.m.Y H:i') }}</div>
+                        @endif
+                    </div>
+                </div>
             </div>
 
             <div class="flex gap-3">

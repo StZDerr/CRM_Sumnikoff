@@ -22,6 +22,8 @@ class Contact extends Model
         'preferred_messenger',
         'messenger_contact',
         'comment',
+        'created_by',
+        'updated_by',
     ];
 
     /** Приведения типов */
@@ -64,5 +66,15 @@ class Contact extends Model
     public function __toString()
     {
         return $this->full_name ?: ($this->phone ?? $this->email ?? (string) $this->id);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

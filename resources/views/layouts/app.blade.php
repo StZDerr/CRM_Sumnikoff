@@ -115,6 +115,13 @@
                 </div>
 
 
+                @if (isset($header))
+                    <header class="bg-white shadow">
+                        <div class="px-6 py-4">
+                            {{ $header }}
+                        </div>
+                    </header>
+                @endif
 
                 <!-- Page Content -->
                 <main class="p-6">

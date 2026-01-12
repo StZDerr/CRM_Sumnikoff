@@ -56,6 +56,8 @@ class ContactController extends Controller
             'comment' => 'nullable|string',
         ]);
 
+        $data['created_by'] = auth()->id();
+
         $contact = Contact::create($data);
 
         if (! empty($data['organization_id'])) {
@@ -70,7 +72,7 @@ class ContactController extends Controller
      */
     public function show(Contact $contact)
     {
-        $contact->load('organization');
+        $contact->load('organization', 'createdBy', 'updatedBy');
 
         return view('admin.contacts.show', compact('contact'));
     }
@@ -102,6 +104,8 @@ class ContactController extends Controller
             'messenger_contact' => 'nullable|string|max:255',
             'comment' => 'nullable|string',
         ]);
+
+        $data['updated_by'] = auth()->id();
 
         $contact->update($data);
 
