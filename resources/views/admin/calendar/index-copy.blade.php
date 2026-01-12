@@ -1,139 +1,135 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="max-w-7xl mx-auto py-6">
+    <div class="max-w-6xl mx-auto py-6">
         {{-- Кнопка Назад --}}
         <div class="mb-4">
             <a href="{{ url()->previous() }}"
-                class="inline-flex items-center px-4 py-2 rounded-md border border-indigo-500 text-indigo-600 text-sm font-medium hover:bg-indigo-50 transition">
+                class="inline-flex items-center px-4 py-2 rounded-md border border-indigo-500 text-indigo-600 text-sm font-medium
+          hover:bg-indigo-50 transition">
                 ← Назад
             </a>
         </div>
+        <h1 class="text-2xl font-semibold mb-4">Проекты по месяцам</h1>
 
-        <h1 class="text-2xl font-semibold mb-4">Календарь: {{ $project->title }}</h1>
+
 
         <div class="overflow-x-auto">
-            @if (empty($months))
+            @if (empty($project->contract_date) || empty($months))
                 <div class="bg-yellow-50 border border-yellow-200 rounded p-4 text-sm text-gray-700">
-                    Нет данных для отображения — нет счетов или платежей по проекту.
+                    У проекта не задана дата заключения договора — нет данных для календаря.
                 </div>
             @else
                 <table class="min-w-full border-collapse border border-gray-200">
                     <thead class="bg-gray-100">
                         <tr>
-                            <th class="border border-gray-200 p-2 text-left sticky left-0 bg-gray-100 z-10">Проект</th>
+                            <th class="border border-gray-200 p-2 text-left">Проект</th>
                             @foreach ($months as $m)
-                                <th class="border border-gray-200 p-2 text-center min-w-[120px]">{{ $m['label'] }}</th>
+                                <th class="border border-gray-200 p-2 text-center">{{ $m['label'] }}</th>
                             @endforeach
-                            <th
-                                class="border border-gray-200 p-2 text-center sticky right-[180px] bg-gray-100 z-10 min-w-[100px]">
-                                Всего счетов</th>
-                            <th
-                                class="border border-gray-200 p-2 text-center sticky right-[90px] bg-gray-100 z-10 min-w-[100px]">
-                                Всего оплачено</th>
-                            <th class="border border-gray-200 p-2 text-center sticky right-0 bg-gray-100 z-10 min-w-[90px]">
-                                Баланс</th>
+                            <th class="border border-gray-200 p-2 text-center"
+                                style="width:80px; position:sticky; right:170px; background:#fff; z-index:10;">К оплате
+                            </th>
+                            <th class="border border-gray-200 p-2 text-center"
+                                style="width:80px; position:sticky; right:80px; background:#fff; z-index:20;">Оплачено
+                            </th>
+                            <th class="border border-gray-200 p-2 text-center"
+                                style="width:80px; position:sticky; right:0; background:#fff; z-index:30;">Разница</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         <tr class="hover:bg-gray-50">
-                            <td class="border border-gray-200 p-2 font-medium sticky left-0 bg-white z-10">
-                                {{ $project->title }}
-                            </td>
+                            <td class="border border-gray-200 p-2 font-medium">{{ $project->title }}</td>
 
                             @foreach ($months as $m)
                                 @php
                                     $key = $m['ym'];
-                                    $invoiced = (float) ($invoicesByMonth[$key] ?? 0);
                                     $paid = (float) ($paymentsByMonth[$key] ?? 0);
-                                    $diff = $paid - $invoiced;
-
-                                    // Цвет: зелёный если оплата > счета, серый если равны, красный если счёт > оплаты
-                                    if ($invoiced == 0 && $paid == 0) {
-                                        $diffClass = 'text-gray-400';
-                                        $diffText = '—';
-                                    } elseif ($paid > $invoiced) {
-                                        $diffClass = 'text-green-600';
-                                        $diffText = '+' . number_format($diff, 0, '.', ' ') . ' ₽';
-                                    } elseif ($paid == $invoiced) {
-                                        $diffClass = 'text-gray-600';
-                                        $diffText = '0 ₽';
-                                    } else {
-                                        $diffClass = 'text-red-600';
-                                        $diffText = number_format($diff, 0, '.', ' ') . ' ₽';
-                                    }
+                                    $expected = (float) ($project->contract_amount ?? 0);
+                                    $diff = $paid - $expected;
                                 @endphp
 
-                                <td class="relative border border-gray-200 p-2 text-center cursor-pointer min-w-[120px]"
+                                <td class="relative border border-gray-200 p-2 text-center cursor-pointer"
                                     data-month="{{ $key }}" data-month-label="{{ $m['label'] }}" data-tippy
-                                    data-tippy-content="Счета: {{ number_format($invoiced, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paid, 0, '.', ' ') }} ₽<br>Разница: {{ $diffText }}">
-
-                                    {{-- Уголок, если есть комментарии за месяц --}}
-                                    @if (!empty($commentsByMonth[$key] ?? 0))
-                                        <span title="Комментарии: {{ $commentsByMonth[$key] }}"
-                                            class="absolute top-0 right-0 w-3 h-3 bg-blue-500"
-                                            style="clip-path: polygon(100% 0, 0 0, 100% 100%);" aria-hidden="true"></span>
-                                    @endif
-
-                                    {{-- Счета --}}
-                                    @if ($invoiced > 0)
-                                        <div class="text-xs text-gray-500">Счета:</div>
-                                        <div class="font-medium text-gray-800">{{ number_format($invoiced, 0, '.', ' ') }}
-                                            ₽</div>
-                                    @endif
-
-                                    {{-- Оплачено --}}
-                                    @if ($paid > 0)
-                                        <div class="text-xs text-gray-500 mt-1">Оплачено:</div>
-                                        <div class="font-medium text-gray-800">{{ number_format($paid, 0, '.', ' ') }} ₽
-                                        </div>
-                                    @endif
-
-                                    {{-- Разница --}}
-                                    @if ($invoiced > 0 || $paid > 0)
-                                        <div class="mt-1 pt-1 border-t border-gray-200">
-                                            <span class="font-semibold {{ $diffClass }}">{{ $diffText }}</span>
-                                        </div>
+                                    data-tippy-content="Оплачено: {{ number_format($paid, 0, '.', ' ') }} ₽<br>Ожидалось: {{ number_format($expected, 0, '.', ' ') }} ₽">
+                                    @if ($expected <= 0)
+                                        —
                                     @else
-                                        <span class="text-gray-400">—</span>
+                                        {{-- уголок, если есть комментарии за месяц --}}
+                                        @if (!empty($commentsByMonth[$key] ?? 0))
+                                            <span title="Комментарии: {{ $commentsByMonth[$key] }}"
+                                                class="absolute top-0 right-0 w-3 h-3 bg-blue-500"
+                                                style="clip-path: polygon(100% 0, 0 0, 100% 100%);"
+                                                aria-hidden="true"></span>
+                                        @endif
+
+                                        @if ($diff > 0)
+                                            <span
+                                                class="text-green-600 font-semibold">+{{ number_format($diff, 0, '.', ' ') }}
+                                                ₽</span>
+                                        @elseif ($diff < 0)
+                                            <span
+                                                class="text-red-600 font-semibold">-{{ number_format(abs($diff), 0, '.', ' ') }}
+                                                ₽</span>
+                                        @else
+                                            <span class="text-gray-900 font-semibold">{{ number_format(0, 0, '.', ' ') }}
+                                                ₽</span>
+                                        @endif
                                     @endif
                                 </td>
                             @endforeach
 
-                            {{-- Итого: Всего счетов --}}
-                            <td
-                                class="border border-gray-200 p-2 text-center font-medium sticky right-[180px] bg-white z-10">
-                                <div class="text-xs text-gray-500">Счетов:</div>
-                                <div class="font-semibold text-gray-800">{{ number_format($totalInvoices, 0, '.', ' ') }} ₽
-                                </div>
+                            {{-- Итоги --}}
+                            <td class="border border-gray-200 p-2 text-center font-medium"
+                                style="width:80px; position:sticky; right:170px; background:#fff; z-index:10;">
+                                @if (!is_null($project->debt))
+                                    {{ number_format($project->debt, 0, '.', ' ') }} ₽
+                                    @if ($project->debt_calculated_at)
+                                        <div class="text-xs text-gray-400">as of
+                                            {{ \Illuminate\Support\Carbon::make($project->debt_calculated_at)->format('Y-m-d H:i') }}
+                                        </div>
+                                    @endif
+                                @else
+                                    —
+                                @endif
                             </td>
 
-                            {{-- Итого: Всего оплачено --}}
-                            <td
-                                class="border border-gray-200 p-2 text-center font-medium sticky right-[90px] bg-white z-10">
-                                <div class="text-xs text-gray-500">Оплачено:</div>
-                                <div class="font-semibold text-gray-800">{{ number_format($totalPayments, 0, '.', ' ') }} ₽
-                                </div>
+                            <td class="border border-gray-200 p-2 text-center font-medium"
+                                style="width:80px; position:sticky; right:80px; background:#fff; z-index:20;">
+                                @if (!is_null($project->received_total))
+                                    {{ number_format($project->received_total, 0, '.', ' ') }} ₽
+                                    @if ($project->received_calculated_at)
+                                        <div class="text-xs text-gray-400">as of
+                                            {{ \Illuminate\Support\Carbon::make($project->received_calculated_at)->format('Y-m-d H:i') }}
+                                        </div>
+                                    @endif
+                                @else
+                                    —
+                                @endif
                             </td>
 
-                            {{-- Итого: Баланс --}}
                             @php
-                                $totalDiff = $totalPayments - $totalInvoices;
-                                if ($totalPayments > $totalInvoices) {
-                                    $totalDiffClass = 'text-green-600';
-                                    $totalDiffText = '+' . number_format($totalDiff, 0, '.', ' ') . ' ₽';
-                                } elseif ($totalPayments == $totalInvoices) {
-                                    $totalDiffClass = 'text-gray-600';
-                                    $totalDiffText = '0 ₽';
-                                } else {
-                                    $totalDiffClass = 'text-red-600';
-                                    $totalDiffText = number_format($totalDiff, 0, '.', ' ') . ' ₽';
-                                }
+                                $bal =
+                                    $project->balance ??
+                                    (isset($project->debt, $project->received_total)
+                                        ? $project->debt - $project->received_total
+                                        : null);
+                                $diffClass =
+                                    $bal < 0 ? 'text-red-600' : ($bal > 0 ? 'text-green-600' : 'text-gray-900');
                             @endphp
-                            <td
-                                class="border border-gray-200 p-2 text-center font-semibold sticky right-0 bg-white z-10 {{ $totalDiffClass }}">
-                                {{ $totalDiffText }}
+                            <td class="border border-gray-200 p-2 text-center font-semibold {{ $diffClass }}"
+                                style="width:160px; position:sticky; right:0; background:#fff; z-index:30;">
+                                @if (!is_null($bal))
+                                    {{ number_format($bal, 0, '.', ' ') }} ₽
+                                    @if ($project->balance_calculated_at)
+                                        <div class="text-xs text-gray-400">as of
+                                            {{ \Illuminate\Support\Carbon::make($project->balance_calculated_at)->format('Y-m-d H:i') }}
+                                        </div>
+                                    @endif
+                                @else
+                                    —
+                                @endif
                             </td>
                         </tr>
                     </tbody>
@@ -141,15 +137,14 @@
             @endif
         </div>
     </div>
-
-    <!-- Offcanvas для комментариев -->
+    <!-- Offcanvas -->
     <div id="month-offcanvas" class="fixed inset-0 z-50 hidden">
         <div id="offcanvas-overlay" class="absolute inset-0 bg-black/50"></div>
 
         <div id="offcanvas-panel"
             class="absolute right-0 top-0 h-full w-full sm:w-96 bg-white shadow-lg transform translate-x-full transition-transform">
             <div class="p-4 flex items-center justify-between border-b">
-                <h3 class="text-lg font-medium">Комментарий — <span id="offcanvas-month-label"></span></h3>
+                <h3 class="text-lg font-medium">Добавить комментарий — <span id="offcanvas-month-label"></span></h3>
                 <button id="offcanvas-close" class="text-gray-600">✕</button>
             </div>
 
@@ -174,12 +169,12 @@
                     <button type="submit" class="px-3 py-2 bg-indigo-600 text-white rounded">Добавить</button>
                 </div>
             </form>
-
             <!-- Comments area (загружается по AJAX) -->
             <div id="offcanvas-comments" class="p-4 border-t">
                 <div class="text-sm text-gray-500">Загрузка комментариев...</div>
             </div>
         </div>
+
     </div>
 
     @push('scripts')

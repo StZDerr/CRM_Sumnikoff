@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Project;
 use App\Models\ProjectComment;
@@ -13,19 +14,48 @@ class CalendarController extends Controller
     public function index(Project $project)
     {
         $months = [];
+        $invoicesByMonth = [];
         $paymentsByMonth = [];
-        $periodTotal = 0;
-        $owedTotal = 0;
-        $paidTotal = 0;
-        $difference = 0;
         $commentsByMonth = [];
+        $totalInvoices = 0;
+        $totalPayments = 0;
 
+        // Определяем период: от самой ранней даты (контракт или счёт) до сейчас
+        $start = null;
+
+        // Начало от даты контракта
         if (! empty($project->contract_date)) {
-
             $start = Carbon::make($project->contract_date)->startOfMonth();
+        }
 
-            // end = min(now, closed_at if set)
+        // Расширяем начало, если есть счета раньше даты контракта
+        $earliestInvoice = Invoice::where('project_id', $project->id)
+            ->selectRaw('MIN(COALESCE(issued_at, created_at)) as earliest')
+            ->value('earliest');
+
+        if ($earliestInvoice) {
+            $earliestStart = Carbon::make($earliestInvoice)->startOfMonth();
+            if (! $start || $earliestStart->lt($start)) {
+                $start = $earliestStart;
+            }
+        }
+
+        // Расширяем начало, если есть платежи раньше
+        $earliestPayment = Payment::where('project_id', $project->id)
+            ->selectRaw('MIN(COALESCE(payment_date, created_at)) as earliest')
+            ->value('earliest');
+
+        if ($earliestPayment) {
+            $earliestPaymentStart = Carbon::make($earliestPayment)->startOfMonth();
+            if (! $start || $earliestPaymentStart->lt($start)) {
+                $start = $earliestPaymentStart;
+            }
+        }
+
+        if ($start) {
             $end = Carbon::now()->endOfMonth();
+
+            // Если проект закрыт — ограничиваем конец
             if (! empty($project->closed_at)) {
                 $closed = Carbon::make($project->closed_at)->endOfMonth();
                 if ($closed->lt($end)) {
@@ -36,10 +66,7 @@ class CalendarController extends Controller
             // Названия месяцев
             $monthsRus = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
-            /**
-             * Формируем месяцы ОТ КОНЦА К НАЧАЛУ
-             * (новые месяцы сверху)
-             */
+            // Формируем месяцы от конца к началу (новые сверху/слева)
             $cur = $end->copy();
             while ($cur->gte($start)) {
                 $months[] = [
@@ -49,43 +76,25 @@ class CalendarController extends Controller
                 $cur->subMonthNoOverflow();
             }
 
-            /**
-             * Суммы оплат по месяцам
-             * используем payment_date или fallback на created_at
-             */
-            $paymentsByMonth = Payment::selectRaw("
-                DATE_FORMAT(COALESCE(payment_date, created_at), '%Y-%m') as ym,
-                SUM(amount) as total
-            ")
+            // Суммы счетов по месяцам (по issued_at, fallback на created_at)
+            $invoicesByMonth = Invoice::selectRaw("DATE_FORMAT(COALESCE(issued_at, created_at), '%Y-%m') as ym, SUM(amount) as total")
                 ->where('project_id', $project->id)
-                ->where(function ($q) use ($start, $end) {
-                    $q->whereNotNull('payment_date')
-                        ->whereBetween('payment_date', [$start, $end])
-                        ->orWhere(function ($q2) use ($start, $end) {
-                            $q2->whereNull('payment_date')
-                                ->whereBetween('created_at', [$start, $end]);
-                        });
-                })
                 ->groupBy('ym')
-                ->orderBy('ym', 'desc')
                 ->pluck('total', 'ym')
                 ->all();
 
-            // Итоги
-            $periodTotal = array_sum($paymentsByMonth);
+            // Суммы поступлений по месяцам (по payment_date, fallback на created_at)
+            $paymentsByMonth = Payment::selectRaw("DATE_FORMAT(COALESCE(payment_date, created_at), '%Y-%m') as ym, SUM(amount) as total")
+                ->where('project_id', $project->id)
+                ->groupBy('ym')
+                ->pluck('total', 'ym')
+                ->all();
 
-            $monthsCount = count($months);
-            $monthlyExpected = (float) ($project->contract_amount ?? 0);
+            // Итоговые суммы
+            $totalInvoices = array_sum($invoicesByMonth);
+            $totalPayments = array_sum($paymentsByMonth);
 
-            $owedTotal = $monthlyExpected > 0
-                ? $monthlyExpected * $monthsCount
-                : 0;
-
-            $paidTotal = $periodTotal;
-            $difference = $paidTotal - $owedTotal;
-
-            // Считаем комментарии по месяцам (для отметки уголком)
-            $commentsByMonth = [];
+            // Комментарии по месяцам (для уголка)
             $monthKeys = array_column($months, 'ym');
             if (! empty($monthKeys)) {
                 $commentsByMonth = ProjectComment::selectRaw('month as ym, COUNT(*) as total')
@@ -100,12 +109,11 @@ class CalendarController extends Controller
         return view('admin.calendar.index', compact(
             'project',
             'months',
+            'invoicesByMonth',
             'paymentsByMonth',
-            'periodTotal',
-            'owedTotal',
-            'paidTotal',
-            'difference',
-            'commentsByMonth'
+            'commentsByMonth',
+            'totalInvoices',
+            'totalPayments'
         ));
     }
 
@@ -340,5 +348,104 @@ class CalendarController extends Controller
         }
 
         return $expected;
+    }
+
+    public function index_copy(Project $project)
+    {
+        $months = [];
+        $paymentsByMonth = [];
+        $periodTotal = 0;
+        $owedTotal = 0;
+        $paidTotal = 0;
+        $difference = 0;
+        $commentsByMonth = [];
+
+        if (! empty($project->contract_date)) {
+
+            $start = Carbon::make($project->contract_date)->startOfMonth();
+
+            // end = min(now, closed_at if set)
+            $end = Carbon::now()->endOfMonth();
+            if (! empty($project->closed_at)) {
+                $closed = Carbon::make($project->closed_at)->endOfMonth();
+                if ($closed->lt($end)) {
+                    $end = $closed;
+                }
+            }
+
+            // Названия месяцев
+            $monthsRus = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+
+            /**
+             * Формируем месяцы ОТ КОНЦА К НАЧАЛУ
+             * (новые месяцы сверху)
+             */
+            $cur = $end->copy();
+            while ($cur->gte($start)) {
+                $months[] = [
+                    'ym' => $cur->format('Y-m'),
+                    'label' => $monthsRus[$cur->month - 1].' '.$cur->year,
+                ];
+                $cur->subMonthNoOverflow();
+            }
+
+            /**
+             * Суммы оплат по месяцам
+             * используем payment_date или fallback на created_at
+             */
+            $paymentsByMonth = Payment::selectRaw("
+                DATE_FORMAT(COALESCE(payment_date, created_at), '%Y-%m') as ym,
+                SUM(amount) as total
+            ")
+                ->where('project_id', $project->id)
+                ->where(function ($q) use ($start, $end) {
+                    $q->whereNotNull('payment_date')
+                        ->whereBetween('payment_date', [$start, $end])
+                        ->orWhere(function ($q2) use ($start, $end) {
+                            $q2->whereNull('payment_date')
+                                ->whereBetween('created_at', [$start, $end]);
+                        });
+                })
+                ->groupBy('ym')
+                ->orderBy('ym', 'desc')
+                ->pluck('total', 'ym')
+                ->all();
+
+            // Итоги
+            $periodTotal = array_sum($paymentsByMonth);
+
+            $monthsCount = count($months);
+            $monthlyExpected = (float) ($project->contract_amount ?? 0);
+
+            $owedTotal = $monthlyExpected > 0
+                ? $monthlyExpected * $monthsCount
+                : 0;
+
+            $paidTotal = $periodTotal;
+            $difference = $paidTotal - $owedTotal;
+
+            // Считаем комментарии по месяцам (для отметки уголком)
+            $commentsByMonth = [];
+            $monthKeys = array_column($months, 'ym');
+            if (! empty($monthKeys)) {
+                $commentsByMonth = ProjectComment::selectRaw('month as ym, COUNT(*) as total')
+                    ->where('project_id', $project->id)
+                    ->whereIn('month', $monthKeys)
+                    ->groupBy('month')
+                    ->pluck('total', 'ym')
+                    ->all();
+            }
+        }
+
+        return view('admin.calendar.index', compact(
+            'project',
+            'months',
+            'paymentsByMonth',
+            'periodTotal',
+            'owedTotal',
+            'paidTotal',
+            'difference',
+            'commentsByMonth'
+        ));
     }
 }

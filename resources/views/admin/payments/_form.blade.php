@@ -371,12 +371,20 @@
             }
 
             if (vatInput) {
-                vatInput.addEventListener('input', () => { vatManual = true; });
-                vatInput.addEventListener('blur', () => { vatInput.value = parseNumericInput(vatInput.value).toFixed(2); });
+                vatInput.addEventListener('input', () => {
+                    vatManual = true;
+                });
+                vatInput.addEventListener('blur', () => {
+                    vatInput.value = parseNumericInput(vatInput.value).toFixed(2);
+                });
             }
             if (usnInput) {
-                usnInput.addEventListener('input', () => { usnManual = true; });
-                usnInput.addEventListener('blur', () => { usnInput.value = parseNumericInput(usnInput.value).toFixed(2); });
+                usnInput.addEventListener('input', () => {
+                    usnManual = true;
+                });
+                usnInput.addEventListener('blur', () => {
+                    usnInput.value = parseNumericInput(usnInput.value).toFixed(2);
+                });
             }
 
             if (amountInput) {

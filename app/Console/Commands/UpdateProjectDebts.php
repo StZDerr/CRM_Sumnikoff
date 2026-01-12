@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Invoice;
 use App\Models\Project;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -11,13 +12,15 @@ class UpdateProjectDebts extends Command
 {
     protected $signature = 'projects:update-debts {--project=}';
 
-    protected $description = 'Recalculate project debts (expected total since contract_date)';
+    protected $description = 'Auto-generate monthly invoices for active projects';
 
     public function handle()
     {
-        $this->info('Starting debt recalculation (expected total of fully completed months)...');
+        $this->info('Starting auto-invoice generation for active projects...');
 
         $projectId = $this->option('project');
+        $now = Carbon::now();
+        $currentYm = $now->format('Y-m'); // Текущий месяц (например, 2026-01)
 
         if ($projectId) {
             $projects = Project::whereNotNull('contract_date')->where('id', $projectId)->get();
@@ -25,73 +28,94 @@ class UpdateProjectDebts extends Command
             $projects = Project::whereNotNull('contract_date')->get();
         }
 
-        DB::transaction(function () use ($projects) {
+        $created = 0;
+        $skipped = 0;
+
+        DB::transaction(function () use ($projects, $now, $currentYm, &$created, &$skipped) {
             foreach ($projects as $project) {
                 $contractAmount = (float) ($project->contract_amount ?? 0);
 
+                // Пропускаем проекты без суммы договора
                 if ($contractAmount <= 0) {
-                    $project->update([
-                        'debt' => 0,
-                        'debt_calculated_at' => now(),
-                        'received_total' => 0,
-                        'received_calculated_at' => now(),
-                        'balance' => 0,
-                        'balance_calculated_at' => now(),
-                    ]);
-                    $this->line("Project #{$project->id} ({$project->title}): contract_amount missing/zero — all totals set to 0");
+                    $this->line("Project #{$project->id} ({$project->title}): пропущен — contract_amount = 0");
+                    $skipped++;
 
                     continue;
                 }
 
-                // считаем количество полностью завершённых месяцев — учитываем закрытие проекта (closed_at)
-                $start = Carbon::make($project->contract_date);
+                // Пропускаем закрытые проекты
+                if (! empty($project->closed_at) && Carbon::make($project->closed_at)->lt($now)) {
+                    $this->line("Project #{$project->id} ({$project->title}): пропущен — проект закрыт");
+                    $skipped++;
 
-                $end = Carbon::now();
-                if (! empty($project->closed_at)) {
-                    $closed = Carbon::make($project->closed_at);
-                    if ($closed->lt($end)) {
-                        $end = $closed;
-                    }
+                    continue;
                 }
 
-                $monthsCount = 0;
-                $cursor = $start->copy()->addMonthNoOverflow();
-                while ($cursor->lte($end)) {
-                    $monthsCount++;
-                    $cursor->addMonthNoOverflow();
+                // Проверяем, что дата контракта не позже текущего месяца
+                $contractDate = Carbon::make($project->contract_date);
+                if ($contractDate->format('Y-m') > $currentYm) {
+                    $this->line("Project #{$project->id} ({$project->title}): пропущен — контракт ещё не начался");
+                    $skipped++;
+
+                    continue;
                 }
 
-                $expectedTotal = round($contractAmount * $monthsCount, 2);
+                // Проверяем, есть ли уже счёт на текущий месяц
+                $existingInvoice = Invoice::where('project_id', $project->id)
+                    ->whereRaw("DATE_FORMAT(COALESCE(issued_at, created_at), '%Y-%m') = ?", [$currentYm])
+                    ->exists();
 
-                // пересчитываем фактические оплаты по проекту (учитываем payment_date или, если нет, created_at) без ограничений по периоду
-                $paidTotal = \App\Models\Payment::where('project_id', $project->id)
-                    ->where(function ($q) {
-                        $q->whereNotNull('payment_date')
-                            ->orWhere(function ($q2) {
-                                $q2->whereNull('payment_date')->whereNotNull('created_at');
-                            });
-                    })
-                    ->sum('amount');
-                $paidTotal = round((float) $paidTotal, 2);
+                if ($existingInvoice) {
+                    $this->line("Project #{$project->id} ({$project->title}): пропущен — счёт на {$currentYm} уже существует");
+                    $skipped++;
 
-                // balance = received_total - debt (положительное — переплата)
-                $balance = round($paidTotal - $expectedTotal, 2);
+                    continue;
+                }
 
-                $project->update([
-                    'debt' => $expectedTotal,
-                    'debt_calculated_at' => now(),
-                    'received_total' => $paidTotal,
-                    'received_calculated_at' => now(),
-                    'balance' => $balance,
-                    'balance_calculated_at' => now(),
+                // Генерируем номер счёта
+                $invoiceNumber = $this->generateInvoiceNumber($project, $now);
+
+                // Создаём счёт
+                Invoice::create([
+                    'number' => $invoiceNumber,
+                    'project_id' => $project->id,
+                    'issued_at' => $now,
+                    'amount' => $contractAmount,
+                    'payment_method_id' => 1, // Р/с
+                    'invoice_status_id' => 4, // Долг
                 ]);
 
-                $this->line("Project #{$project->id} ({$project->title}): months={$monthsCount}, debt={$expectedTotal}, received={$paidTotal}, balance={$balance}");
+                $this->info("Project #{$project->id} ({$project->title}): создан счёт #{$invoiceNumber} на {$contractAmount} ₽");
+                $created++;
             }
         });
 
-        $this->info('Project debts updated.');
+        $this->info("Готово! Создано счетов: {$created}, пропущено: {$skipped}");
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Генерирует уникальный номер счёта
+     */
+    protected function generateInvoiceNumber(Project $project, Carbon $date): string
+    {
+        // Формат: INV-{project_id}-{YYYYMM}-{порядковый номер}
+        $prefix = 'INV-'.$project->id.'-'.$date->format('Ym');
+
+        // Находим последний счёт с таким префиксом
+        $lastInvoice = Invoice::where('number', 'like', $prefix.'%')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($lastInvoice) {
+            // Извлекаем порядковый номер и увеличиваем
+            $parts = explode('-', $lastInvoice->number);
+            $seq = (int) end($parts) + 1;
+        } else {
+            $seq = 1;
+        }
+
+        return $prefix.'-'.str_pad($seq, 2, '0', STR_PAD_LEFT);
     }
 }
