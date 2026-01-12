@@ -103,7 +103,7 @@ class ProjectController extends Controller
             'organization_id' => 'required|exists:organizations,id',
             'city' => 'required|string|max:255',
             'closed_at' => 'nullable|date|after_or_equal:contract_date',
-            'marketer_id' => 'required|exists:users,id',
+            'marketer_id' => 'nullable|exists:users,id',
             'importance_id' => 'required|exists:importances,id',
             'contract_amount' => 'required|numeric|min:0',
             'contract_date' => 'required|date',

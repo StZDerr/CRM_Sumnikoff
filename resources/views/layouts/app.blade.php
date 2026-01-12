@@ -125,6 +125,7 @@
 
                 <!-- Page Content -->
                 <main class="p-6">
+                    @php $slot = $slot ?? null; @endphp
                     @isset($slot)
                         {{ $slot }}
                     @else

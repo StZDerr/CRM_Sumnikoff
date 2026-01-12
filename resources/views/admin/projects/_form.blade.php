@@ -166,12 +166,24 @@
         }, true);
         Array.from(list.querySelectorAll('.stage-item')).forEach(el => {
             el.setAttribute('draggable', 'true');
-            // Toggle selection on click (excluding drag handle)
+            const cb = el.querySelector('.stage-checkbox');
+
+            // Когда чекбокс меняется (клик по самому чекбоксу), обновляем класс
+            if (cb) {
+                cb.addEventListener('change', () => {
+                    el.classList.toggle('selected', cb.checked);
+                });
+            }
+
+            // Клик по карточке: игнорируем клики по drag-handle и по самому чекбоксу
             el.addEventListener('click', (e) => {
                 if (e.target.closest('.drag-handle')) return;
-                const cb = el.querySelector('.stage-checkbox');
-                cb.checked = !cb.checked;
-                el.classList.toggle('selected', cb.checked);
+                if (e.target === cb || e.target.closest('.stage-checkbox')) return;
+
+                if (cb) {
+                    cb.checked = !cb.checked;
+                    el.classList.toggle('selected', cb.checked);
+                }
             });
         });
 

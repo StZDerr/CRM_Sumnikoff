@@ -67,4 +67,9 @@ class Invoice extends Model
     {
         return $this->belongsTo(\App\Models\InvoiceStatus::class);
     }
+
+    public function status()
+    {
+        return $this->belongsTo(\App\Models\InvoiceStatus::class, 'invoice_status_id');
+    }
 }

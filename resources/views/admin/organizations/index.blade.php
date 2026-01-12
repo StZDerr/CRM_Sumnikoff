@@ -38,7 +38,7 @@
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <div class="font-medium text-gray-900">{{ $org->name_short ?: $org->name_full }}</div>
+                                    <div class="font-medium text-gray-900">{{ $org->name_full }}</div>
                                     <div class="text-xs text-gray-500">
                                         {{ $org->inn ? 'ИНН: ' . $org->inn . ' • ' : '' }}
                                         {{ $org->phone ? $org->phone . ' • ' : '' }}

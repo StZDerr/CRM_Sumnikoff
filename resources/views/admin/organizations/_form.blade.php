@@ -85,7 +85,6 @@
     <div>
         <x-input-label for="campaign_status_id" :value="'Статус'" />
         <select id="campaign_status_id" name="campaign_status_id" class="mt-1 block w-full rounded border px-3 py-2">
-            <option value="">— не выбрано —</option>
             @foreach ($statuses ?? [] as $id => $name)
                 <option value="{{ $id }}" @selected((string) old('campaign_status_id', $organization->campaign_status_id ?? '') === (string) $id)>{{ $name }}</option>
             @endforeach

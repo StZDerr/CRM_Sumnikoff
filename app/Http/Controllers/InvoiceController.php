@@ -138,40 +138,38 @@ class InvoiceController extends Controller
 
     public function invoicesByProject(Project $project)
     {
-        // Exclude invoices whose status name contains 'оплач' (case-insensitive)
-        $excludeStatusIds = InvoiceStatus::whereRaw('LOWER(name) LIKE ?', ['%оплач%'])->pluck('id')->all();
+        try {
+            $excludeStatusIds = InvoiceStatus::whereRaw('LOWER(name) LIKE ?', ['%оплач%'])->pluck('id')->all();
 
-        $query = Invoice::where('project_id', $project->id)
-            ->orderByDesc('issued_at')
-            ->with('status');
+            $query = Invoice::where('project_id', $project->id)
+                ->orderByDesc('issued_at')
+                ->with('status');
 
-        if (! empty($excludeStatusIds)) {
-            $query->where(function ($q) use ($excludeStatusIds) {
-                $q->whereNull('invoice_status_id')
-                    ->orWhereNotIn('invoice_status_id', $excludeStatusIds);
-            });
+            if (! empty($excludeStatusIds)) {
+                $query->where(function ($q) use ($excludeStatusIds) {
+                    $q->whereNull('invoice_status_id')
+                        ->orWhereNotIn('invoice_status_id', $excludeStatusIds);
+                });
+            }
+
+            $invoices = $query->get(['id', 'number', 'issued_at', 'amount', 'transaction_id', 'invoice_status_id'])
+                ->map(function ($inv) {
+                    return [
+                        'id' => $inv->id,
+                        'number' => $inv->number,
+                        'issued_at' => optional($inv->issued_at)->toDateString(),
+                        'amount' => (float) $inv->amount,
+                        'transaction_id' => $inv->transaction_id,
+                        'invoice_status_id' => $inv->invoice_status_id,
+                        'invoice_status_name' => $inv->status?->name ?? null,
+                    ];
+                });
+
+            return response()->json($invoices);
+        } catch (\Throwable $e) {
+            \Log::error('invoicesByProject error', ['project_id' => $project->id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+
+            return response()->json(['error' => 'Не удалось загрузить счета проекта'], 500);
         }
-
-        // allow including a specific invoice even if it's excluded (param include)
-        if ($inc = request()->query('include')) {
-            $query->orWhere(function ($q) use ($inc, $project) {
-                $q->where('id', $inc)->where('project_id', $project->id);
-            });
-        }
-
-        $invoices = $query->get(['id', 'number', 'issued_at', 'amount', 'transaction_id', 'invoice_status_id'])
-            ->map(function ($inv) {
-                return [
-                    'id' => $inv->id,
-                    'number' => $inv->number,
-                    'issued_at' => optional($inv->issued_at)->toDateString(),
-                    'amount' => (float) $inv->amount,
-                    'transaction_id' => $inv->transaction_id,
-                    'invoice_status_id' => $inv->invoice_status_id,
-                    'invoice_status_name' => $inv->status?->name ?? null,
-                ];
-            });
-
-        return response()->json($invoices);
     }
 }

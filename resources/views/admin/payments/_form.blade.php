@@ -28,13 +28,13 @@
 
     <div>
         <label class="text-xs text-gray-500">НДС (5%)</label>
-        <input id="vat_amount" type="text" readonly class="w-full border rounded p-2 bg-gray-50"
+        <input id="vat_amount" name="vat_amount" type="number" step="0.01" class="w-full border rounded p-2"
             value="{{ old('vat_amount', isset($payment) ? number_format($payment->vat_amount ?? 0, 2, '.', '') : '0.00') }}" />
     </div>
 
     <div>
         <label class="text-xs text-gray-500">УСН (7%)</label>
-        <input id="usn_amount" type="text" readonly class="w-full border rounded p-2 bg-gray-50"
+        <input id="usn_amount" name="usn_amount" type="number" step="0.01" class="w-full border rounded p-2"
             value="{{ old('usn_amount', isset($payment) ? number_format($payment->usn_amount ?? 0, 2, '.', '') : '0.00') }}" />
     </div>
 
@@ -353,12 +353,30 @@
                 });
             }
 
+            // Manual input flags so user edits are not overwritten by auto-calculation
+            let vatManual = false;
+            let usnManual = false;
+
+            function parseNumericInput(v) {
+                if (v === undefined || v === null || v === '') return 0;
+                return parseFloat(String(v).replace(/\s+/g, '').replace(',', '.')) || 0;
+            }
+
             function recalcTaxes() {
-                const val = parseFloat(amountInput?.value || 0);
+                const val = parseNumericInput(amountInput?.value || 0);
                 const vat = Math.round(val * 0.05 * 100) / 100;
                 const usn = Math.round(val * 0.07 * 100) / 100;
-                if (vatInput) vatInput.value = formatNumber(vat);
-                if (usnInput) usnInput.value = formatNumber(usn);
+                if (vatInput && !vatManual) vatInput.value = vat.toFixed(2);
+                if (usnInput && !usnManual) usnInput.value = usn.toFixed(2);
+            }
+
+            if (vatInput) {
+                vatInput.addEventListener('input', () => { vatManual = true; });
+                vatInput.addEventListener('blur', () => { vatInput.value = parseNumericInput(vatInput.value).toFixed(2); });
+            }
+            if (usnInput) {
+                usnInput.addEventListener('input', () => { usnManual = true; });
+                usnInput.addEventListener('blur', () => { usnInput.value = parseNumericInput(usnInput.value).toFixed(2); });
             }
 
             if (amountInput) {
