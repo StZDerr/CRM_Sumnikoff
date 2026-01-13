@@ -20,19 +20,26 @@
                 <table class="min-w-full border-collapse border border-gray-200">
                     <thead class="bg-gray-100">
                         <tr>
-                            <th class="border border-gray-200 p-2 text-left">Объект</th>
+                            <th class="border border-gray-200 p-2 text-left sticky left-0 bg-gray-100 z-10">Объект</th>
                             @foreach ($months as $m)
-                                <th class="border border-gray-200 p-2 text-center">{{ $m['label'] }}</th>
+                                <th class="border border-gray-200 p-2 text-center min-w-[120px]">{{ $m['label'] }}</th>
                             @endforeach
-                            <th class="border border-gray-200 p-2 text-center">Ожидается</th>
-                            <th class="border border-gray-200 p-2 text-center">Оплачено</th>
-                            <th class="border border-gray-200 p-2 text-center">Разница</th>
+                            <th
+                                class="border border-gray-200 p-2 text-center sticky right-[180px] bg-gray-100 z-10 min-w-[100px]">
+                                Ожидаемо</th>
+                            <th
+                                class="border border-gray-200 p-2 text-center sticky right-[90px] bg-gray-100 z-10 min-w-[100px]">
+                                Оплачено</th>
+                            <th class="border border-gray-200 p-2 text-center sticky right-0 bg-gray-100 z-10 min-w-[90px]">
+                                Баланс</th>
                         </tr>
                     </thead>
 
+                    {{-- Сводная строка по всем проектам --}}
                     <tbody>
-                        <tr>
-                            <td class="border border-gray-200 p-2 font-medium">Все проекты</td>
+                        <tr class="bg-gray-50 font-medium">
+                            <td class="border border-gray-200 p-2 font-semibold sticky left-0 bg-gray-50 z-10">Все проекты
+                            </td>
 
                             @foreach ($months as $m)
                                 @php
@@ -42,95 +49,204 @@
                                     $diff = $paid - $expected;
                                 @endphp
                                 <td class="border border-gray-200 p-2 text-center" data-tippy
-                                    data-tippy-content="Оплачено: {{ number_format($paid, 0, '.', ' ') }} ₽&#10;Ожидалось: {{ number_format($expected, 0, '.', ' ') }} ₽">
+                                    data-tippy-content="Ожидаемо: {{ number_format($expected, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paid, 0, '.', ' ') }} ₽">
                                     @if ($expected <= 0 && $paid == 0)
-                                        —
+                                        <span class="text-gray-400">—</span>
                                     @else
-                                        @if ($diff > 0)
-                                            <span
-                                                class="text-green-600 font-semibold">+{{ number_format($diff, 0, '.', ' ') }}
-                                                ₽</span>
-                                        @elseif ($diff < 0)
-                                            <span
-                                                class="text-red-600 font-semibold">-{{ number_format(abs($diff), 0, '.', ' ') }}
-                                                ₽</span>
-                                        @else
-                                            <span class="text-gray-900 font-semibold">{{ number_format(0, 0, '.', ' ') }}
-                                                ₽</span>
+                                        @if ($expected > 0)
+                                            <div class="text-xs text-gray-500">Ожидаемо:</div>
+                                            <div class="text-gray-800">{{ number_format($expected, 0, '.', ' ') }} ₽</div>
                                         @endif
-                                    @endif
-                                </td>
-                            @endforeach
-
-                            <td class="border border-gray-200 p-2 text-center font-medium">
-                                {{ number_format($owedTotal, 0, '.', ' ') }} ₽</td>
-                            <td class="border border-gray-200 p-2 text-center font-medium">
-                                {{ number_format($periodTotal, 0, '.', ' ') }} ₽</td>
-                            @php $diffClass = $difference < 0 ? 'text-red-600' : ($difference > 0 ? 'text-green-600' : 'text-gray-900'); @endphp
-                            <td class="border border-gray-200 p-2 text-center font-semibold {{ $diffClass }}">
-                                {{ number_format($difference, 0, '.', ' ') }} ₽</td>
-                        </tr>
-                    </tbody>
-                    <tbody>
-                        {{-- Сводная строка (All projects) уже есть выше --}}
-                        {{-- Детализированный разбор по каждому проекту --}}
-                        @foreach ($projectRows as $row)
-                            @php $proj = $row['project']; @endphp
-                            <tr class="hover:bg-gray-50">
-                                <td class="border border-gray-200 p-2 font-medium">
-                                    <a href="{{ route('projects.show', $proj) }}" class="text-indigo-600 hover:underline">
-                                        {{ $proj->title }}
-                                    </a>
-                                </td>
-
-                                @foreach ($months as $m)
-                                    @php
-                                        $ym = $m['ym'];
-                                        $cell = $row['months'][$ym] ?? ['paid' => 0, 'expected' => 0, 'diff' => 0];
-                                        $paid = $cell['paid'];
-                                        $expected = $cell['expected'];
-                                        $diff = $cell['diff'];
-                                        $commentsCount = $commentsMap[$proj->id][$ym] ?? 0;
-                                    @endphp
-
-                                    <td class="relative border border-gray-200 p-2 text-center cursor-pointer"
-                                        data-project-id="{{ $proj->id }}" data-project-title="{{ e($proj->title) }}"
-                                        data-month="{{ $ym }}" data-month-label="{{ $m['label'] }}" data-tippy
-                                        data-tippy-content="Оплачено: {{ number_format($paid, 0, '.', ' ') }} ₽&#10;Ожидалось: {{ number_format($expected, 0, '.', ' ') }} ₽">
-
-                                        @if ($commentsCount > 0)
-                                            <span title="Комментарии: {{ $commentsCount }}" aria-hidden="true"
-                                                class="absolute top-0 right-0 w-3 h-3 bg-blue-500"
-                                                style="clip-path: polygon(100% 0, 0 0, 100% 100%);"></span>
+                                        @if ($paid > 0)
+                                            <div class="text-xs text-gray-500 mt-1">Оплачено:</div>
+                                            <div class="text-gray-800">{{ number_format($paid, 0, '.', ' ') }} ₽</div>
                                         @endif
-
-                                        @if ($expected <= 0 && $paid == 0)
-                                            —
-                                        @else
+                                        <div class="mt-1 pt-1 border-t border-gray-200">
                                             @if ($diff > 0)
                                                 <span
                                                     class="text-green-600 font-semibold">+{{ number_format($diff, 0, '.', ' ') }}
                                                     ₽</span>
                                             @elseif ($diff < 0)
                                                 <span
-                                                    class="text-red-600 font-semibold">-{{ number_format(abs($diff), 0, '.', ' ') }}
+                                                    class="text-red-600 font-semibold">{{ number_format($diff, 0, '.', ' ') }}
                                                     ₽</span>
                                             @else
-                                                <span
-                                                    class="text-gray-900 font-semibold">{{ number_format(0, 0, '.', ' ') }}
-                                                    ₽</span>
+                                                <span class="text-gray-600 font-semibold">0 ₽</span>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </td>
+                            @endforeach
+
+                            <td
+                                class="border border-gray-200 p-2 text-center font-medium sticky right-[180px] bg-gray-50 z-10">
+                                <div class="text-xs text-gray-500">Ожидаемо:</div>
+                                <div class="font-semibold">{{ number_format($owedTotal, 0, '.', ' ') }} ₽</div>
+                            </td>
+                            <td
+                                class="border border-gray-200 p-2 text-center font-medium sticky right-[90px] bg-gray-50 z-10">
+                                <div class="text-xs text-gray-500">Оплачено:</div>
+                                <div class="font-semibold">{{ number_format($periodTotal, 0, '.', ' ') }} ₽</div>
+                            </td>
+                            @php $diffClass = $difference < 0 ? 'text-red-600' : ($difference > 0 ? 'text-green-600' : 'text-gray-600'); @endphp
+                            <td
+                                class="border border-gray-200 p-2 text-center font-semibold sticky right-0 bg-gray-50 z-10 {{ $diffClass }}">
+                                {{ ($difference > 0 ? '+' : '') . number_format($difference, 0, '.', ' ') }} ₽
+                            </td>
+                        </tr>
+                    </tbody>
+
+                    {{-- Строки по каждому проекту --}}
+                    <tbody>
+                        @foreach ($projectRows as $row)
+                            @php $proj = $row['project']; @endphp
+                            <tr class="hover:bg-gray-50">
+                                <td class="border border-gray-200 p-2 font-medium sticky left-0 bg-white z-10">
+                                    <a href="{{ route('projects.show', $proj) }}" class="text-indigo-600 hover:underline">
+                                        {{ $proj->title }}
+                                    </a>
+                                </td>
+
+                                @php
+                                    $lastDisplayMonth = $row['lastDisplayMonth'] ?? now()->format('Y-m');
+                                    $currentYm = now()->format('Y-m');
+                                @endphp
+
+                                @foreach ($months as $m)
+                                    @php
+                                        $ym = $m['ym'];
+                                        $cell = $row['months'][$ym] ?? [
+                                            'invoiced' => 0,
+                                            'paid' => 0,
+                                            'expected' => 0,
+                                            'balance' => 0,
+                                            'isActive' => false,
+                                        ];
+                                        $invoiced = $cell['invoiced'];
+                                        $paid = $cell['paid'];
+                                        $expected = $cell['expected'];
+                                        $balance = $cell['balance'];
+                                        $isActive = $cell['isActive'];
+                                        $commentsCount = $commentsMap[$proj->id][$ym] ?? 0;
+
+                                        // Проверяем, нужно ли показывать данные для этого месяца
+                                        // Если месяц в будущем (> текущего) и > lastDisplayMonth — не показываем ожидаемые
+                                        $isFutureMonth = $ym > $currentYm;
+                                        $isWithinDisplayLimit = $ym <= $lastDisplayMonth;
+                                        $shouldShowExpected = !$isFutureMonth || $isWithinDisplayLimit;
+
+                                        // Если не нужно показывать — обнуляем ожидаемое (но счета и платежи показываем всегда)
+                                        $displayExpected = $shouldShowExpected ? $expected : 0;
+                                        $displayInvoiced = $invoiced; // Реальные счета показываем всегда
+                                        $displayPaid = $paid; // Реальные платежи показываем всегда
+
+                                        // Для будущих месяцев за пределами лимита — не показываем баланс если нет реальных данных
+                                        $showCell = $shouldShowExpected || $invoiced > 0 || $paid > 0;
+
+                                        // Цвет накопительного баланса
+                                        if (
+                                            !$showCell ||
+                                            ($displayInvoiced == 0 && $displayExpected == 0 && $displayPaid == 0)
+                                        ) {
+                                            $balanceClass = 'text-gray-400';
+                                            $balanceText = '—';
+                                            $showBalance = false;
+                                        } elseif ($balance > 0) {
+                                            $balanceClass = 'text-green-600';
+                                            $balanceText = '+' . number_format($balance, 0, '.', ' ') . ' ₽';
+                                            $showBalance = true;
+                                        } elseif ($balance == 0) {
+                                            $balanceClass = 'text-gray-600';
+                                            $balanceText = '0 ₽';
+                                            $showBalance = true;
+                                        } else {
+                                            $balanceClass = 'text-red-600';
+                                            $balanceText = number_format($balance, 0, '.', ' ') . ' ₽';
+                                            $showBalance = true;
+                                        }
+
+                                        // Для tooltip
+                                        $tooltipInvoice =
+                                            $displayInvoiced > 0
+                                                ? 'Счета: ' . number_format($displayInvoiced, 0, '.', ' ') . ' ₽'
+                                                : ($displayExpected > 0
+                                                    ? 'Ожидаемо: ' . number_format($displayExpected, 0, '.', ' ') . ' ₽'
+                                                    : '');
+                                    @endphp
+
+                                    <td class="relative border border-gray-200 p-2 text-center cursor-pointer min-w-[120px]"
+                                        data-project-id="{{ $proj->id }}" data-project-title="{{ e($proj->title) }}"
+                                        data-month="{{ $ym }}" data-month-label="{{ $m['label'] }}" data-tippy
+                                        data-tippy-content="{{ $tooltipInvoice }}<br>Оплачено: {{ number_format($displayPaid, 0, '.', ' ') }} ₽<br>Накоп. баланс: {{ $balanceText }}">
+
+                                        {{-- Уголок, если есть комментарии --}}
+                                        @if ($commentsCount > 0)
+                                            <span title="Комментарии: {{ $commentsCount }}" aria-hidden="true"
+                                                class="absolute top-0 right-0 w-3 h-3 bg-blue-500"
+                                                style="clip-path: polygon(100% 0, 0 0, 100% 100%);"></span>
+                                        @endif
+
+                                        @if (!$showCell || ($displayInvoiced == 0 && $displayExpected == 0 && $displayPaid == 0))
+                                            <span class="text-gray-400">—</span>
+                                        @else
+                                            {{-- Счета (реальные) --}}
+                                            @if ($displayInvoiced > 0)
+                                                <div class="text-xs text-gray-500">Счета:</div>
+                                                <div class="font-medium text-gray-800">
+                                                    {{ number_format($displayInvoiced, 0, '.', ' ') }} ₽
+                                                </div>
+                                            @elseif ($displayExpected > 0)
+                                                {{-- Ожидаемо (из контракта) --}}
+                                                <div class="text-xs text-orange-500">Ожидаемо:</div>
+                                                <div class="font-medium text-orange-600">
+                                                    {{ number_format($displayExpected, 0, '.', ' ') }} ₽
+                                                </div>
+                                            @endif
+
+                                            {{-- Оплачено --}}
+                                            @if ($displayPaid > 0)
+                                                <div class="text-xs text-gray-500 mt-1">Оплачено:</div>
+                                                <div class="font-medium text-gray-800">
+                                                    {{ number_format($displayPaid, 0, '.', ' ') }} ₽</div>
+                                            @endif
+
+                                            {{-- Накопительный баланс --}}
+                                            @if ($invoiced > 0 || $expected > 0 || $paid > 0 || $balance != 0)
+                                                <div class="mt-1 pt-1 border-t border-gray-200">
+                                                    <div class="text-xs text-gray-400">Баланс:</div>
+                                                    <span
+                                                        class="font-semibold {{ $balanceClass }}">{{ $balanceText }}</span>
+                                                </div>
                                             @endif
                                         @endif
                                     </td>
                                 @endforeach
 
-                                <td class="border border-gray-200 p-2 text-center">
-                                    {{ number_format($row['owed'], 0, '.', ' ') }} ₽</td>
-                                <td class="border border-gray-200 p-2 text-center">
-                                    {{ number_format($row['paid'], 0, '.', ' ') }} ₽</td>
-                                @php $cls = $row['diff'] < 0 ? 'text-red-600' : ($row['diff'] > 0 ? 'text-green-600' : 'text-gray-900'); @endphp
-                                <td class="border border-gray-200 p-2 text-center font-semibold {{ $cls }}">
-                                    {{ number_format($row['diff'], 0, '.', ' ') }} ₽</td>
+                                {{-- Итого: Ожидаемо --}}
+                                <td class="border border-gray-200 p-2 text-center sticky right-[180px] bg-white z-10">
+                                    <div class="text-xs text-gray-500">Ожидаемо:</div>
+                                    <div class="font-medium">{{ number_format($row['owed'], 0, '.', ' ') }} ₽</div>
+                                </td>
+
+                                {{-- Итого: Оплачено --}}
+                                <td class="border border-gray-200 p-2 text-center sticky right-[90px] bg-white z-10">
+                                    <div class="text-xs text-gray-500">Оплачено:</div>
+                                    <div class="font-medium">{{ number_format($row['paid'], 0, '.', ' ') }} ₽</div>
+                                </td>
+
+                                {{-- Итого: Баланс --}}
+                                @php
+                                    $rowDiffClass =
+                                        $row['diff'] < 0
+                                            ? 'text-red-600'
+                                            : ($row['diff'] > 0
+                                                ? 'text-green-600'
+                                                : 'text-gray-600');
+                                @endphp
+                                <td
+                                    class="border border-gray-200 p-2 text-center font-semibold sticky right-0 bg-white z-10 {{ $rowDiffClass }}">
+                                    {{ ($row['diff'] > 0 ? '+' : '') . number_format($row['diff'], 0, '.', ' ') }} ₽
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

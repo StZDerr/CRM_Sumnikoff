@@ -37,6 +37,34 @@
                     </thead>
 
                     <tbody>
+                        @php
+                            // Сортируем месяцы в хронологическом порядке (от старых к новым) для расчёта накопительного баланса
+                            $monthsChronological = array_reverse($months);
+                            $runningBalance = 0; // Накопительный баланс (переплата переносится на следующие месяцы)
+                            $balanceByMonth = [];
+                            $expectedByMonth = []; // Ожидаемые счета (contract_amount если нет явного счёта)
+
+                            foreach ($monthsChronological as $m) {
+                                $key = $m['ym'];
+                                $invoiced = (float) ($invoicesByMonth[$key] ?? 0);
+                                $paid = (float) ($paymentsByMonth[$key] ?? 0);
+
+                                // Если нет явного счёта, но месяц >= даты начала контракта — используем contract_amount
+                                $expected = $invoiced;
+                                if ($invoiced == 0 && $contractAmount > 0 && $contractStart) {
+                                    $monthDate = \Carbon\Carbon::createFromFormat('Y-m', $key)->startOfMonth();
+                                    if ($monthDate->gte($contractStart)) {
+                                        $expected = $contractAmount;
+                                    }
+                                }
+                                $expectedByMonth[$key] = $expected;
+
+                                // Баланс = предыдущий баланс + оплата текущего месяца - ожидаемая сумма
+                                $runningBalance = $runningBalance + $paid - $expected;
+                                $balanceByMonth[$key] = $runningBalance;
+                            }
+                        @endphp
+
                         <tr class="hover:bg-gray-50">
                             <td class="border border-gray-200 p-2 font-medium sticky left-0 bg-white z-10">
                                 {{ $project->title }}
@@ -46,28 +74,33 @@
                                 @php
                                     $key = $m['ym'];
                                     $invoiced = (float) ($invoicesByMonth[$key] ?? 0);
+                                    $expected = (float) ($expectedByMonth[$key] ?? 0);
                                     $paid = (float) ($paymentsByMonth[$key] ?? 0);
-                                    $diff = $paid - $invoiced;
+                                    $balance = $balanceByMonth[$key] ?? 0;
+                                    $isExpectedFromContract = $invoiced == 0 && $expected > 0;
 
-                                    // Цвет: зелёный если оплата > счета, серый если равны, красный если счёт > оплаты
-                                    if ($invoiced == 0 && $paid == 0) {
-                                        $diffClass = 'text-gray-400';
-                                        $diffText = '—';
-                                    } elseif ($paid > $invoiced) {
-                                        $diffClass = 'text-green-600';
-                                        $diffText = '+' . number_format($diff, 0, '.', ' ') . ' ₽';
-                                    } elseif ($paid == $invoiced) {
-                                        $diffClass = 'text-gray-600';
-                                        $diffText = '0 ₽';
+                                    // Цвет накопительного баланса: зелёный если переплата, серый если ноль, красный если долг
+                                    if ($expected == 0 && $paid == 0 && $balance == 0) {
+                                        $balanceClass = 'text-gray-400';
+                                        $balanceText = '—';
+                                    } elseif ($balance > 0) {
+                                        $balanceClass = 'text-green-600';
+                                        $balanceText = '+' . number_format($balance, 0, '.', ' ') . ' ₽';
+                                    } elseif ($balance == 0) {
+                                        $balanceClass = 'text-gray-600';
+                                        $balanceText = '0 ₽';
                                     } else {
-                                        $diffClass = 'text-red-600';
-                                        $diffText = number_format($diff, 0, '.', ' ') . ' ₽';
+                                        $balanceClass = 'text-red-600';
+                                        $balanceText = number_format($balance, 0, '.', ' ') . ' ₽';
                                     }
+
+                                    // Разница текущего месяца (для tooltip)
+                                    $monthDiff = $paid - $expected;
                                 @endphp
 
                                 <td class="relative border border-gray-200 p-2 text-center cursor-pointer min-w-[120px]"
                                     data-month="{{ $key }}" data-month-label="{{ $m['label'] }}" data-tippy
-                                    data-tippy-content="Счета: {{ number_format($invoiced, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paid, 0, '.', ' ') }} ₽<br>Разница: {{ $diffText }}">
+                                    data-tippy-content="{{ $isExpectedFromContract ? 'Ожидаемо (контракт)' : 'Счета' }}: {{ number_format($expected, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paid, 0, '.', ' ') }} ₽<br>За месяц: {{ ($monthDiff >= 0 ? '+' : '') . number_format($monthDiff, 0, '.', ' ') }} ₽<br>Накоп. баланс: {{ $balanceText }}">
 
                                     {{-- Уголок, если есть комментарии за месяц --}}
                                     @if (!empty($commentsByMonth[$key] ?? 0))
@@ -76,11 +109,16 @@
                                             style="clip-path: polygon(100% 0, 0 0, 100% 100%);" aria-hidden="true"></span>
                                     @endif
 
-                                    {{-- Счета --}}
-                                    @if ($invoiced > 0)
-                                        <div class="text-xs text-gray-500">Счета:</div>
-                                        <div class="font-medium text-gray-800">{{ number_format($invoiced, 0, '.', ' ') }}
-                                            ₽</div>
+                                    {{-- Счета / Ожидаемо --}}
+                                    @if ($expected > 0)
+                                        <div
+                                            class="text-xs {{ $isExpectedFromContract ? 'text-orange-500' : 'text-gray-500' }}">
+                                            {{ $isExpectedFromContract ? 'Ожидаемо:' : 'Счета:' }}
+                                        </div>
+                                        <div
+                                            class="font-medium {{ $isExpectedFromContract ? 'text-orange-600' : 'text-gray-800' }}">
+                                            {{ number_format($expected, 0, '.', ' ') }} ₽
+                                        </div>
                                     @endif
 
                                     {{-- Оплачено --}}
@@ -90,10 +128,11 @@
                                         </div>
                                     @endif
 
-                                    {{-- Разница --}}
-                                    @if ($invoiced > 0 || $paid > 0)
+                                    {{-- Накопительный баланс --}}
+                                    @if ($expected > 0 || $paid > 0 || $balance != 0)
                                         <div class="mt-1 pt-1 border-t border-gray-200">
-                                            <span class="font-semibold {{ $diffClass }}">{{ $diffText }}</span>
+                                            <div class="text-xs text-gray-400">Баланс:</div>
+                                            <span class="font-semibold {{ $balanceClass }}">{{ $balanceText }}</span>
                                         </div>
                                     @else
                                         <span class="text-gray-400">—</span>
@@ -101,11 +140,17 @@
                                 </td>
                             @endforeach
 
-                            {{-- Итого: Всего счетов --}}
+                            @php
+                                // Рассчитываем итоговые суммы с учётом ожидаемых платежей
+                                $totalExpected = array_sum($expectedByMonth);
+                                $finalBalance = end($balanceByMonth) ?: 0;
+                            @endphp
+
+                            {{-- Итого: Всего ожидаемо/счетов --}}
                             <td
                                 class="border border-gray-200 p-2 text-center font-medium sticky right-[180px] bg-white z-10">
-                                <div class="text-xs text-gray-500">Счетов:</div>
-                                <div class="font-semibold text-gray-800">{{ number_format($totalInvoices, 0, '.', ' ') }} ₽
+                                <div class="text-xs text-gray-500">Ожидаемо:</div>
+                                <div class="font-semibold text-gray-800">{{ number_format($totalExpected, 0, '.', ' ') }} ₽
                                 </div>
                             </td>
 
@@ -117,18 +162,17 @@
                                 </div>
                             </td>
 
-                            {{-- Итого: Баланс --}}
+                            {{-- Итого: Баланс (накопительный) --}}
                             @php
-                                $totalDiff = $totalPayments - $totalInvoices;
-                                if ($totalPayments > $totalInvoices) {
+                                if ($finalBalance > 0) {
                                     $totalDiffClass = 'text-green-600';
-                                    $totalDiffText = '+' . number_format($totalDiff, 0, '.', ' ') . ' ₽';
-                                } elseif ($totalPayments == $totalInvoices) {
+                                    $totalDiffText = '+' . number_format($finalBalance, 0, '.', ' ') . ' ₽';
+                                } elseif ($finalBalance == 0) {
                                     $totalDiffClass = 'text-gray-600';
                                     $totalDiffText = '0 ₽';
                                 } else {
                                     $totalDiffClass = 'text-red-600';
-                                    $totalDiffText = number_format($totalDiff, 0, '.', ' ') . ' ₽';
+                                    $totalDiffText = number_format($finalBalance, 0, '.', ' ') . ' ₽';
                                 }
                             @endphp
                             <td

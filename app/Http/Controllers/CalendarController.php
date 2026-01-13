@@ -19,6 +19,8 @@ class CalendarController extends Controller
         $commentsByMonth = [];
         $totalInvoices = 0;
         $totalPayments = 0;
+        $contractAmount = 0;
+        $contractStart = null;
 
         // Определяем период: от самой ранней даты (контракт или счёт) до сейчас
         $start = null;
@@ -53,6 +55,23 @@ class CalendarController extends Controller
         }
 
         if ($start) {
+            // Сначала получаем данные о платежах и счетах для расчёта переплаты
+            $invoicesByMonth = Invoice::selectRaw("DATE_FORMAT(COALESCE(issued_at, created_at), '%Y-%m') as ym, SUM(amount) as total")
+                ->where('project_id', $project->id)
+                ->groupBy('ym')
+                ->pluck('total', 'ym')
+                ->all();
+
+            $paymentsByMonth = Payment::selectRaw("DATE_FORMAT(COALESCE(payment_date, created_at), '%Y-%m') as ym, SUM(amount) as total")
+                ->where('project_id', $project->id)
+                ->groupBy('ym')
+                ->pluck('total', 'ym')
+                ->all();
+
+            $contractAmount = (float) ($project->contract_amount ?? 0);
+            $contractStart = $project->contract_date ? Carbon::make($project->contract_date)->startOfMonth() : null;
+
+            // Базовый конец — текущий месяц
             $end = Carbon::now()->endOfMonth();
 
             // Если проект закрыт — ограничиваем конец
@@ -60,6 +79,44 @@ class CalendarController extends Controller
                 $closed = Carbon::make($project->closed_at)->endOfMonth();
                 if ($closed->lt($end)) {
                     $end = $closed;
+                }
+            }
+
+            // Рассчитываем накопительный баланс до текущего месяца
+            if ($contractAmount > 0 && $contractStart) {
+                $tempBalance = 0;
+                $tempCur = $start->copy();
+                $currentMonth = Carbon::now()->startOfMonth();
+
+                while ($tempCur->lte($currentMonth)) {
+                    $key = $tempCur->format('Y-m');
+                    $invoiced = (float) ($invoicesByMonth[$key] ?? 0);
+                    $paid = (float) ($paymentsByMonth[$key] ?? 0);
+
+                    // Ожидаемая сумма
+                    $expected = $invoiced;
+                    if ($invoiced == 0 && $tempCur->gte($contractStart)) {
+                        $expected = $contractAmount;
+                    }
+
+                    $tempBalance = $tempBalance + $paid - $expected;
+                    $tempCur->addMonthNoOverflow();
+                }
+
+                // Если есть переплата — расширяем период вперёд, пока баланс положительный
+                if ($tempBalance > 0) {
+                    $futureBalance = $tempBalance;
+                    $futureCur = $currentMonth->copy()->addMonthNoOverflow();
+                    $maxFutureMonths = 24; // Ограничение на 2 года вперёд
+                    $count = 0;
+
+                    while ($futureBalance > 0 && $count < $maxFutureMonths) {
+                        $end = $futureCur->copy()->endOfMonth();
+                        $futureBalance -= $contractAmount;
+                        $futureCur->addMonthNoOverflow();
+                        $count++;
+                    }
+                    // Останавливаемся на первом месяце с отрицательным балансом (не добавляем лишние)
                 }
             }
 
@@ -75,20 +132,6 @@ class CalendarController extends Controller
                 ];
                 $cur->subMonthNoOverflow();
             }
-
-            // Суммы счетов по месяцам (по issued_at, fallback на created_at)
-            $invoicesByMonth = Invoice::selectRaw("DATE_FORMAT(COALESCE(issued_at, created_at), '%Y-%m') as ym, SUM(amount) as total")
-                ->where('project_id', $project->id)
-                ->groupBy('ym')
-                ->pluck('total', 'ym')
-                ->all();
-
-            // Суммы поступлений по месяцам (по payment_date, fallback на created_at)
-            $paymentsByMonth = Payment::selectRaw("DATE_FORMAT(COALESCE(payment_date, created_at), '%Y-%m') as ym, SUM(amount) as total")
-                ->where('project_id', $project->id)
-                ->groupBy('ym')
-                ->pluck('total', 'ym')
-                ->all();
 
             // Итоговые суммы
             $totalInvoices = array_sum($invoicesByMonth);
@@ -113,7 +156,9 @@ class CalendarController extends Controller
             'paymentsByMonth',
             'commentsByMonth',
             'totalInvoices',
-            'totalPayments'
+            'totalPayments',
+            'contractAmount',
+            'contractStart'
         ));
     }
 
@@ -136,8 +181,103 @@ class CalendarController extends Controller
             $start = Carbon::make($minContract)->startOfMonth();
             $end = Carbon::now()->endOfMonth();
 
-            // Построим месяцы ОТ КОНЦА К НАЧАЛУ
+            // Получаем все проекты с контрактами
+            $projects = Project::whereNotNull('contract_date')
+                ->where('contract_amount', '>', 0)
+                ->orderBy('title')
+                ->get();
+
+            // Получаем все счета по проектам
+            $invoicesMap = [];
+            $invoiceRows = Invoice::selectRaw("project_id, DATE_FORMAT(COALESCE(issued_at, created_at), '%Y-%m') as ym, SUM(amount) as total")
+                ->whereIn('project_id', $projects->pluck('id'))
+                ->groupBy('project_id', 'ym')
+                ->get();
+            foreach ($invoiceRows as $r) {
+                $invoicesMap[$r->project_id][$r->ym] = (float) $r->total;
+            }
+
+            // Получаем все платежи по проектам
+            $paymentsMap = [];
+            $paymentRows = Payment::selectRaw("project_id, DATE_FORMAT(COALESCE(payment_date, created_at), '%Y-%m') as ym, SUM(amount) as total")
+                ->whereIn('project_id', $projects->pluck('id'))
+                ->groupBy('project_id', 'ym')
+                ->get();
+            foreach ($paymentRows as $r) {
+                $paymentsMap[$r->project_id][$r->ym] = (float) $r->total;
+            }
+
+            // Для каждого проекта определяем конечную дату с учётом переплаты
+            $maxEnd = $end->copy();
             $monthsRus = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+
+            foreach ($projects as $project) {
+                $contractStart = Carbon::make($project->contract_date)->startOfMonth();
+                $contractAmount = (float) $project->contract_amount;
+                $closedAt = $project->closed_at ? Carbon::make($project->closed_at)->endOfMonth() : null;
+
+                if ($contractAmount <= 0) {
+                    continue;
+                }
+
+                // Определяем самую раннюю дату для расчёта (может быть раньше контракта если есть счета/платежи)
+                $calcStart = $contractStart->copy();
+                
+                // Проверяем, есть ли счета или платежи раньше даты контракта
+                $projectInvoices = $invoicesMap[$project->id] ?? [];
+                $projectPayments = $paymentsMap[$project->id] ?? [];
+                $allMonths = array_unique(array_merge(array_keys($projectInvoices), array_keys($projectPayments)));
+                
+                foreach ($allMonths as $ym) {
+                    $monthDate = Carbon::createFromFormat('Y-m', $ym)->startOfMonth();
+                    if ($monthDate->lt($calcStart)) {
+                        $calcStart = $monthDate->copy();
+                    }
+                }
+
+                // Рассчитываем баланс до текущего месяца
+                $tempBalance = 0;
+                $tempCur = $calcStart->copy();
+                $currentMonth = Carbon::now()->startOfMonth();
+
+                while ($tempCur->lte($currentMonth)) {
+                    $key = $tempCur->format('Y-m');
+                    $invoiced = (float) ($invoicesMap[$project->id][$key] ?? 0);
+                    $paid = (float) ($paymentsMap[$project->id][$key] ?? 0);
+
+                    $expected = $invoiced > 0 ? $invoiced : ($tempCur->gte($contractStart) ? $contractAmount : 0);
+                    $tempBalance = $tempBalance + $paid - $expected;
+                    $tempCur->addMonthNoOverflow();
+                }
+
+                // Если есть переплата — расширяем период вперёд
+                if ($tempBalance > 0) {
+                    $futureBalance = $tempBalance;
+                    $futureCur = $currentMonth->copy()->addMonthNoOverflow();
+                    $maxFutureMonths = 24;
+                    $count = 0;
+
+                    // Расширяем пока баланс положительный, плюс один месяц когда станет 0 или отрицательным
+                    while ($count < $maxFutureMonths) {
+                        $futureEnd = $futureCur->copy()->endOfMonth();
+                        if ($futureEnd->gt($maxEnd)) {
+                            $maxEnd = $futureEnd->copy();
+                        }
+                        $futureBalance -= $contractAmount;
+                        $futureCur->addMonthNoOverflow();
+                        $count++;
+                        
+                        // Останавливаемся после месяца где баланс стал <= 0
+                        if ($futureBalance <= 0) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $end = $maxEnd;
+
+            // Построим месяцы ОТ КОНЦА К НАЧАЛУ
             $cur = $end->copy();
             while ($cur->gte($start)) {
                 $months[] = [
@@ -149,58 +289,171 @@ class CalendarController extends Controller
                 $cur->subMonthNoOverflow();
             }
 
-            if (! empty($months)) {
-                $first = end($months)['start']; // самый старый месяц
-                $last = $months[0]['end'];      // самый новый месяц
+            // Строим данные для каждого проекта с накопительным балансом
+            $projectRows = [];
+            $currentMonth = Carbon::now()->startOfMonth();
+            
+            foreach ($projects as $project) {
+                $contractStart = $project->contract_date ? Carbon::make($project->contract_date)->startOfMonth() : null;
+                $contractAmount = (float) ($project->contract_amount ?? 0);
+                $closedAt = $project->closed_at ? Carbon::make($project->closed_at)->endOfMonth() : null;
 
-                // агрегируем все платежи по проектам и месяцам за период
-                $cacheKey = "calendar:paymentsMap:{$first->toDateString()}:{$last->toDateString()}";
-                $paymentsMap = Cache::remember($cacheKey, 300, function () use ($first, $last) {
-                    return $this->aggregatePaymentsByProject($first, $last);
-                });
+                // Определяем последний месяц для отображения этого проекта
+                // По умолчанию - текущий месяц
+                $lastDisplayMonth = $currentMonth->format('Y-m');
 
-                // получим все проекты
-                $projects = Project::orderBy('title')->get();
-
-                // построим строки по проектам
-                $projectRows = $this->buildProjectRows($projects, $months, $paymentsMap);
-
-                // посчитаем комментарии по проектам и месяцам (для all-projects view)
-                $commentsMap = [];
-                $projectIds = $projects->pluck('id')->all();
-                $monthKeys = array_column($months, 'ym');
-                if (! empty($projectIds) && ! empty($monthKeys)) {
-                    $rows = ProjectComment::selectRaw('project_id, month as ym, COUNT(*) as total')
-                        ->whereIn('project_id', $projectIds)
-                        ->whereIn('month', $monthKeys)
-                        ->groupBy('project_id', 'month')
-                        ->get();
-
-                    foreach ($rows as $r) {
-                        $commentsMap[$r->project_id][$r->ym] = (int) $r->total;
+                // Если есть переплата - расширяем до месяца когда баланс станет <= 0
+                $projectInvoices = $invoicesMap[$project->id] ?? [];
+                $projectPayments = $paymentsMap[$project->id] ?? [];
+                
+                // Считаем баланс до текущего месяца
+                $calcStart = $contractStart ? $contractStart->copy() : null;
+                $allMonths = array_unique(array_merge(array_keys($projectInvoices), array_keys($projectPayments)));
+                foreach ($allMonths as $ym) {
+                    $monthDate = Carbon::createFromFormat('Y-m', $ym)->startOfMonth();
+                    if (!$calcStart || $monthDate->lt($calcStart)) {
+                        $calcStart = $monthDate->copy();
+                    }
+                }
+                
+                if ($calcStart && $contractAmount > 0) {
+                    $tempBalance = 0;
+                    $tempCur = $calcStart->copy();
+                    
+                    while ($tempCur->lte($currentMonth)) {
+                        $key = $tempCur->format('Y-m');
+                        $invoiced = (float) ($projectInvoices[$key] ?? 0);
+                        $paid = (float) ($projectPayments[$key] ?? 0);
+                        $expected = $invoiced > 0 ? $invoiced : ($contractStart && $tempCur->gte($contractStart) ? $contractAmount : 0);
+                        $tempBalance = $tempBalance + $paid - $expected;
+                        $tempCur->addMonthNoOverflow();
+                    }
+                    
+                    // Если есть переплата - расширяем
+                    if ($tempBalance > 0) {
+                        $futureBalance = $tempBalance;
+                        $futureCur = $currentMonth->copy()->addMonthNoOverflow();
+                        $maxFutureMonths = 24;
+                        $count = 0;
+                        
+                        while ($count < $maxFutureMonths) {
+                            $lastDisplayMonth = $futureCur->format('Y-m');
+                            $futureBalance -= $contractAmount;
+                            $futureCur->addMonthNoOverflow();
+                            $count++;
+                            
+                            if ($futureBalance <= 0) {
+                                break;
+                            }
+                        }
                     }
                 }
 
-                // суммарные оплаты по месяцам
-                $paymentsByMonth = Payment::selectRaw("DATE_FORMAT(COALESCE(payment_date, created_at), '%Y-%m') as ym, SUM(amount) as total")
-                    ->where(function ($q) use ($first, $last) {
-                        $q->whereNotNull('payment_date')->whereBetween('payment_date', [$first, $last])
-                            ->orWhere(function ($q2) use ($first, $last) {
-                                $q2->whereNull('payment_date')->whereBetween('created_at', [$first, $last]);
-                            });
-                    })
-                    ->groupBy('ym')
-                    ->orderByDesc('ym') // последние месяцы сверху
-                    ->pluck('total', 'ym')
-                    ->all();
+                $row = [
+                    'project' => $project,
+                    'months' => [],
+                    'owed' => 0.0,
+                    'paid' => 0.0,
+                    'diff' => 0.0,
+                    'contractAmount' => $contractAmount,
+                    'contractStart' => $contractStart,
+                    'lastDisplayMonth' => $lastDisplayMonth,
+                ];
 
-                // ожидаемая сумма по месяцу
-                $expectedByMonth = $this->computeExpectedByMonth($months);
+                // Сортируем месяцы хронологически для расчёта накопительного баланса
+                $monthsChronological = array_reverse($months);
+                $runningBalance = 0;
 
-                $periodTotal = array_sum($paymentsByMonth);
-                $owedTotal = array_sum($expectedByMonth);
-                $paidTotal = $periodTotal;
-                $difference = $paidTotal - $owedTotal;
+                foreach ($monthsChronological as $m) {
+                    $ym = $m['ym'];
+                    $monthDate = Carbon::createFromFormat('Y-m', $ym)->startOfMonth();
+
+                    // Проверяем активность проекта в этом месяце
+                    $isActive = false;
+                    if ($contractStart && $monthDate->gte($contractStart)) {
+                        if (! $closedAt || $monthDate->lte($closedAt)) {
+                            $isActive = true;
+                        }
+                    }
+
+                    $invoiced = (float) ($invoicesMap[$project->id][$ym] ?? 0);
+                    $paid = (float) ($paymentsMap[$project->id][$ym] ?? 0);
+
+                    // Ожидаемая сумма: счёт учитывается всегда, contract_amount только если активен
+                    $expected = 0;
+                    if ($invoiced > 0) {
+                        $expected = $invoiced;
+                    } elseif ($isActive && $contractAmount > 0) {
+                        $expected = $contractAmount;
+                    }
+
+                    $runningBalance = $runningBalance + $paid - $expected;
+
+                    $row['months'][$ym] = [
+                        'invoiced' => $invoiced,
+                        'paid' => $paid,
+                        'expected' => $expected,
+                        'balance' => $runningBalance,
+                        'isActive' => $isActive,
+                    ];
+
+                    // Для итогов учитываем только месяцы в пределах lastDisplayMonth
+                    // Для будущих месяцев (> текущего) - только если они в пределах lastDisplayMonth
+                    $isFutureMonth = $ym > $currentMonth->format('Y-m');
+                    $isWithinDisplayLimit = $ym <= $lastDisplayMonth;
+                    $shouldCountForTotal = !$isFutureMonth || $isWithinDisplayLimit;
+
+                    if ($shouldCountForTotal) {
+                        $row['owed'] += $expected;
+                    }
+                    $row['paid'] += $paid;
+                }
+
+                $row['diff'] = $row['paid'] - $row['owed'];
+                $projectRows[] = $row;
+            }
+
+            // Комментарии по проектам и месяцам
+            $projectIds = $projects->pluck('id')->all();
+            $monthKeys = array_column($months, 'ym');
+            if (! empty($projectIds) && ! empty($monthKeys)) {
+                $rows = ProjectComment::selectRaw('project_id, month as ym, COUNT(*) as total')
+                    ->whereIn('project_id', $projectIds)
+                    ->whereIn('month', $monthKeys)
+                    ->groupBy('project_id', 'month')
+                    ->get();
+
+                foreach ($rows as $r) {
+                    $commentsMap[$r->project_id][$r->ym] = (int) $r->total;
+                }
+            }
+
+            // Суммарные оплаты и ожидания
+            $periodTotal = 0;
+            $owedTotal = 0;
+            foreach ($projectRows as $row) {
+                $periodTotal += $row['paid'];
+                $owedTotal += $row['owed'];
+            }
+            $paidTotal = $periodTotal;
+            $difference = $paidTotal - $owedTotal;
+
+            // Агрегированные данные по месяцам для сводной строки
+            $currentYm = $currentMonth->format('Y-m');
+            foreach ($months as $m) {
+                $ym = $m['ym'];
+                $paymentsByMonth[$ym] = 0;
+                $expectedByMonth[$ym] = 0;
+                foreach ($projectRows as $row) {
+                    $paymentsByMonth[$ym] += $row['months'][$ym]['paid'] ?? 0;
+                    
+                    // Для expected учитываем lastDisplayMonth
+                    $isFutureMonth = $ym > $currentYm;
+                    $isWithinDisplayLimit = $ym <= ($row['lastDisplayMonth'] ?? $currentYm);
+                    if (!$isFutureMonth || $isWithinDisplayLimit) {
+                        $expectedByMonth[$ym] += $row['months'][$ym]['expected'] ?? 0;
+                    }
+                }
             }
         }
 
