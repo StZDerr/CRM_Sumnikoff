@@ -14,88 +14,127 @@
 
         <div class="bg-white shadow rounded p-6 space-y-4">
             <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <div class="text-sm text-gray-500">Полное название</div>
-                    <div class="font-medium">{{ $organization->name_full }}</div>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-500">Сокращённое</div>
-                    <div class="font-medium">{{ $organization->name_short ?? '-' }}</div>
-                </div>
-
-                <div>
-                    <div class="text-sm text-gray-500">Телефон</div>
-                    <div class="font-medium">{{ $organization->phone ?? '-' }}</div>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-500">Email</div>
-                    <div class="font-medium">{{ $organization->email ?? '-' }}</div>
-                </div>
-
-                <div>
-                    <div class="text-sm text-gray-500">ИНН</div>
-                    <div class="font-medium">{{ $organization->inn ?? '-' }}</div>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-500">ОГРНИП</div>
-                    <div class="font-medium">{{ $organization->ogrnip ?? '-' }}</div>
-                </div>
-
-                <div class="col-span-2">
-                    <div class="text-sm text-gray-500">Юридический адрес</div>
-                    <div class="font-medium">{{ $organization->legal_address ?? '-' }}</div>
-                </div>
-
-                <div class="col-span-2">
-                    <div class="text-sm text-gray-500">Фактический адрес</div>
-                    <div class="font-medium">{{ $organization->actual_address ?? '-' }}</div>
-                </div>
-
-                <div>
-                    <div class="text-sm text-gray-500">Р/с</div>
-                    <div class="font-medium">{{ $organization->account_number ?? '-' }}</div>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-500">Банк / БИК</div>
-                    <div class="font-medium">{{ $organization->bank_name ?? '-' }} / {{ $organization->bic ?? '-' }}</div>
-                </div>
-
-                <div>
-                    <div class="text-sm text-gray-500">Статус</div>
-                    <div class="font-medium">{{ $organization->status->name ?? '-' }}</div>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-500">Источник</div>
-                    <div class="font-medium">{{ $organization->source->name ?? '-' }}</div>
-                </div>
-
-                <div class="col-span-2">
-                    <div class="text-sm text-gray-500">Примечание</div>
-                    <div class="font-medium whitespace-pre-line">{{ $organization->notes ?? '-' }}</div>
-                </div>
-
-                <div>
-                    <div class="text-sm text-gray-500">Создал</div>
-                    <div class="font-medium">
-                        {{ $organization->createdBy?->name ?? '-' }}
-                        @if ($organization->created_at)
-                            <div class="text-xs text-gray-400 mt-1">{{ $organization->created_at->format('d.m.Y H:i') }}
-                            </div>
-                        @endif
+                @if ($organization->name_full)
+                    <div>
+                        <div class="text-sm text-gray-500">Полное название</div>
+                        <div class="font-medium">{{ $organization->name_full }}</div>
                     </div>
-                </div>
+                @endif
 
-                <div>
-                    <div class="text-sm text-gray-500">Последнее обновление</div>
-                    <div class="font-medium">
-                        {{ $organization->updatedBy?->name ?? '-' }}
-                        @if ($organization->updated_at)
-                            <div class="text-xs text-gray-400 mt-1">{{ $organization->updated_at->format('d.m.Y H:i') }}
-                            </div>
-                        @endif
+                @if ($organization->name_short)
+                    <div>
+                        <div class="text-sm text-gray-500">Сокращённое</div>
+                        <div class="font-medium">{{ $organization->name_short }}</div>
                     </div>
-                </div>
+                @endif
+
+                @if ($organization->phone)
+                    <div>
+                        <div class="text-sm text-gray-500">Телефон</div>
+                        <div class="font-medium">{{ $organization->phone }}</div>
+                    </div>
+                @endif
+
+                @if ($organization->email)
+                    <div>
+                        <div class="text-sm text-gray-500">Email</div>
+                        <div class="font-medium">{{ $organization->email }}</div>
+                    </div>
+                @endif
+
+                @if ($organization->inn)
+                    <div>
+                        <div class="text-sm text-gray-500">ИНН</div>
+                        <div class="font-medium">{{ $organization->inn }}</div>
+                    </div>
+                @endif
+
+                @if ($organization->ogrnip)
+                    <div>
+                        <div class="text-sm text-gray-500">ОГРНИП</div>
+                        <div class="font-medium">{{ $organization->ogrnip }}</div>
+                    </div>
+                @endif
+
+                @if ($organization->legal_address)
+                    <div class="col-span-2">
+                        <div class="text-sm text-gray-500">Юридический адрес</div>
+                        <div class="font-medium">{{ $organization->legal_address }}</div>
+                    </div>
+                @endif
+
+                @if ($organization->actual_address)
+                    <div class="col-span-2">
+                        <div class="text-sm text-gray-500">Фактический адрес</div>
+                        <div class="font-medium">{{ $organization->actual_address }}</div>
+                    </div>
+                @endif
+
+                @if ($organization->account_number)
+                    <div>
+                        <div class="text-sm text-gray-500">Р/с</div>
+                        <div class="font-medium">{{ $organization->account_number }}</div>
+                    </div>
+                @endif
+
+                @if ($organization->bank_name || $organization->bic)
+                    <div>
+                        <div class="text-sm text-gray-500">Банк / БИК</div>
+                        <div class="font-medium">
+                            {{ $organization->bank_name ?? '' }}
+                            {{ $organization->bank_name && $organization->bic ? '/' : '' }} {{ $organization->bic ?? '' }}
+                        </div>
+                    </div>
+                @endif
+
+                @if ($organization->status)
+                    <div>
+                        <div class="text-sm text-gray-500">Статус</div>
+                        <div class="font-medium">{{ $organization->status->name }}</div>
+                    </div>
+                @endif
+
+                @if ($organization->source)
+                    <div>
+                        <div class="text-sm text-gray-500">Источник</div>
+                        <div class="font-medium">{{ $organization->source->name }}</div>
+                    </div>
+                @endif
+
+                @if ($organization->notes)
+                    <div class="col-span-2">
+                        <div class="text-sm text-gray-500">Примечание</div>
+                        <div class="font-medium whitespace-pre-line">{{ $organization->notes }}</div>
+                    </div>
+                @endif
+
+                @if ($organization->createdBy)
+                    <div>
+                        <div class="text-sm text-gray-500">Создал</div>
+                        <div class="font-medium">
+                            {{ $organization->createdBy->name }}
+                            @if ($organization->created_at)
+                                <div class="text-xs text-gray-400 mt-1">
+                                    {{ $organization->created_at->format('d.m.Y H:i') }}</div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
+                @if ($organization->updatedBy)
+                    <div>
+                        <div class="text-sm text-gray-500">Последнее обновление</div>
+                        <div class="font-medium">
+                            {{ $organization->updatedBy->name }}
+                            @if ($organization->updated_at)
+                                <div class="text-xs text-gray-400 mt-1">
+                                    {{ $organization->updated_at->format('d.m.Y H:i') }}</div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
             </div>
+
 
             <hr>
 

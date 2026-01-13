@@ -22,6 +22,10 @@
                 Пользователи
             </x-nav-link>
 
+            <x-nav-link :href="route('specialties.index')" :active="request()->routeIs('specialties.*')">
+                Специальности
+            </x-nav-link>
+
             <x-nav-link :href="route('calendar.all-projects')" :active="request()->routeIs('calendar.all-projects')">
                 Календарь
             </x-nav-link>

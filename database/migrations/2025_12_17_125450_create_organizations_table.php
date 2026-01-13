@@ -20,16 +20,16 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
 
-            $table->string('inn');
+            $table->string('inn')->nullable();
             $table->string('ogrnip')->nullable();
 
-            $table->text('legal_address');
+            $table->text('legal_address')->nullable();
             $table->text('actual_address')->nullable();
 
             // Банковские реквизиты
-            $table->string('account_number');
-            $table->string('bank_name');
-            $table->string('corr_account');
+            $table->string('account_number')->nullable();
+            $table->string('bank_name')->nullable();
+            $table->string('corr_account')->nullable();
             $table->string('bic')->nullable();
 
             $table->text('notes')->nullable();

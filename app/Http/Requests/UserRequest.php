@@ -37,6 +37,19 @@ class UserRequest extends FormRequest
                 ? ['required', 'confirmed', Rules\Password::defaults()]
                 : ['nullable', 'confirmed', Rules\Password::defaults()],
             'role' => ['required', 'in:admin,manager'],
+            'specialty_id' => ['nullable', 'exists:specialties,id'],
+            'is_department_head' => ['nullable', 'boolean'],
+            'salary_override' => [
+                'nullable',
+                'integer',
+                'min:0',
+                function ($attr, $value, $fail) {
+                    if ($this->boolean('is_department_head') && ! $value) {
+                        $fail('Для начальника отдела необходимо указать индивидуальный оклад.');
+                    }
+                },
+            ],
+            'individual_bonus_percent' => 'nullable|integer|min:0|max:100', // <-- добавляем
         ];
     }
 }

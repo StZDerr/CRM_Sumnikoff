@@ -51,6 +51,11 @@
                                     Отпуск
                                 </button>
 
+                                <a href="{{ route('attendance.userShow', $user) }}"
+                                    class="px-3 py-1 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition">
+                                    Табель
+                                </a>
+
                                 <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline-block"
                                     onsubmit="return confirm('Удалить пользователя? Проекты пользователя будут перераспределены.')">
                                     @csrf
@@ -61,6 +66,7 @@
                                     </button>
                                 </form>
                             </td>
+
 
                         </tr>
                     @endforeach

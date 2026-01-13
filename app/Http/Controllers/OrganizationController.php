@@ -73,7 +73,7 @@ class OrganizationController extends Controller
             'name_short' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
-            'inn' => 'required|string|max:64|unique:organizations,inn',
+            'inn' => 'nullable|string|max:64|unique:organizations,inn',
             'ogrnip' => 'nullable|string|max:64|unique:organizations,ogrnip',
             'legal_address' => 'nullable|string',
             'actual_address' => 'nullable|string',

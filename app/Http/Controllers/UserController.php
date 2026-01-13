@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UserRequest;
 use App\Models\Project;
+use App\Models\Specialty;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,13 +29,27 @@ class UserController extends Controller
 
     public function create(): View
     {
-        return view('admin.users.create');
+        $specialties = Specialty::where('active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.users.create', compact('specialties'));
     }
 
     public function store(UserRequest $request): RedirectResponse
     {
         $data = $request->validated();
+
         $data['password'] = Hash::make($data['password']);
+
+        // если не начальник — обнуляем индивидуальный оклад
+        if (empty($data['is_department_head'])) {
+            $data['salary_override'] = null;
+            $data['is_department_head'] = false;
+        }
+
+        // Индивидуальная премия по умолчанию 5%
+        $data['individual_bonus_percent'] = $data['individual_bonus_percent'] ?? 5;
 
         User::create($data);
 
@@ -48,7 +63,11 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
-        return view('admin.users.edit', compact('user'));
+        $specialties = Specialty::where('active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.users.edit', compact('user', 'specialties'));
     }
 
     public function update(UserRequest $request, User $user): RedirectResponse
@@ -60,6 +79,14 @@ class UserController extends Controller
         } else {
             $data['password'] = Hash::make($data['password']);
         }
+
+        if (empty($data['is_department_head'])) {
+            $data['salary_override'] = null;
+            $data['is_department_head'] = false;
+        }
+
+        // Индивидуальная премия по умолчанию 5%
+        $data['individual_bonus_percent'] = $data['individual_bonus_percent'] ?? 5;
 
         $user->update($data);
 

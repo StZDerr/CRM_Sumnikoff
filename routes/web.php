@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CampaignSourceController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectCommentController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SpecialtyController;
 use App\Http\Controllers\StageController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VacationController;
@@ -55,6 +57,7 @@ Route::middleware('auth')->group(function () {
         'invoice-statuses' => InvoiceStatusController::class,
         'payment-categories' => PaymentCategoryController::class,
         'vacations' => VacationController::class,
+        'specialties' => SpecialtyController::class,
     ]);
 
     Route::post('vacations/{vacation}/end', [VacationController::class, 'end'])->name('vacations.end');
@@ -104,6 +107,8 @@ Route::middleware('auth')->group(function () {
     // Получить счета проекта в JSON
     Route::get('projects/{project}/invoices', [InvoiceController::class, 'invoicesByProject'])
         ->name('projects.invoices');
+
+    Route::get('attendance/{user}', [AttendanceController::class, 'userShow'])->name('attendance.userShow');
 
     // внутри middleware('auth') группы
     Route::get('search', [SearchController::class, 'index'])->name('search');

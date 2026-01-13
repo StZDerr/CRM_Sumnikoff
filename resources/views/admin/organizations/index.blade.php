@@ -38,7 +38,12 @@
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <div class="font-medium text-gray-900">{{ $org->name_full }}</div>
+                                    {{-- Название кликабельное --}}
+                                    <a href="{{ route('organizations.show', $org) }}"
+                                        class="font-medium text-gray-900 hover:text-indigo-600">
+                                        {{ $org->name_full }}
+                                    </a>
+
                                     <div class="text-xs text-gray-500">
                                         {{ $org->inn ? 'ИНН: ' . $org->inn . ' • ' : '' }}
                                         {{ $org->phone ? $org->phone . ' • ' : '' }}
@@ -49,11 +54,13 @@
                                 <div class="text-right">
                                     @if ($org->status)
                                         <div class="text-xs text-white rounded px-2 py-1 mb-1 inline-block bg-indigo-600">
-                                            {{ $org->status->name }}</div>
+                                            {{ $org->status->name }}
+                                        </div>
                                     @endif
                                     @if ($org->source)
                                         <div class="text-xs text-gray-700 rounded px-2 py-1 inline-block border">
-                                            {{ $org->source->name }}</div>
+                                            {{ $org->source->name }}
+                                        </div>
                                     @endif
                                     <div class="text-sm text-gray-400 mt-1">{{ $org->created_at?->format('Y-m-d') }}</div>
                                 </div>
@@ -61,8 +68,7 @@
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <a href="{{ route('organizations.show', $org) }}"
-                                class="text-indigo-600 hover:text-indigo-800 text-sm p-2">Просмотр</a>
+                            {{-- Убираем кнопку "Просмотр" --}}
                             <a href="{{ route('organizations.edit', $org) }}"
                                 class="text-indigo-600 hover:text-indigo-800 text-sm p-2">Редактировать</a>
 
@@ -74,6 +80,7 @@
                             </form>
                         </div>
                     </div>
+
                 @empty
                     <div class="px-4 py-6 text-gray-500">Пока нет организаций.</div>
                 @endforelse
