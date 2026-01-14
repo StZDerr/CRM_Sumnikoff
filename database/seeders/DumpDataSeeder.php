@@ -124,7 +124,7 @@ class DumpDataSeeder extends Seeder
 
         // stages
         DB::table('stages')->insertOrIgnore([
-            ['id' => 1, 'name' => 'СЕО (SEO)', 'slug' => 'seo-seo', 'sort_order' => 1, 'created_at' => '2026-01-12 05:29:16', 'updated_at' => '2026-01-12 05:29:16'],
+            ['id' => 1, 'name' => 'СЕО (SEO)', 'slug' => 'seo-seo', 'color' => null, 'sort_order' => 1, 'created_at' => '2026-01-12 05:29:16', 'updated_at' => '2026-01-12 05:29:16'],
             ['id' => 2, 'name' => 'Авито', 'slug' => 'avito', 'color' => '#1e334d', 'sort_order' => 2, 'created_at' => '2026-01-12 05:29:33', 'updated_at' => '2026-01-12 05:29:33'],
         ]);
 
