@@ -21,9 +21,20 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('vacation_projects', function (Blueprint $table) {
-            $table->dropIndex(['project_id']);
+
+            // 1. Удаляем foreign key
+            $table->dropForeign(['restored_by']);
+
+            // 2. Удаляем индекс
             $table->dropIndex(['restored_at']);
-            $table->dropColumn(['reassigned_at', 'restored_at', 'restored_by', 'note']);
+
+            // 3. Удаляем колонки
+            $table->dropColumn([
+                'reassigned_at',
+                'restored_at',
+                'restored_by',
+                'note',
+            ]);
         });
     }
 };
