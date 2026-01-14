@@ -140,7 +140,7 @@
 
             <div>
                 <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-lg font-semibold">Сотрудники</h2>
+                    <h2 class="text-lg font-semibold">Контакты</h2>
 
                     <button type="button" onclick="openAddContactModal()"
                         class="inline-flex items-center gap-2 rounded-xl
@@ -154,7 +154,7 @@
                             stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
-                        Добавить сотрудника
+                        Добавить контакт
                     </button>
                 </div>
                 @if ($contacts->count())
@@ -180,7 +180,7 @@
                         {{ $contacts->links() }}
                     </div>
                 @else
-                    <div class="text-sm text-gray-500">Сотрудники не добавлены.</div>
+                    <div class="text-sm text-gray-500">Контакты не добавлены.</div>
                 @endif
             </div>
         </div>

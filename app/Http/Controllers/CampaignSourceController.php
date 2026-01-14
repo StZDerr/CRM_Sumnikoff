@@ -50,6 +50,11 @@ class CampaignSourceController extends Controller
             $source->moveToPosition((int) $data['sort_order']);
         }
 
+        // Если запрос AJAX/JSON — вернём данные в формате JSON для inline-форм
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'id' => $source->id, 'name' => $source->name], 201);
+        }
+
         return redirect()->route('campaign-sources.index')->with('success', 'Источник создан.');
     }
 

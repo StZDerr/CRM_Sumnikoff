@@ -120,7 +120,11 @@
 
         {{-- Источник --}}
         <div class="p-4 bg-white shadow rounded transition-all duration-300">
-            <x-input-label for="campaign_source_id" :value="'Источник'" />
+            <div class="flex items-center justify-between">
+                <x-input-label for="campaign_source_id" :value="'Источник'" />
+                <button type="button" id="addSourceBtn" class="text-sm text-indigo-600 hover:underline">Добавить источник</button>
+            </div>
+
             <select id="campaign_source_id" name="campaign_source_id"
                 class="mt-1 block w-full rounded border px-3 py-2">
                 <option value="">— не выбрано —</option>
@@ -129,6 +133,26 @@
                 @endforeach
             </select>
             <x-input-error :messages="$errors->get('campaign_source_id')" class="mt-2" />
+
+            {{-- Modal для добавления источника --}}
+            <div id="addSourceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+                <div class="bg-white w-full max-w-md rounded shadow p-6">
+                    <h3 class="text-lg font-medium mb-4">Новый источник</h3>
+                    <div id="addSourceErrors" class="text-sm text-red-600 mb-3"></div>
+                    <div class="mb-3">
+                        <label class="block text-sm text-gray-700">Название</label>
+                        <input id="newSourceName" type="text" class="mt-1 block w-full rounded border px-3 py-2" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-sm text-gray-700">Позиция (опционально)</label>
+                        <input id="newSourceSort" type="number" min="1" class="mt-1 block w-full rounded border px-3 py-2" />
+                    </div>
+                    <div class="flex justify-end gap-2 mt-4">
+                        <button type="button" id="cancelAddSource" class="px-3 py-2 border rounded">Отмена</button>
+                        <button type="button" id="saveAddSource" class="px-3 py-2 bg-indigo-600 text-white rounded">Сохранить</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -171,4 +195,79 @@
         // initial
         setType(hiddenInput.value);
     });
+    // Inline add source modal behaviour
+    (function(){
+        const addBtn = document.getElementById('addSourceBtn');
+        const modal = document.getElementById('addSourceModal');
+        const cancelBtn = document.getElementById('cancelAddSource');
+        const saveBtn = document.getElementById('saveAddSource');
+        const nameInput = document.getElementById('newSourceName');
+        const sortInput = document.getElementById('newSourceSort');
+        const errorsEl = document.getElementById('addSourceErrors');
+        const select = document.getElementById('campaign_source_id');
+
+        if (!addBtn || !modal) return;
+
+        function open() {
+            modal.classList.remove('hidden');
+            nameInput.focus();
+        }
+        function close() {
+            modal.classList.add('hidden');
+            nameInput.value = '';
+            sortInput.value = '';
+            errorsEl.innerHTML = '';
+        }
+
+        addBtn.addEventListener('click', open);
+        cancelBtn.addEventListener('click', close);
+
+        saveBtn.addEventListener('click', async () => {
+            const name = nameInput.value.trim();
+            const sort = sortInput.value ? parseInt(sortInput.value, 10) : null;
+            errorsEl.innerHTML = '';
+            if (!name) {
+                errorsEl.textContent = 'Название обязательно.';
+                return;
+            }
+
+            // Отправляем AJAX запрос на создание источника
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const res = await fetch("{{ route('campaign-sources.store') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify({ name, sort_order: sort })
+                });
+
+                if (res.status === 422) {
+                    const data = await res.json();
+                    errorsEl.innerHTML = Object.values(data.errors || {}).flat().join('<br>');
+                    return;
+                }
+
+                if (!res.ok) {
+                    errorsEl.textContent = 'Ошибка сервера при создании источника.';
+                    return;
+                }
+
+                const json = await res.json();
+                // добавляем опцию и выбираем её
+                const opt = document.createElement('option');
+                opt.value = json.id;
+                opt.textContent = json.name;
+                opt.selected = true;
+                select.appendChild(opt);
+
+                close();
+            } catch (err) {
+                errorsEl.textContent = 'Ошибка при отправке запроса.';
+                console.error(err);
+            }
+        });
+    })();
 </script>
