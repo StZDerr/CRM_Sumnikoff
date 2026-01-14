@@ -14,8 +14,8 @@
 
             <!-- Базовый оклад -->
             <div class="flex justify-between items-center border-b pb-3">
-                <div>Специальность: <span class="font-medium">{{ $user->specialty->name }}</span></div>
-                <div>Оклад: <span class="font-medium">{{ number_format($user->specialty->salary) }}
+                <div>Специальность: <span class="font-medium">{{ $user->specialty->name ?? 'Индивидуальная' }}</span></div>
+                <div>Оклад: <span class="font-medium">{{ number_format($user->specialty->salary ?? $user->salary_override) }}
                         ₽</span></div>
             </div>
 
