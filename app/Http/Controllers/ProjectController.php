@@ -59,21 +59,21 @@ class ProjectController extends Controller
                 COALESCE((SELECT SUM(amount) FROM payments WHERE payments.project_id = projects.id), 0) -
                 COALESCE((SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id), 0)
             ) < 0')
-            ->whereRaw('(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id) > 0');
+                ->whereRaw('(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id) > 0');
         } elseif ($balance_status === 'paid') {
             // Оплачено: сумма счетов = сумме платежей
             $query->whereRaw('ROUND(
                 COALESCE((SELECT SUM(amount) FROM payments WHERE payments.project_id = projects.id), 0) -
                 COALESCE((SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id), 0)
             , 2) = 0')
-            ->whereRaw('(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id) > 0');
+                ->whereRaw('(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id) > 0');
         } elseif ($balance_status === 'overpaid') {
             // Переплата: сумма платежей > суммы счетов
             $query->whereRaw('(
                 COALESCE((SELECT SUM(amount) FROM payments WHERE payments.project_id = projects.id), 0) -
                 COALESCE((SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id), 0)
             ) > 0')
-            ->whereRaw('(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id) > 0');
+                ->whereRaw('(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id) > 0');
         }
 
         // Подзапросы для сортировки по рассчитанному балансу
@@ -149,7 +149,7 @@ class ProjectController extends Controller
         }
 
         // Запустить пересчёт долгов/поступлений для этого проекта
-        Artisan::call('projects:update-debts', ['--project' => $project->id]);
+        // Artisan::call('projects:update-debts', ['--project' => $project->id]);
 
         return redirect()->route('projects.index')->with('success', 'Проект создан.');
     }
@@ -218,9 +218,9 @@ class ProjectController extends Controller
         }
 
         // Если изменилось contract_amount/contract_date/closed_at — пересчитать для проекта
-        if (array_key_exists('contract_amount', $data) || array_key_exists('contract_date', $data) || array_key_exists('closed_at', $data)) {
-            Artisan::call('projects:update-debts', ['--project' => $project->id]);
-        }
+        // if (array_key_exists('contract_amount', $data) || array_key_exists('contract_date', $data) || array_key_exists('closed_at', $data)) {
+        //     Artisan::call('projects:update-debts', ['--project' => $project->id]);
+        // }
 
         return redirect()->route('projects.index')->with('success', 'Проект обновлён.');
     }
