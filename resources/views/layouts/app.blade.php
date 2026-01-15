@@ -56,7 +56,7 @@
                 </div>
             </div>
 
-            <div class="flex-1 sm:ml-64">
+            <div class="flex-1 sm:ml-64 overflow-x-hidden">
                 <!-- Toast notifications -->
                 <div class="fixed top-4 right-4 z-50 space-y-2" aria-live="polite" aria-atomic="true">
                     @if (session('success'))

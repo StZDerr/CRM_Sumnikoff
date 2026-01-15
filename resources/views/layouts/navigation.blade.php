@@ -26,6 +26,14 @@
                 Специальности
             </x-nav-link>
 
+            <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.index')">
+                Табель посещаемости
+            </x-nav-link>
+
+            <x-nav-link :href="route('attendance.approvals')" :active="request()->routeIs('attendance.approvals')">
+                Табели на согласовании
+            </x-nav-link>
+
             <x-nav-link :href="route('calendar.all-projects')" :active="request()->routeIs('calendar.all-projects')">
                 Календарь
             </x-nav-link>

@@ -87,18 +87,20 @@ class PaymentController extends Controller
         // TAX calculation from gross amount: VAT 5%, USN 7%
         $amount = (float) ($data['amount'] ?? 0);
 
-        // VAT: принимаем ручное значение, если указано
-        if (array_key_exists('vat_amount', $data) && $data['vat_amount'] !== null && $data['vat_amount'] !== '') {
-            $data['vat_amount'] = round((float) str_replace(',', '.', str_replace(' ', '', $data['vat_amount'])), 2);
+        // НДС
+        if (! empty($data['vat_amount'])) {
+            $data['vat_amount'] = round((float) str_replace(',', '.', $data['vat_amount']), 2);
         } else {
-            $data['vat_amount'] = round($amount * 0.05, 2);
+            $data['vat_amount'] = round($amount / 105 * 5, 2);
         }
 
-        // USN: принимаем ручное значение, если указано
-        if (array_key_exists('usn_amount', $data) && $data['usn_amount'] !== null && $data['usn_amount'] !== '') {
-            $data['usn_amount'] = round((float) str_replace(',', '.', str_replace(' ', '', $data['usn_amount'])), 2);
+        // УСН
+        $amountWithoutVat = $amount - $data['vat_amount'];
+
+        if (! empty($data['usn_amount'])) {
+            $data['usn_amount'] = round((float) str_replace(',', '.', $data['usn_amount']), 2);
         } else {
-            $data['usn_amount'] = round($amount * 0.07, 2);
+            $data['usn_amount'] = round($amountWithoutVat * 0.07, 2);
         }
 
         // Создадим платёж и обновим статус счёта в транзакции
@@ -190,18 +192,20 @@ class PaymentController extends Controller
         // TAX recalculation when updating amount
         $amount = (float) ($data['amount'] ?? 0);
 
-        // VAT: принимаем ручное значение, если указано
-        if (array_key_exists('vat_amount', $data) && $data['vat_amount'] !== null && $data['vat_amount'] !== '') {
-            $data['vat_amount'] = round((float) str_replace(',', '.', str_replace(' ', '', $data['vat_amount'])), 2);
+        // НДС
+        if (! empty($data['vat_amount'])) {
+            $data['vat_amount'] = round((float) str_replace(',', '.', $data['vat_amount']), 2);
         } else {
-            $data['vat_amount'] = round($amount * 0.05, 2);
+            $data['vat_amount'] = round($amount / 105 * 5, 2);
         }
 
-        // USN: принимаем ручное значение, если указано
-        if (array_key_exists('usn_amount', $data) && $data['usn_amount'] !== null && $data['usn_amount'] !== '') {
-            $data['usn_amount'] = round((float) str_replace(',', '.', str_replace(' ', '', $data['usn_amount'])), 2);
+        // УСН
+        $amountWithoutVat = $amount - $data['vat_amount'];
+
+        if (! empty($data['usn_amount'])) {
+            $data['usn_amount'] = round((float) str_replace(',', '.', $data['usn_amount']), 2);
         } else {
-            $data['usn_amount'] = round($amount * 0.07, 2);
+            $data['usn_amount'] = round($amountWithoutVat * 0.07, 2);
         }
 
         $oldProjectId = $payment->getOriginal('project_id');

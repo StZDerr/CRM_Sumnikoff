@@ -1,0 +1,87 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class SalaryReport extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'user_id',            // сотрудник, которому табель
+        'year',
+        'month',
+        'base_salary',
+        'ordinary_days',
+        'remote_days',
+        'audits_count',
+        'individual_bonus',
+        'individual_bonus_amount',
+        'custom_bonus',
+        'total_salary',
+        'status',             // статус табеля (draft, pending, approved, rejected)
+        'comment',            // комментарий
+        'created_by',         // кто создал
+        'updated_by',         // кто обновил
+        'commented_by',       // кто оставил комментарий
+    ];
+
+    // Привязка к пользователю, которому табель
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // Кто создал табель
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // Кто обновил табель
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // Кто оставил комментарий
+    public function commenter()
+    {
+        return $this->belongsTo(User::class, 'commented_by');
+    }
+
+    // Кто одобрил табель
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * Приведения типов
+     */
+    protected $casts = [
+        'base_salary' => 'decimal:2',
+        'ordinary_days' => 'decimal:2',
+        'remote_days' => 'decimal:2',
+        'audits_count' => 'integer',
+        'individual_bonus' => 'decimal:2',
+        'custom_bonus' => 'decimal:2',
+        'total_salary' => 'decimal:2',
+    ];
+
+    // Читабельная метка статуса (локализованная)
+    public function getStatusLabelAttribute(): string
+    {
+        $key = 'attendance.statuses.'.$this->status;
+        $translation = __($key);
+
+        // Если перевод совпадает с ключом — возвращаем удобочитаемую форму
+        if ($translation === $key) {
+            return ucfirst($this->status);
+        }
+
+        return $translation;
+    }
+}

@@ -149,4 +149,9 @@ class User extends Authenticatable
 
         return $total * ($percent / 100);
     }
+
+    public function attendanceDays()
+    {
+        return $this->hasMany(\App\Models\AttendanceDay::class);
+    }
 }

@@ -27,10 +27,11 @@ return new class extends Migration
         ]);
 
         // Таблица учёта посещаемости
+        // status_id делаем nullable, чтобы можно было хранить только комментарий без статуса
         Schema::create('attendance_days', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('status_id')->constrained('attendance_statuses');
+            $table->foreignId('status_id')->nullable()->constrained('attendance_statuses')->nullOnDelete();
             $table->date('date');
             $table->string('comment')->nullable();
             $table->timestamps();

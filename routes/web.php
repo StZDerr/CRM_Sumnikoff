@@ -108,7 +108,40 @@ Route::middleware('auth')->group(function () {
     Route::get('projects/{project}/invoices', [InvoiceController::class, 'invoicesByProject'])
         ->name('projects.invoices');
 
+    Route::get('attendance/index', [AttendanceController::class, 'index'])->name('attendance.index');
+    Route::post('attendance/store', [AttendanceController::class, 'store'])->name('attendance.store');
+
+    // Список табелей на согласование
+    Route::get('/attendance/approvals', [AttendanceController::class, 'approvals'])
+        ->name('attendance.approvals')
+        ->middleware('auth'); // при необходимости можно добавить middleware для роли начальника
+
     Route::get('attendance/{user}', [AttendanceController::class, 'userShow'])->name('attendance.userShow');
+
+    // Отправка табеля на согласование
+    Route::post('/attendance/{user}/submit', [AttendanceController::class, 'submitForApproval'])
+        ->name('attendance.submit')
+        ->middleware('auth'); // при необходимости, чтобы только авторизованные пользователи могли отправлять
+
+    // Показ табеля конкретного пользователя
+    Route::get('/attendance/showUser/{report}', [AttendanceController::class, 'show'])
+        ->name('attendance.show')
+        ->middleware('auth');
+
+    // Одобрение табеля начальством
+    Route::post('/attendance/{report}/approve', [AttendanceController::class, 'approve'])
+        ->name('attendance.approve')
+        ->middleware('auth');
+
+    // Отклонение табеля начальством
+    Route::post('/attendance/{report}/reject', [AttendanceController::class, 'reject'])
+        ->name('attendance.reject')
+        ->middleware('auth');
+
+    // Обновление существующего табеля
+    Route::put('/attendance/{report}/update', [AttendanceController::class, 'update'])
+        ->name('attendance.update')
+        ->middleware('auth');
 
     // внутри middleware('auth') группы
     Route::get('search', [SearchController::class, 'index'])->name('search');

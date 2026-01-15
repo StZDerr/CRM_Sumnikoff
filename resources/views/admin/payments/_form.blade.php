@@ -346,14 +346,6 @@
             const vatInput = container.querySelector('#vat_amount');
             const usnInput = container.querySelector('#usn_amount');
 
-            function formatNumber(val) {
-                return Number(val).toLocaleString('ru-RU', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
-            }
-
-            // Manual input flags so user edits are not overwritten by auto-calculation
             let vatManual = false;
             let usnManual = false;
 
@@ -362,34 +354,54 @@
                 return parseFloat(String(v).replace(/\s+/g, '').replace(',', '.')) || 0;
             }
 
+            function round2(val) {
+                return Math.round(val * 100) / 100;
+            }
+
             function recalcTaxes() {
-                const val = parseNumericInput(amountInput?.value || 0);
-                const vat = Math.round(val * 0.05 * 100) / 100;
-                const usn = Math.round(val * 0.07 * 100) / 100;
+                const amount = parseNumericInput(amountInput?.value || 0);
+                if (!amount) {
+                    if (vatInput && !vatManual) vatInput.value = '0.00';
+                    if (usnInput && !usnManual) usnInput.value = '0.00';
+                    return;
+                }
+
+                // НДС 5% — включён в сумму
+                const vat = round2(amount / 105 * 5);
+
+                // Сумма без НДС
+                const amountWithoutVat = amount - vat;
+
+                // УСН 7% — от суммы без НДС
+                const usn = round2(amountWithoutVat * 0.07);
+
                 if (vatInput && !vatManual) vatInput.value = vat.toFixed(2);
                 if (usnInput && !usnManual) usnInput.value = usn.toFixed(2);
             }
 
+            // Флаги ручного ввода
             if (vatInput) {
-                vatInput.addEventListener('input', () => {
-                    vatManual = true;
-                });
+                vatInput.addEventListener('input', () => vatManual = true);
                 vatInput.addEventListener('blur', () => {
                     vatInput.value = parseNumericInput(vatInput.value).toFixed(2);
                 });
             }
+
             if (usnInput) {
-                usnInput.addEventListener('input', () => {
-                    usnManual = true;
-                });
+                usnInput.addEventListener('input', () => usnManual = true);
                 usnInput.addEventListener('blur', () => {
                     usnInput.value = parseNumericInput(usnInput.value).toFixed(2);
                 });
             }
 
             if (amountInput) {
-                amountInput.addEventListener('input', recalcTaxes);
-                // initial
+                amountInput.addEventListener('input', () => {
+                    vatManual = false;
+                    usnManual = false;
+                    recalcTaxes();
+                });
+
+                // initial calculation
                 recalcTaxes();
             }
         }
