@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
 class Project extends Model
 {
@@ -89,6 +90,46 @@ class Project extends Model
         return $this->hasMany(\App\Models\VacationProject::class);
     }
 
+    // Счета проекта
+    public function invoices()
+    {
+        return $this->hasMany(\App\Models\Invoice::class);
+    }
+
+    // Платежи проекта
+    public function payments()
+    {
+        return $this->hasMany(\App\Models\Payment::class);
+    }
+
+    /**
+     * Рассчитать баланс: платежи - счета
+     * > 0 = переплата, < 0 = долг, = 0 = оплачено
+     */
+    public function getCalculatedBalanceAttribute(): float
+    {
+        $invoicesTotal = $this->invoices()->sum('amount');
+        $paymentsTotal = $this->payments()->sum('amount');
+        
+        return (float) ($paymentsTotal - $invoicesTotal);
+    }
+
+    /**
+     * Сумма выставленных счетов
+     */
+    public function getInvoicesTotalAttribute(): float
+    {
+        return (float) $this->invoices()->sum('amount');
+    }
+
+    /**
+     * Сумма поступлений
+     */
+    public function getPaymentsTotalAttribute(): float
+    {
+        return (float) $this->payments()->sum('amount');
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -97,5 +138,61 @@ class Project extends Model
     public function updatedBy()
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // История маркетологов на проекте
+    public function marketerHistory()
+    {
+        return $this->hasMany(ProjectMarketerHistory::class)->orderBy('assigned_at', 'desc');
+    }
+
+    /**
+     * Текущий маркетолог (из истории)
+     */
+    public function currentMarketerFromHistory()
+    {
+        return $this->hasOne(ProjectMarketerHistory::class)
+            ->whereNull('unassigned_at')
+            ->latestOfMany('assigned_at');
+    }
+
+    /**
+     * Назначить нового маркетолога (с записью в историю)
+     */
+    public function assignMarketer(int $newMarketerId, ?string $reason = 'transfer'): void
+    {
+        // Закрываем предыдущее назначение
+        $this->marketerHistory()
+            ->whereNull('unassigned_at')
+            ->update(['unassigned_at' => now(), 'reason' => $reason]);
+
+        // Создаём новое назначение
+        ProjectMarketerHistory::create([
+            'project_id' => $this->id,
+            'user_id' => $newMarketerId,
+            'assigned_at' => now(),
+            'assigned_by' => auth()->id(),
+        ]);
+
+        // Обновляем текущего маркетолога в проекте
+        $this->update(['marketer_id' => $newMarketerId]);
+    }
+
+    /**
+     * Получить статистику дней по маркетологам за период
+     */
+    public function getMarketerDaysStats(Carbon $from, Carbon $to): array
+    {
+        return $this->marketerHistory()
+            ->with('marketer:id,name')
+            ->get()
+            ->groupBy('user_id')
+            ->map(fn ($records, $userId) => [
+                'user_id' => $userId,
+                'name' => $records->first()->marketer->name ?? '—',
+                'total_days' => $records->sum(fn ($r) => $r->daysInPeriod($from, $to)),
+            ])
+            ->values()
+            ->toArray();
     }
 }

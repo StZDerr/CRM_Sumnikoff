@@ -26,10 +26,19 @@ return new class extends Migration
             $table->integer('audits_count')->default(0);
             $table->decimal('custom_bonus', 10, 2)->default(0);
             $table->decimal('individual_bonus', 10, 2)->default(0);
+
+            // Сборы (например, на ДР и т.п.). Допускаются отрицательные значения.
+            $table->decimal('fees', 10, 2)->default(0)->comment('Сборы (например, на ДР)');
+
+            // Штрафы (опоздания, косяки и т.п.). Отрицательное значение уменьшает ЗП
+            $table->decimal('penalties', 10, 2)
+                ->default(0)
+                ->comment('Штрафы (опоздания, нарушения и т.п.)');
+
             $table->decimal('total_salary', 10, 2)->default(0);
 
             // Статус согласования
-            $table->enum('status', ['draft', 'submitted', 'approved', 'rejected'])->default('draft');
+            $table->enum('status', ['draft', 'submitted', 'approved', 'rejected', 'paid'])->default('draft');
 
             // Комментарий к табелю
             $table->text('comment')->nullable();

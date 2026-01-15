@@ -154,4 +154,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(\App\Models\AttendanceDay::class);
     }
+
+    // История назначений на проекты как маркетолог
+    public function marketerProjectHistory()
+    {
+        return $this->hasMany(\App\Models\ProjectMarketerHistory::class, 'user_id');
+    }
+
+    /**
+     * Сколько дней пользователь работал над проектами за период
+     */
+    public function getProjectDaysInPeriod(\Carbon\Carbon $from, \Carbon\Carbon $to): int
+    {
+        return $this->marketerProjectHistory()
+            ->get()
+            ->sum(fn ($record) => $record->daysInPeriod($from, $to));
+    }
 }

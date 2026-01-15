@@ -18,6 +18,8 @@ class SalaryReport extends Model
         'remote_days',
         'audits_count',
         'individual_bonus',
+        'fees',           // сборы (например, на ДР)
+        'penalties',       // штрафы (опоздания, нарушения и т.п.)
         'individual_bonus_amount',
         'custom_bonus',
         'total_salary',
@@ -58,6 +60,12 @@ class SalaryReport extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    // Детализация премии по проектам
+    public function projectBonuses()
+    {
+        return $this->hasMany(SalaryReportProjectBonus::class);
+    }
+
     /**
      * Приведения типов
      */
@@ -69,6 +77,8 @@ class SalaryReport extends Model
         'individual_bonus' => 'decimal:2',
         'custom_bonus' => 'decimal:2',
         'total_salary' => 'decimal:2',
+        'fees' => 'decimal:2',
+        'penalties' => 'decimal:2',
     ];
 
     // Читабельная метка статуса (локализованная)

@@ -65,7 +65,11 @@
                                     <div class="text-sm text-gray-500">{{ $project->marketer?->name ?? '-' }}</div>
                                     <div class="text-sm text-gray-400 mt-1">
                                         @php
-                                            $bal = $project->balance;
+                                            // Рассчитываем баланс: платежи - счета
+                                            $invoicesTotal = $project->invoices_total;
+                                            $paymentsTotal = $project->payments_total;
+                                            $bal = $paymentsTotal - $invoicesTotal;
+                                            $hasInvoices = $invoicesTotal > 0;
                                         @endphp
 
                                         {{-- Пометка закрытого проекта --}}
@@ -78,33 +82,37 @@
                                             </button>
                                         @endif
 
-                                        @if (!is_null($bal) && $bal < 0)
+                                        @if ($hasInvoices && $bal < 0)
+                                            {{-- Долг: счета > платежей --}}
                                             <button type="button"
                                                 class="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded text-sm"
                                                 data-tippy
-                                                data-tippy-content="Долг: {{ number_format(abs($bal), 2, '.', ' ') }} ₽{{ $project->balance_calculated_at ? ' (на ' . \Illuminate\Support\Carbon::make($project->balance_calculated_at)->format('Y-m-d') . ')' : '' }}">
+                                                data-tippy-content="Счета: {{ number_format($invoicesTotal, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽<br>Долг: {{ number_format(abs($bal), 0, '.', ' ') }} ₽">
                                                 Долг
                                             </button>
-                                        @elseif (!is_null($bal) && $bal > 0)
+                                        @elseif ($hasInvoices && $bal > 0)
+                                            {{-- Переплата: платежей > счетов --}}
                                             <button type="button"
                                                 class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-sm"
                                                 data-tippy
-                                                data-tippy-content="Переплата: {{ number_format($bal, 2, '.', ' ') }} ₽{{ $project->balance_calculated_at ? ' (на ' . \Illuminate\Support\Carbon::make($project->balance_calculated_at)->format('Y-m-d') . ')' : '' }}">
+                                                data-tippy-content="Счета: {{ number_format($invoicesTotal, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽<br>Переплата: {{ number_format($bal, 0, '.', ' ') }} ₽">
                                                 Переплата
                                             </button>
-                                        @elseif (!is_null($bal) && $bal > 0)
+                                        @elseif ($hasInvoices && round($bal, 2) == 0)
+                                            {{-- Оплачено: счета = платежам --}}
                                             <button type="button"
                                                 class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-sm"
                                                 data-tippy
-                                                data-tippy-content="Переплата: {{ number_format($bal, 2, '.', ' ') }} ₽{{ $project->balance_calculated_at ? ' (на ' . \Illuminate\Support\Carbon::make($project->balance_calculated_at)->format('Y-m-d') . ')' : '' }}">
-                                                Переплата
+                                                data-tippy-content="Счета: {{ number_format($invoicesTotal, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽">
+                                                Оплачено
                                             </button>
-                                        @elseif (!is_null($bal) && round($bal, 2) == 0)
+                                        @elseif (!$hasInvoices && $paymentsTotal > 0)
+                                            {{-- Нет счетов, но есть платежи --}}
                                             <button type="button"
-                                                class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-sm"
+                                                class="inline-flex items-center px-2 py-1 bg-blue-600 text-white rounded text-sm"
                                                 data-tippy
-                                                data-tippy-content="Оплачено: {{ number_format($project->received_total ?? 0, 2, '.', ' ') }} ₽{{ $project->received_calculated_at ? ' (на ' . \Illuminate\Support\Carbon::make($project->received_calculated_at)->format('Y-m-d') . ')' : '' }}">
-                                                Оплаченно
+                                                data-tippy-content="Нет счетов<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽">
+                                                Без счёта
                                             </button>
                                         @else
                                             <span class="text-sm text-gray-400">—</span>

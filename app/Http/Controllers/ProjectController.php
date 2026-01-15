@@ -54,18 +54,39 @@ class ProjectController extends Controller
         }
 
         if ($balance_status === 'debt') {
-            $query->whereNotNull('balance')->where('balance', '<', 0);
+            // Долг: сумма счетов > суммы платежей (т.е. платежи - счета < 0)
+            $query->whereRaw('(
+                COALESCE((SELECT SUM(amount) FROM payments WHERE payments.project_id = projects.id), 0) -
+                COALESCE((SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id), 0)
+            ) < 0')
+            ->whereRaw('(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id) > 0');
         } elseif ($balance_status === 'paid') {
-            // сравниваем округлённый баланс с нулём
-            $query->whereNotNull('balance')->whereRaw('ROUND(balance, 2) = 0');
+            // Оплачено: сумма счетов = сумме платежей
+            $query->whereRaw('ROUND(
+                COALESCE((SELECT SUM(amount) FROM payments WHERE payments.project_id = projects.id), 0) -
+                COALESCE((SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id), 0)
+            , 2) = 0')
+            ->whereRaw('(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id) > 0');
         } elseif ($balance_status === 'overpaid') {
-            $query->whereNotNull('balance')->where('balance', '>', 0);
+            // Переплата: сумма платежей > суммы счетов
+            $query->whereRaw('(
+                COALESCE((SELECT SUM(amount) FROM payments WHERE payments.project_id = projects.id), 0) -
+                COALESCE((SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id), 0)
+            ) > 0')
+            ->whereRaw('(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id) > 0');
         }
 
-        // Сортировка: 1) должники (balance < 0) первыми, 2) по balance (самые большие долги — самые маленькие значения, т.е. -15000 перед -500), 3) по названию
+        // Подзапросы для сортировки по рассчитанному балансу
+        $balanceSubquery = '(
+            COALESCE((SELECT SUM(amount) FROM payments WHERE payments.project_id = projects.id), 0) -
+            COALESCE((SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id), 0)
+        )';
+        $hasInvoicesSubquery = '(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id)';
+
+        // Сортировка: 1) должники первыми (у кого есть счета и баланс < 0), 2) по балансу, 3) по названию
         $projects = $query
-            ->orderByRaw('(COALESCE(balance, 0) < 0) DESC')
-            ->orderByRaw('COALESCE(balance, 0) ASC')
+            ->orderByRaw("(COALESCE({$hasInvoicesSubquery}, 0) > 0 AND {$balanceSubquery} < 0) DESC")
+            ->orderByRaw("{$balanceSubquery} ASC")
             ->orderBy('title')
             ->paginate(25)
             ->withQueryString();

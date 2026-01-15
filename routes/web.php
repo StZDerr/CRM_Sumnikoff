@@ -116,7 +116,24 @@ Route::middleware('auth')->group(function () {
         ->name('attendance.approvals')
         ->middleware('auth'); // при необходимости можно добавить middleware для роли начальника
 
+    // Список табелей на оплату
+    Route::get('/attendance/payable', [AttendanceController::class, 'payable'])
+        ->name('attendance.payable')
+        ->middleware('auth'); // при необходимости можно добавить middleware для роли бугалтера
+
+    // Список табелей архив оплаченных
+    Route::get('/attendance/paid', [AttendanceController::class, 'paid'])
+        ->name('attendance.paid')
+        ->middleware('auth'); // при необходимости можно добавить middleware для роли начальника
+
+    // Список табелей на согласование
+    Route::get('/attendance/rejected', [AttendanceController::class, 'rejected'])
+        ->name('attendance.rejected')
+        ->middleware('auth'); // при необходимости можно добавить middleware для роли начальника
+
     Route::get('attendance/{user}', [AttendanceController::class, 'userShow'])->name('attendance.userShow');
+
+    Route::get('rejected/{report}', [AttendanceController::class, 'rejectedUserShow'])->name('rejected.userShow');
 
     // Отправка табеля на согласование
     Route::post('/attendance/{user}/submit', [AttendanceController::class, 'submitForApproval'])
@@ -124,13 +141,18 @@ Route::middleware('auth')->group(function () {
         ->middleware('auth'); // при необходимости, чтобы только авторизованные пользователи могли отправлять
 
     // Показ табеля конкретного пользователя
-    Route::get('/attendance/showUser/{report}', [AttendanceController::class, 'show'])
+    Route::get('/attendance/show/{report}', [AttendanceController::class, 'show'])
         ->name('attendance.show')
         ->middleware('auth');
 
     // Одобрение табеля начальством
     Route::post('/attendance/{report}/approve', [AttendanceController::class, 'approve'])
         ->name('attendance.approve')
+        ->middleware('auth');
+
+    // Оплата табеля
+    Route::post('/attendance/{report}/paidUpdate', [AttendanceController::class, 'paidUpdate'])
+        ->name('attendance.paidUpdate')
         ->middleware('auth');
 
     // Отклонение табеля начальством
@@ -141,6 +163,11 @@ Route::middleware('auth')->group(function () {
     // Обновление существующего табеля
     Route::put('/attendance/{report}/update', [AttendanceController::class, 'update'])
         ->name('attendance.update')
+        ->middleware('auth');
+
+    // Обновление комментария табеля (краткий endpoint)
+    Route::post('/attendance/{report}/comment', [AttendanceController::class, 'updateComment'])
+        ->name('attendance.comment')
         ->middleware('auth');
 
     // внутри middleware('auth') группы

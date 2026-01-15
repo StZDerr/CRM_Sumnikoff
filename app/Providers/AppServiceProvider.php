@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use App\Models\Project;
+use App\Observers\ProjectObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,5 +24,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register admin middleware alias
         Route::aliasMiddleware('admin', \App\Http\Middleware\AdminMiddleware::class);
+
+        // Регистрация observer для отслеживания истории маркетологов
+        Project::observe(ProjectObserver::class);
     }
 }

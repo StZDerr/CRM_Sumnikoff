@@ -120,6 +120,39 @@ class AttendanceController extends Controller
         return view('admin.attendance.approvals', compact('reports'));
     }
 
+    public function payable()
+    {
+        // Получаем все табели со статусом 'payable'
+        $reports = SalaryReport::with('user')
+            ->where('status', 'approved')
+            ->orderByDesc('month')
+            ->get();
+
+        return view('admin.attendance.payable', compact('reports'));
+    }
+
+    public function paid()
+    {
+        // Получаем все табели со статусом 'paid'
+        $reports = SalaryReport::with('user')
+            ->where('status', 'paid')
+            ->orderByDesc('month')
+            ->get();
+
+        return view('admin.attendance.paid', compact('reports'));
+    }
+
+    public function rejected()
+    {
+        // Получаем все табели со статусом 'payable'
+        $reports = SalaryReport::with('user')
+            ->where('status', 'rejected')
+            ->orderByDesc('month')
+            ->get();
+
+        return view('admin.attendance.rejected', compact('reports'));
+    }
+
     public function update(Request $request, SalaryReport $report)
     {
         $request->validate([
@@ -128,25 +161,78 @@ class AttendanceController extends Controller
             'audits_count' => 'nullable|numeric|min:0',
             'individual_bonus' => 'nullable|numeric|min:0',
             'custom_bonus' => 'nullable|numeric|min:0',
-            'total_salary' => 'required|numeric|min:0', // если передаётся с формы
+            'fees' => 'nullable|numeric',
+            'penalties' => 'nullable|numeric',
+            'total_salary' => 'required|numeric|min:0',
+            'comment' => 'nullable|string|max:255',
+            'project_bonuses' => 'nullable|array',
         ]);
-
-        $report->fill([
+        $data = [
             'ordinary_days' => $request->input('ordinary_days'),
             'remote_days' => $request->input('remote_days'),
             'audits_count' => $request->input('audits_count') ?? 0,
             'individual_bonus' => $request->input('individual_bonus') ?? 0,
             'custom_bonus' => $request->input('custom_bonus') ?? 0,
+            'fees' => $request->input('fees') ?? 0,
+            'penalties' => $request->input('penalties') ?? 0,
             'total_salary' => $request->input('total_salary'),
+            'comment' => $request->input('comment') ?? $report->comment,
             'updated_by' => auth()->id(),
-        ])->save();
+        ];
+
+        // Если табель был отклонён — переводим в статус "submitted" при повторной отправке
+        $wasRejected = $report->status === 'rejected';
+        if ($wasRejected) {
+            $data['status'] = 'submitted';
+            $data['submitted_at'] = now();
+        }
+
+        $report->fill($data)->save();
+
+        // Обновляем детализацию по проектам
+        if ($request->has('project_bonuses')) {
+            $report->projectBonuses()->delete();
+
+            foreach ($request->project_bonuses as $projectId => $data) {
+                $report->projectBonuses()->create([
+                    'project_id' => $projectId,
+                    'contract_amount' => $data['contract_amount'] ?? 0,
+                    'bonus_percent' => $data['bonus_percent'] ?? 0,
+                    'max_bonus' => $data['max_bonus'] ?? 0,
+                    'days_worked' => $data['days_worked'] ?? 0,
+                    'bonus_amount' => $data['bonus_amount'] ?? 0,
+                ]);
+            }
+        }
+
+        // Перенаправляем на список отклонённых, если табель был повторно отправлен
+        if ($wasRejected) {
+            return redirect()->route('attendance.rejected')->with('success', 'Табель успешно отправлен на повторное согласование');
+        }
 
         return redirect()->back()->with('success', 'Табель успешно обновлен');
     }
 
     public function show(SalaryReport $report)
     {
+        $report->load('projectBonuses.project');
+
         return view('admin.attendance.show', compact('report'));
+    }
+
+    // Сохраняем/обновляем только комментарий табеля
+    public function updateComment(Request $request, SalaryReport $report)
+    {
+        $request->validate([
+            'comment' => 'nullable|string|max:255',
+        ]);
+
+        $report->update([
+            'comment' => $request->comment,
+            'updated_by' => auth()->id(),
+        ]);
+
+        return redirect()->back()->with('success', 'Комментарий сохранён');
     }
 
     public function approve(SalaryReport $report)
@@ -170,6 +256,32 @@ class AttendanceController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Табель отклонён');
+    }
+
+    public function paidUpdate(SalaryReport $report)
+    {
+        $report->update([
+            'status' => 'paid',
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Табель успешно оплачен');
+    }
+
+    /**
+     * Страница редактирования отклонённого табеля
+     * Загружает данные из БД без лишних расчётов
+     */
+    public function rejectedUserShow(SalaryReport $report)
+    {
+        // Загружаем связанные данные
+        $report->load(['user.specialty', 'projectBonuses.project']);
+
+        $user = $report->user;
+        $month = Carbon::parse($report->month);
+
+        return view('admin.attendance.rejectedUserShow', compact('report', 'user', 'month'));
     }
 
     public function userShow(User $user)
@@ -198,6 +310,81 @@ class AttendanceController extends Controller
         $auditsCount = 0;
         $auditPrice = 300;
         $baseSalary = $user->salary_override ?? ($user->specialty->salary ?? 0);
+        $individualBonusPercent = $user->individual_bonus_percent ?? 5;
+
+        // Получаем историю работы маркетолога над проектами за прошлый месяц
+        // Учитываем только дни, когда сотрудник реально работал (по attendance_days)
+        $projectDaysData = [];
+
+        // Создаём словарь: дата => коэффициент дня (1 для work, 0.5 для remote/short, 0 для остальных)
+        $workDayCoefficients = [];
+        foreach ($attendanceDays as $day) {
+            $dateKey = $day->date->format('Y-m-d');
+            $code = $day->status->code ?? null;
+
+            if ($code === 'work') {
+                $workDayCoefficients[$dateKey] = 1;
+            } elseif (in_array($code, ['remote', 'short'])) {
+                $workDayCoefficients[$dateKey] = 0.5;
+            }
+            // absent или null — не добавляем (коэффициент = 0)
+        }
+
+        foreach ($projects as $project) {
+            // Получаем все записи истории по этому проекту и пользователю
+            $historyRecords = \App\Models\ProjectMarketerHistory::where('project_id', $project->id)
+                ->where('user_id', $user->id)
+                ->where(function ($q) use ($monthStart, $monthEnd) {
+                    // Записи, которые пересекаются с нашим месяцем
+                    $q->where('assigned_at', '<=', $monthEnd)
+                        ->where(function ($q2) use ($monthStart) {
+                            $q2->whereNull('unassigned_at')
+                                ->orWhere('unassigned_at', '>=', $monthStart);
+                        });
+                })
+                ->get();
+
+            // Считаем суммарное количество рабочих дней с учётом статусов посещаемости
+            $totalDays = 0;
+            foreach ($historyRecords as $record) {
+                // Период назначения на проект (ограниченный текущим месяцем)
+                $recordStart = $record->assigned_at->max($monthStart);
+                $recordEnd = ($record->unassigned_at ?? $monthEnd)->min($monthEnd);
+
+                // Проходим по каждому дню периода и проверяем, работал ли сотрудник
+                $currentDate = $recordStart->copy();
+                while ($currentDate->lte($recordEnd)) {
+                    $dateKey = $currentDate->format('Y-m-d');
+                    // Добавляем коэффициент дня (если есть в словаре)
+                    $totalDays += $workDayCoefficients[$dateKey] ?? 0;
+                    $currentDate->addDay();
+                }
+            }
+
+            $projectDaysData[$project->id] = $totalDays;
+        }
+
+        // Рассчитываем бонусы по проектам для передачи во view и сохранения
+        $projectBonusesData = [];
+        $avgWorkDays = 22;
+        $calculatedTotalBonus = 0;
+
+        foreach ($projects as $project) {
+            $contractAmount = $project->contract_amount ?? 0;
+            $maxBonus = $contractAmount * ($individualBonusPercent / 100);
+            $bonusPerDay = $avgWorkDays > 0 ? $maxBonus / $avgWorkDays : 0;
+            $daysWorked = $projectDaysData[$project->id] ?? 0;
+            $bonusAmount = $bonusPerDay * $daysWorked;
+            $calculatedTotalBonus += $bonusAmount;
+
+            $projectBonusesData[$project->id] = [
+                'contract_amount' => $contractAmount,
+                'bonus_percent' => $individualBonusPercent,
+                'max_bonus' => $maxBonus,
+                'days_worked' => $daysWorked,
+                'bonus_amount' => $bonusAmount,
+            ];
+        }
 
         // Проверяем, есть ли уже табель за месяц
         $existingReport = SalaryReport::where('user_id', $user->id)
@@ -212,10 +399,15 @@ class AttendanceController extends Controller
             'absentDays',
             'totalContractAmount',
             'projectsCount',
+            'projects',
+            'projectDaysData',
+            'projectBonusesData',
+            'calculatedTotalBonus',
+            'individualBonusPercent',
             'auditsCount',
             'auditPrice',
             'baseSalary',
-            'existingReport' // <-- передаем во view
+            'existingReport'
         ));
     }
 
@@ -256,9 +448,12 @@ class AttendanceController extends Controller
             'audits_count' => 'nullable|integer|min:0',
             'individual_bonus' => 'nullable|numeric|min:0',
             'custom_bonus' => 'nullable|numeric|min:0',
+            'fees' => 'nullable|numeric',
+            'penalties' => 'nullable|numeric',
             'total_salary' => 'required|numeric|min:0',
             'status' => 'nullable|in:draft,submitted,approved,rejected',
             'comment' => 'nullable|string|max:255',
+            'project_bonuses' => 'nullable|array',
         ]);
 
         // Сохраняем переданные значения без дополнительного пересчёта
@@ -274,6 +469,8 @@ class AttendanceController extends Controller
                 'audits_count' => $request->audits_count ?? 0,
                 'individual_bonus' => $request->individual_bonus ?? 0,
                 'custom_bonus' => $request->custom_bonus ?? 0,
+                'fees' => $request->fees ?? 0,
+                'penalties' => $request->penalties ?? 0,
                 'total_salary' => $request->total_salary,
                 'status' => $request->status ?? 'submitted',
                 'comment' => $request->comment,
@@ -281,6 +478,24 @@ class AttendanceController extends Controller
                 'updated_by' => auth()->id(),
             ]
         );
+
+        // Сохраняем детализацию по проектам
+        if ($request->has('project_bonuses')) {
+            // Удаляем старые записи
+            $salaryReport->projectBonuses()->delete();
+
+            // Создаём новые
+            foreach ($request->project_bonuses as $projectId => $data) {
+                $salaryReport->projectBonuses()->create([
+                    'project_id' => $projectId,
+                    'contract_amount' => $data['contract_amount'] ?? 0,
+                    'bonus_percent' => $data['bonus_percent'] ?? 0,
+                    'max_bonus' => $data['max_bonus'] ?? 0,
+                    'days_worked' => $data['days_worked'] ?? 0,
+                    'bonus_amount' => $data['bonus_amount'] ?? 0,
+                ]);
+            }
+        }
 
         // Перенаправляем на страницу просмотра созданного/обновлённого табеля
         return redirect()->route('attendance.show', $salaryReport->id)->with('success', 'Табель сохранён!');

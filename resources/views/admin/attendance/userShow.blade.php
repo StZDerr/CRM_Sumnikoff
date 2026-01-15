@@ -55,7 +55,7 @@
             </div>
 
             <!-- Индивидуальная премия -->
-            <div class="flex justify-between items-center border-b pb-3">
+            <div class="border-b pb-3">
                 @php
                     function declension($number, $one, $two, $five)
                     {
@@ -72,12 +72,96 @@
                         }
                         return $five;
                     }
+                    $bonusPercent = $user->individual_bonus_percent ?? 5;
                 @endphp
-                <div>Индивидуальная премия {{ $user->individual_bonus_percent }}% от {{ $projectsCount }}
-                    {{ declension($projectsCount, 'проекта', 'проекта', 'проектов') }}:</div>
-                <div>сумма: <span id="individual-bonus"
-                        class="font-medium">{{ number_format($existingReport->individual_bonus ?? ($user->individual_bonus_amount ?? 0), 0, '', ' ') }}
-                        ₽</span></div>
+
+                <div class="flex justify-between items-center mb-2">
+                    <div class="font-medium">Индивидуальная премия {{ $bonusPercent }}% от {{ $projectsCount }}
+                        {{ declension($projectsCount, 'проекта', 'проектов', 'проектов') }}:</div>
+                </div>
+
+                @php
+                    $avgWorkDays = 22; // среднее количество рабочих дней в месяце
+                    $calculatedTotalBonus = 0;
+                @endphp
+
+                @if ($projects->count() > 0)
+                    <div class="ml-4 mt-4 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                        {{-- Header --}}
+                        <div
+                            class="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-semibold text-gray-500 bg-gray-50 border-b">
+                            <div class="col-span-5">Проект</div>
+                            <div class="col-span-2 text-center">Макс. премия</div>
+                            <div class="col-span-2 text-center">Дней</div>
+                            <div class="col-span-3 text-right">Премия</div>
+                        </div>
+
+                        {{-- Rows --}}
+                        @foreach ($projects as $project)
+                            @php
+                                $contractAmount = $project->contract_amount ?? 0;
+                                $maxProjectBonus = $contractAmount * ($bonusPercent / 100);
+                                $bonusPerDay = $maxProjectBonus / $avgWorkDays;
+                                $daysWorked = $projectDaysData[$project->id] ?? 0;
+                                $projectBonus = $bonusPerDay * $daysWorked;
+                                $calculatedTotalBonus += $projectBonus;
+                            @endphp
+
+                            <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center text-sm border-b last:border-b-0
+                   hover:bg-gray-50 transition"
+                                data-project-id="{{ $project->id }}" data-max-bonus="{{ $maxProjectBonus }}"
+                                data-bonus-per-day="{{ $bonusPerDay }}">
+
+                                {{-- Project --}}
+                                <div class="col-span-5 truncate font-medium text-gray-800" title="{{ $project->title }}">
+                                    {{ $project->title }}
+                                </div>
+
+                                {{-- Max bonus --}}
+                                <div class="col-span-2 text-center text-gray-500">
+                                    {{ number_format($maxProjectBonus, 0, '', ' ') }} ₽
+                                </div>
+
+                                {{-- Days (editable) --}}
+                                <div class="col-span-2 text-center">
+                                    <input type="number" step="0.5" min="0" max="31"
+                                        class="project-days-input w-16 px-2 py-1 text-center border rounded text-xs font-semibold
+                                                  {{ $daysWorked > 0 ? 'bg-green-50 text-green-700 border-green-300' : 'bg-red-50 text-red-600 border-red-300' }}"
+                                        data-project-id="{{ $project->id }}"
+                                        value="{{ $daysWorked == intval($daysWorked) ? intval($daysWorked) : number_format($daysWorked, 1, '.', '') }}">
+                                </div>
+
+                                {{-- Bonus (editable) --}}
+                                <div class="col-span-3 text-right">
+                                    <input type="number" step="1" min="0"
+                                        class="project-bonus-input w-24 px-2 py-1 text-right border rounded font-semibold text-gray-800"
+                                        data-project-id="{{ $project->id }}" value="{{ round($projectBonus) }}">
+                                    <span class="text-gray-500 ml-1">₽</span>
+                                </div>
+                            </div>
+                        @endforeach
+
+                        {{-- Footer / Total --}}
+                        <div class="flex justify-between items-center px-4 py-3 bg-gray-50 text-sm font-semibold">
+                            <span class="text-gray-600">Итого премия</span>
+                            <span class="text-green-700">
+                                <span
+                                    id="total-project-bonus">{{ number_format($calculatedTotalBonus, 0, '', ' ') }}</span>
+                                ₽
+                            </span>
+                        </div>
+                    </div>
+                @else
+                    <div class="ml-4 text-sm text-gray-400">Нет проектов</div>
+                @endif
+
+                <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-300">
+                    <div class="font-medium">Итого премия ({{ $avgWorkDays }} раб. дней/мес.):</div>
+                    <div class="font-semibold text-indigo-600">
+                        <span id="individual-bonus">{{ number_format($calculatedTotalBonus, 0, '', ' ') }}</span>
+                        ₽
+                    </div>
+                </div>
             </div>
 
             <!-- Произвольная премия -->
@@ -85,6 +169,28 @@
                 <div>Произвольная премия:</div>
                 <div>
                     <input type="number" name="custom_bonus" value="0" class="w-28 border rounded p-1 text-center" />
+                    ₽
+                </div>
+            </div>
+
+            <!-- Сборы -->
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>Сборы (вводите число без знака — оно автоматически будет вычитаться):</div>
+                <div>
+                    <input type="number" name="fees" step="0.01"
+                        value="{{ isset($existingReport->fees) ? abs($existingReport->fees) : 0 }}"
+                        class="w-28 border rounded p-1 text-center" />
+                    ₽
+                </div>
+            </div>
+
+            <!-- Штрафы -->
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>Штрафы (вводите число без знака — оно автоматически будет вычитаться):</div>
+                <div>
+                    <input id="penalties-input" type="number" name="penalties" step="0.01"
+                        value="{{ isset($existingReport->penalties) ? abs($existingReport->penalties) : 0 }}"
+                        class="w-28 border rounded p-1 text-center" />
                     ₽
                 </div>
             </div>
@@ -112,15 +218,39 @@
                         <input type="hidden" name="month" value="{{ $lastMonth->format('Y-m-01') }}">
                         <input type="hidden" name="base_salary" id="base-salary-input"
                             value="{{ $user->salary_override ?? ($user->specialty->salary ?? 0) }}">
-                        <input type="hidden" name="ordinary_days" id="ordinary-days-input" value="{{ $ordinaryDays }}">
+                        <input type="hidden" name="ordinary_days" id="ordinary-days-input"
+                            value="{{ $ordinaryDays }}">
                         <input type="hidden" name="remote_days" id="remote-days-input" value="{{ $remoteDays }}">
                         <input type="hidden" name="audits_count" id="audits-count-hidden" value="0">
                         <input type="hidden" name="individual_bonus" id="individual-bonus-input"
-                            value="{{ $existingReport->individual_bonus ?? ($user->individual_bonus_amount ?? 0) }}">
+                            value="{{ $calculatedTotalBonus ?? 0 }}">
+                        <input type="hidden" name="fees" id="fees-hidden" value="{{ $existingReport->fees ?? 0 }}">
+                        <input type="hidden" name="penalties" id="penalties-hidden"
+                            value="{{ $existingReport->penalties ?? 0 }}">
                         <input type="hidden" name="custom_bonus" id="custom-bonus-hidden" value="0">
                         <input type="hidden" name="status" value="submitted">
                         <input type="hidden" name="total_salary" id="total-salary-input"
                             value="{{ $user->salary_override ?? ($user->specialty->salary ?? 0) }}">
+
+                        <!-- Детализация премии по проектам -->
+                        @foreach ($projects as $project)
+                            <input type="hidden" name="project_bonuses[{{ $project->id }}][contract_amount]"
+                                class="pb-contract" data-project-id="{{ $project->id }}"
+                                value="{{ $projectBonusesData[$project->id]['contract_amount'] ?? 0 }}">
+                            <input type="hidden" name="project_bonuses[{{ $project->id }}][bonus_percent]"
+                                class="pb-percent" data-project-id="{{ $project->id }}"
+                                value="{{ $projectBonusesData[$project->id]['bonus_percent'] ?? 0 }}">
+                            <input type="hidden" name="project_bonuses[{{ $project->id }}][max_bonus]" class="pb-max"
+                                data-project-id="{{ $project->id }}"
+                                value="{{ $projectBonusesData[$project->id]['max_bonus'] ?? 0 }}">
+                            <input type="hidden" name="project_bonuses[{{ $project->id }}][days_worked]"
+                                class="pb-days" data-project-id="{{ $project->id }}"
+                                value="{{ $projectBonusesData[$project->id]['days_worked'] ?? 0 }}">
+                            <input type="hidden" name="project_bonuses[{{ $project->id }}][bonus_amount]"
+                                class="pb-bonus" data-project-id="{{ $project->id }}"
+                                value="{{ $projectBonusesData[$project->id]['bonus_amount'] ?? 0 }}">
+                        @endforeach
+
                         <button type="submit" id="submit-for-approval-button"
                             class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
                             Отправить на согласование
@@ -128,26 +258,6 @@
                     </form>
                 @else
                     <p class="text-gray-500 italic mr-4">Табель за этот месяц уже создан.</p>
-
-                    <!-- Кнопка обновления -->
-                    <form id="update-report-form" method="POST"
-                        action="{{ route('attendance.update', $existingReport->id) }}">
-                        @csrf
-                        @method('PUT')
-                        <!-- Скрытые поля, синхронизируются JS перед отправкой -->
-                        <input type="hidden" name="ordinary_days" id="update-ordinary-days" value="{{ $ordinaryDays }}">
-                        <input type="hidden" name="remote_days" id="update-remote-days" value="{{ $remoteDays }}">
-                        <input type="hidden" name="audits_count" id="update-audits-count" value="0">
-                        <input type="hidden" name="custom_bonus" id="update-custom-bonus" value="0">
-                        <input type="hidden" name="individual_bonus" id="update-individual-bonus"
-                            value="{{ $existingReport->individual_bonus ?? ($user->individual_bonus_amount ?? 0) }}">
-                        <input type="hidden" name="total_salary" id="update-total-salary"
-                            value="{{ $user->salary_override ?? ($user->specialty->salary ?? 0) }}">
-                        <button type="submit" id="update-report-button"
-                            class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
-                            Обновить
-                        </button>
-                    </form>
                 @endif
             </div>
 
@@ -162,12 +272,17 @@
             const remoteDaysInput = document.querySelector('input[name="remote_days"]');
             const auditsInput = document.querySelector('input[name="audits_count"]');
             const customBonusInput = document.querySelector('input[name="custom_bonus"]'); // новое поле
+            const feesInput = document.querySelector('input[name="fees"]');
+            const penaltiesInput = document.getElementById('penalties-input');
+
 
             const auditsPrice = 300;
             const individualPercent = {{ $user->individual_bonus_percent }};
             const projectsCount = {{ $projectsCount }};
             const baseSalary = {{ $user->salary_override ?? ($user->specialty->salary ?? 0) }};
             const totalContractAmount = {{ $totalContractAmount }};
+            // Рассчитанная премия с учётом дней работы (может изменяться админом)
+            let calculatedIndividualBonus = {{ $calculatedTotalBonus ?? 0 }};
 
             const individualBonusSpan = document.getElementById('individual-bonus');
             const totalSalarySpan = document.getElementById('total-salary');
@@ -178,16 +293,23 @@
                 const remoteDays = parseFloat(remoteDaysInput.value) || 0;
                 const audits = parseInt(auditsInput.value) || 0;
                 const customBonus = parseFloat(customBonusInput.value) || 0; // новое значение
+                const feesRaw = parseFloat(feesInput.value) || 0;
+                const fees = feesRaw > 0 ? -Math.abs(feesRaw) :
+                    feesRaw; // положительные вводы автоматически считаем удержанием
+                const penaltiesRaw = parseFloat(penaltiesInput?.value) || 0;
+                const penalties = penaltiesRaw > 0 ? -Math.abs(penaltiesRaw) : penaltiesRaw;
 
                 const salaryPerDay = baseSalary / 22; // стандартный месяц = 22 дня
                 const ordinaryPay = ordinaryDays * salaryPerDay;
                 const remotePay = remoteDays * (salaryPerDay * 0.5);
                 const auditsPay = audits * auditsPrice;
-                const individualBonusPay = totalContractAmount * (individualPercent / 100);
+                // Используем рассчитанную премию с учётом дней
+                const individualBonusPay = calculatedIndividualBonus;
 
-                const totalSalary = ordinaryPay + remotePay + auditsPay + individualBonusPay + customBonus;
+                const totalSalary = ordinaryPay + remotePay + auditsPay + individualBonusPay + customBonus + fees +
+                    penalties;
 
-                individualBonusSpan.textContent = individualBonusPay.toLocaleString('ru-RU');
+                individualBonusSpan.textContent = Math.round(individualBonusPay).toLocaleString('ru-RU');
                 totalSalarySpan.textContent = Math.round(totalSalary).toLocaleString('ru-RU');
                 auditsPaySpan.textContent = auditsPay.toLocaleString('ru-RU');
             }
@@ -199,9 +321,21 @@
             });
 
             // Авто-пересчет при изменении полей
-            [ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput].forEach(input => {
-                input.addEventListener('input', calculateSalary);
-            });
+            ([ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput].filter(
+                Boolean)).forEach(
+                input => {
+                    input.addEventListener('input', calculateSalary);
+                });
+
+            // Также синхронизируем скрытые поля при изменении
+            ([ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput].filter(
+                Boolean)).forEach(
+                input => {
+                    input.addEventListener('input', () => {
+                        calculateSalary();
+                        syncHiddenFields();
+                    });
+                });
 
             // Рассчитываем сразу при загрузке страницы
             calculateSalary();
@@ -212,10 +346,16 @@
                 const remote = parseFloat(remoteDaysInput.value) || 0;
                 const audits = parseInt(auditsInput.value) || 0;
                 const customBonus = parseFloat(customBonusInput.value) || 0;
+                const feesRaw = parseFloat(feesInput.value) || 0;
+                const fees = feesRaw > 0 ? -Math.abs(feesRaw) : feesRaw;
+                const penaltiesRaw = parseFloat(penaltiesInput?.value) || 0;
+                const penalties = penaltiesRaw > 0 ? -Math.abs(penaltiesRaw) : penaltiesRaw;
 
                 // Основная форма отправки
                 const auditsHidden = document.getElementById('audits-count-hidden');
                 const customHidden = document.getElementById('custom-bonus-hidden');
+                const feesHidden = document.getElementById('fees-hidden');
+                const penaltiesHidden = document.getElementById('penalties-hidden');
                 const indivHidden = document.getElementById('individual-bonus-input');
                 const totalHidden = document.getElementById('total-salary-input');
                 const ordinaryHidden = document.getElementById('ordinary-days-input');
@@ -223,35 +363,119 @@
 
                 if (auditsHidden) auditsHidden.value = audits;
                 if (customHidden) customHidden.value = customBonus;
-                if (indivHidden) indivHidden.value = (totalContractAmount * (individualPercent / 100));
-                if (totalHidden) totalHidden.value = Math.round((ordinaryPay = (ordinary * (baseSalary / 22))) + (
-                    remote * (baseSalary / 22) * 0.5) + (audits * auditsPrice) + (totalContractAmount * (
-                    individualPercent / 100)) + customBonus);
+                if (feesHidden) feesHidden.value = fees;
+                if (penaltiesHidden) penaltiesHidden.value = penalties;
+                if (indivHidden) indivHidden.value = calculatedIndividualBonus;
+                if (totalHidden) totalHidden.value = Math.round((ordinary * (baseSalary / 22)) + (
+                        remote * (baseSalary / 22) * 0.5) + (audits * auditsPrice) + calculatedIndividualBonus +
+                    customBonus + fees + penalties);
                 if (ordinaryHidden) ordinaryHidden.value = ordinary;
                 if (remoteHidden) remoteHidden.value = remote;
 
-                // Форма обновления
-                const updateAuditsHidden = document.getElementById('update-audits-count');
-                const updateCustomHidden = document.getElementById('update-custom-bonus');
-                const updateTotalHidden = document.getElementById('update-total-salary');
-                const updateOrdHidden = document.getElementById('update-ordinary-days');
-                const updateRemHidden = document.getElementById('update-remote-days');
 
-                if (updateAuditsHidden) updateAuditsHidden.value = audits;
-                if (updateCustomHidden) updateCustomHidden.value = customBonus;
-                if (updateTotalHidden) updateTotalHidden.value = Math.round((ordinary * (baseSalary / 22)) + (
-                    remote * (baseSalary / 22) * 0.5) + (audits * auditsPrice) + (totalContractAmount * (
-                    individualPercent / 100)) + customBonus);
-                if (updateOrdHidden) updateOrdHidden.value = ordinary;
-                if (updateRemHidden) updateRemHidden.value = remote;
 
-                // Синхронизируем индивидуальную премию для формы обновления
-                const updateIndivHidden = document.getElementById('update-individual-bonus');
-                if (updateIndivHidden) updateIndivHidden.value = (totalContractAmount * (individualPercent / 100));
+
+
+                // Синхронизируем скрытые поля проектов
+                syncProjectBonusFields();
             }
 
+            // Функция для пересчёта итога по проектам
+            function recalculateTotalProjectBonus() {
+                let total = 0;
+                document.querySelectorAll('.project-bonus-input').forEach(input => {
+                    total += parseFloat(input.value) || 0;
+                });
+
+                // Обновляем отображение итога
+                const totalSpan = document.getElementById('total-project-bonus');
+                if (totalSpan) {
+                    totalSpan.textContent = Math.round(total).toLocaleString('ru-RU');
+                }
+
+                // Обновляем calculatedIndividualBonus для расчёта общей ЗП
+                calculatedIndividualBonus = total;
+
+                // Обновляем скрытые поля индивидуальной премии
+                const indivHidden = document.getElementById('individual-bonus-input');
+                if (indivHidden) indivHidden.value = total;
+
+                // Обновляем отображение в блоке "Итого премия"
+                const individualBonusSpan = document.getElementById('individual-bonus');
+                if (individualBonusSpan) {
+                    individualBonusSpan.textContent = Math.round(total).toLocaleString('ru-RU');
+                }
+
+                return total;
+            }
+
+            // Синхронизируем скрытые поля проектов с видимыми input
+            function syncProjectBonusFields() {
+                document.querySelectorAll('.project-days-input').forEach(input => {
+                    const projectId = input.dataset.projectId;
+                    const days = parseFloat(input.value) || 0;
+
+                    // Обновляем скрытые поля days_worked во всех формах
+                    document.querySelectorAll(`.pb-days[data-project-id="${projectId}"]`).forEach(
+                        hidden => {
+                            hidden.value = days;
+                        });
+                });
+
+                document.querySelectorAll('.project-bonus-input').forEach(input => {
+                    const projectId = input.dataset.projectId;
+                    const bonus = parseFloat(input.value) || 0;
+
+                    // Обновляем скрытые поля bonus_amount во всех формах
+                    document.querySelectorAll(`.pb-bonus[data-project-id="${projectId}"]`).forEach(
+                        hidden => {
+                            hidden.value = bonus;
+                        });
+                });
+            }
+
+            // Обработчик изменения дней работы над проектом
+            document.querySelectorAll('.project-days-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    const row = this.closest('[data-project-id]');
+                    const bonusPerDay = parseFloat(row.dataset.bonusPerDay) || 0;
+                    const days = parseFloat(this.value) || 0;
+                    const newBonus = Math.round(bonusPerDay * days);
+
+                    // Обновляем поле премии
+                    const bonusInput = row.querySelector('.project-bonus-input');
+                    if (bonusInput) {
+                        bonusInput.value = newBonus;
+                    }
+
+                    // Обновляем стиль поля дней
+                    if (days > 0) {
+                        this.classList.remove('bg-red-50', 'text-red-600', 'border-red-300');
+                        this.classList.add('bg-green-50', 'text-green-700', 'border-green-300');
+                    } else {
+                        this.classList.remove('bg-green-50', 'text-green-700', 'border-green-300');
+                        this.classList.add('bg-red-50', 'text-red-600', 'border-red-300');
+                    }
+
+                    // Пересчитываем итого
+                    recalculateTotalProjectBonus();
+                    calculateSalary();
+                    syncHiddenFields();
+                });
+            });
+
+            // Обработчик прямого изменения премии
+            document.querySelectorAll('.project-bonus-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    recalculateTotalProjectBonus();
+                    calculateSalary();
+                    syncHiddenFields();
+                });
+            });
+
             // Вызываем синхронизацию при изменении полей и после расчёта
-            [ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput].forEach(input => {
+            ([ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput].filter(
+                Boolean)).forEach(input => {
                 input.addEventListener('input', () => {
                     calculateSalary();
                     syncHiddenFields();
@@ -264,17 +488,20 @@
             if (submitForm) {
                 submitForm.addEventListener('submit', (e) => {
                     calculateSalary();
+                    // Гарантированно копируем видимое поле штрафов в скрытое перед отправкой
+                    const visiblePen = document.getElementById('penalties-input');
+                    if (visiblePen) {
+                        const pr = parseFloat(visiblePen.value) || 0;
+                        const p = pr > 0 ? -Math.abs(pr) : pr;
+                        const penHidden = document.getElementById('penalties-hidden');
+                        if (penHidden) penHidden.value = p;
+
+                    }
                     syncHiddenFields();
                 });
             }
 
-            const updateForm = document.getElementById('update-report-form');
-            if (updateForm) {
-                updateForm.addEventListener('submit', (e) => {
-                    calculateSalary();
-                    syncHiddenFields();
-                });
-            }
+
         });
     </script>
 @endsection

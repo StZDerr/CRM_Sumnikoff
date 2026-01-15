@@ -12,10 +12,10 @@
     <!-- Links -->
     <nav class="flex-1 px-2 py-4 overflow-y-auto space-y-1">
 
-
         @if (auth()->user()->isAdmin())
+            {{-- Основные --}}
             <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                Панель управления
+                Dashboard
             </x-nav-link>
 
             <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
@@ -26,37 +26,46 @@
                 Специальности
             </x-nav-link>
 
-            <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.index')">
-                Табель посещаемости
-            </x-nav-link>
-
-            <x-nav-link :href="route('attendance.approvals')" :active="request()->routeIs('attendance.approvals')">
-                Табели на согласовании
-            </x-nav-link>
-
-            <x-nav-link :href="route('calendar.all-projects')" :active="request()->routeIs('calendar.all-projects')">
-                Календарь
-            </x-nav-link>
-
-            <x-nav-link :href="route('operation.index')" :active="request()->routeIs('operation.index')">
-                Операции
-            </x-nav-link>
-
+            {{-- Табель и календарь --}}
             @php
-                $active = request()->routeIs(
-                    'invoices.*',
-                    'payments.*',
-                    'expenses.*',
-                    'expense-categories.*',
+                $activeAttendance = request()->routeIs('attendance.*') || request()->routeIs('calendar.*');
+            @endphp
+            <x-buttons-dropdawn :active="$activeAttendance" title="Табель и календарь">
+                <x-dropdown-link :href="route('attendance.index')" :active="request()->routeIs('attendance.index')">
+                    Табель посещаемости
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('attendance.approvals')" :active="request()->routeIs('attendance.approvals')">
+                    Табели на согласовании
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('attendance.payable')" :active="request()->routeIs('attendance.payable')">
+                    Табели на оплату
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('attendance.paid')" :active="request()->routeIs('attendance.paid')">
+                    Табели оплаченные
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('attendance.rejected')" :active="request()->routeIs('attendance.rejected')">
+                    Табели отклоненные
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('calendar.all-projects')" :active="request()->routeIs('calendar.all-projects')">
+                    Календарь
+                </x-dropdown-link>
+            </x-buttons-dropdawn>
+
+            {{-- Финансы --}}
+            @php
+                $activeFinance = request()->routeIs(
                     'bank-accounts.*',
+                    'invoice-statuses.*',
+                    'payment-categories.*',
+                    'expense-categories.*',
                 );
             @endphp
-
-            <x-buttons-dropdawn :active="$active" title="Настройки Финансов">
-                {{-- <x-dropdown-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
-                    Счета
-                </x-dropdown-link> --}}
-
+            <x-buttons-dropdawn :active="$activeFinance" title="Финансы">
                 <x-dropdown-link :href="route('bank-accounts.index')" :active="request()->routeIs('bank-accounts.*')">
                     Банковские счета
                 </x-dropdown-link>
@@ -65,31 +74,20 @@
                     Статусы счетов
                 </x-dropdown-link>
 
-                {{-- <x-dropdown-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
-                    Поступления
-                </x-dropdown-link> --}}
-
                 <x-dropdown-link :href="route('payment-categories.index')" :active="request()->routeIs('payment-categories.*')">
                     Статьи поступлений
                 </x-dropdown-link>
 
-                {{-- <x-dropdown-link :href="route('expenses.index')" :active="request()->routeIs('expenses.*')">
-                    Расходы
-                </x-dropdown-link> --}}
-
                 <x-dropdown-link :href="route('expense-categories.index')" :active="request()->routeIs('expense-categories.*')">
                     Статьи расходов
                 </x-dropdown-link>
-
-
             </x-buttons-dropdawn>
 
-
+            {{-- Проекты --}}
             @php
-                $active = request()->routeIs('projects.*', 'stages.*', 'payment-methods.*', 'importances.*');
+                $activeProjects = request()->routeIs('projects.*', 'stages.*', 'payment-methods.*', 'importances.*');
             @endphp
-
-            <x-buttons-dropdawn :active="$active" title="Проекты">
+            <x-buttons-dropdawn :active="$activeProjects" title="Проекты">
                 <x-dropdown-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
                     Проекты
                 </x-dropdown-link>
@@ -107,16 +105,16 @@
                 </x-dropdown-link>
             </x-buttons-dropdawn>
 
+            {{-- Организации --}}
             @php
-                $active = request()->routeIs(
+                $activeOrgs = request()->routeIs(
                     'organizations.*',
+                    'contacts.*',
                     'campaign-sources.*',
                     'campaign-statuses.*',
-                    'contacts.*',
                 );
             @endphp
-
-            <x-buttons-dropdawn :active="$active" title="Организации">
+            <x-buttons-dropdawn :active="$activeOrgs" title="Организации">
                 <x-dropdown-link :href="route('organizations.index')" :active="request()->routeIs('organizations.*')">
                     Организации
                 </x-dropdown-link>
@@ -133,6 +131,11 @@
                     Статусы организаций
                 </x-dropdown-link>
             </x-buttons-dropdawn>
+
+            {{-- Прочее --}}
+            <x-nav-link :href="route('operation.index')" :active="request()->routeIs('operation.index')">
+                Операции
+            </x-nav-link>
         @endif
     </nav>
 
