@@ -15,16 +15,19 @@ class ExpenseCategory extends Model
         'title',
         'slug',
         'sort_order',
+        'is_office',
     ];
 
     /** Приведения типов */
     protected $casts = [
         'sort_order' => 'integer',
+        'is_office' => 'boolean',
     ];
 
     /** Значения по умолчанию */
     protected $attributes = [
         'sort_order' => 0,
+        'is_office' => false,
     ];
 
     /** При создании устанавливаем sort_order = max + 1 (если не указан) */
@@ -42,6 +45,24 @@ class ExpenseCategory extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order', 'asc');
+    }
+
+    /** Scope: только офисные категории */
+    public function scopeOffice($query)
+    {
+        return $query->where('is_office', true);
+    }
+
+    /** Scope: только не офисные категории */
+    public function scopeNotOffice($query)
+    {
+        return $query->where('is_office', false);
+    }
+
+    /** Проверка: офисная категория? */
+    public function isOffice(): bool
+    {
+        return (bool) $this->is_office;
     }
 
     /**

@@ -14,13 +14,25 @@ use Illuminate\Support\Facades\Storage;
 
 class ExpenseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $items = Expense::with(['category', 'organization', 'paymentMethod', 'project'])
-            ->orderByDesc('expense_date')
-            ->paginate(25);
+        $query = Expense::with(['category', 'organization', 'paymentMethod', 'project'])
+            ->orderByDesc('expense_date');
 
-        return view('admin.expenses.index', compact('items'));
+        // Фильтр: только офисные расходы
+        if ($request->has('office') && $request->office == '1') {
+            $officeCategoryIds = ExpenseCategory::office()->pluck('id');
+            $query->whereIn('expense_category_id', $officeCategoryIds);
+        }
+
+        $items = $query->paginate(25)->withQueryString();
+
+        // Данные для модального окна офисного расхода
+        $officeCategories = ExpenseCategory::office()->ordered()->get();
+        $paymentMethods = PaymentMethod::orderBy('title')->get();
+        $bankAccounts = BankAccount::orderBy('title')->get();
+
+        return view('admin.expenses.index', compact('items', 'officeCategories', 'paymentMethods', 'bankAccounts'));
     }
 
     public function create(Request $request)
@@ -33,8 +45,9 @@ class ExpenseController extends Controller
 
         $expense = new Expense;
 
-        // If request is AJAX, return only the form wrapper for offcanvas
+        // If request is AJAX, return only the form wrapper for offcanvas (без офисных категорий)
         if ($request->ajax()) {
+            $categories = ExpenseCategory::notOffice()->ordered()->get();
             return view('admin.expenses._form_offcanvas', compact('expense', 'categories', 'organizations', 'paymentMethods', 'bankAccounts', 'projects'));
         }
 
@@ -86,6 +99,66 @@ class ExpenseController extends Controller
         }
 
         return redirect()->route('expenses.index')->with('success', 'Расход сохранён.');
+    }
+
+    /**
+     * Создание офисного расхода (быстрая форма).
+     * Категория ограничена только офисными, project_id = null.
+     */
+    public function storeOffice(Request $request)
+    {
+        $data = $request->validate([
+            'expense_date' => 'required|date',
+            'amount' => 'required|numeric|min:0.01',
+            'expense_category_id' => 'required|exists:expense_categories,id',
+            'payment_method_id' => 'nullable|exists:payment_methods,id',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'description' => 'nullable|string',
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx|max:5120',
+        ]);
+
+        // Проверяем, что категория действительно офисная
+        $category = ExpenseCategory::find($data['expense_category_id']);
+        if (!$category || !$category->is_office) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Категория должна быть офисной.',
+            ], 422);
+        }
+
+        // Создаём расход без привязки к проекту
+        $data['project_id'] = null;
+        $data['organization_id'] = null;
+        $data['status'] = 'paid'; // По умолчанию оплачено
+
+        $expense = Expense::create($data);
+
+        // Сохраняем файлы
+        foreach ($request->file('documents', []) as $file) {
+            $path = $file->store('documents', 'public');
+            $expense->documents()->create([
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+            ]);
+        }
+
+        // Пересчёт баланса банка
+        if ($expense->bank_account_id) {
+            $this->recalcBankBalance($expense->bank_account_id);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'expense_id' => $expense->id,
+                'message' => 'Офисный расход сохранён.',
+            ], 201);
+        }
+
+        return redirect()->route('expenses.index')->with('success', 'Офисный расход сохранён.');
     }
 
     public function show(Expense $expense)

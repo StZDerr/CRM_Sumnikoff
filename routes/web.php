@@ -95,6 +95,9 @@ Route::middleware('auth')->group(function () {
 
     Route::post('expense-categories/reorder', [ExpenseCategoryController::class, 'reorder'])->name('expense-categories.reorder');
 
+    // Быстрое создание офисного расхода
+    Route::post('expenses/store-office', [ExpenseController::class, 'storeOffice'])->name('expenses.store-office');
+
     // Получить проекты организации в JSON
     Route::get('organizations/{organization}/projects', [OrganizationController::class, 'projectsList'])
         ->name('organizations.projects');

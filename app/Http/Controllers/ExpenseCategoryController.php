@@ -26,6 +26,7 @@ class ExpenseCategoryController extends Controller
             'title' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:expense_categories,slug',
             'sort_order' => 'nullable|integer|min:1',
+            'is_office' => 'nullable|boolean',
         ]);
 
         if (empty($data['slug'])) {
@@ -54,6 +55,7 @@ class ExpenseCategoryController extends Controller
             'title' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:expense_categories,slug,'.$expenseCategory->id,
             'sort_order' => 'nullable|integer|min:1',
+            'is_office' => 'nullable|boolean',
         ]);
 
         if (empty($data['slug'])) {

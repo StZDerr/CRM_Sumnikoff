@@ -4,8 +4,39 @@
     <div class="max-w-7xl mx-auto">
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl font-semibold">Расходы</h1>
-            <a href="{{ route('expenses.create') }}"
-                class="inline-flex px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Добавить</a>
+            <div class="flex items-center gap-3">
+                {{-- Кнопка "Новый расход (Офис)" --}}
+                @if (isset($officeCategories) && $officeCategories->count())
+                    <button type="button" id="openOfficeExpenseBtn"
+                        class="inline-flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        Новый расход (Офис)
+                    </button>
+                @endif
+                <a href="{{ route('expenses.create') }}"
+                    class="inline-flex px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Добавить</a>
+            </div>
+        </div>
+
+        {{-- Фильтры --}}
+        <div class="mb-4 flex items-center gap-4">
+            <a href="{{ route('expenses.index') }}"
+                class="px-3 py-1.5 rounded text-sm {{ !request('office') ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                Все расходы
+            </a>
+            <a href="{{ route('expenses.index', ['office' => 1]) }}"
+                class="px-3 py-1.5 rounded text-sm {{ request('office') == '1' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                <span class="inline-flex items-center gap-1">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Только офисные
+                </span>
+            </a>
         </div>
 
         <div class="bg-white shadow rounded">
@@ -30,7 +61,21 @@
                                 </a>
                             </td>
                             <td class="p-3">{{ number_format($item->amount, 2, '.', ' ') }} ₽</td>
-                            <td class="p-3">{{ $item->category?->title ?? '-' }}</td>
+                            <td class="p-3">
+                                <div class="flex items-center gap-1">
+                                    {{ $item->category?->title ?? '-' }}
+                                    @if ($item->category?->is_office)
+                                        <span
+                                            class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700"
+                                            title="Офисный расход">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                            </svg>
+                                        </span>
+                                    @endif
+                                </div>
+                            </td>
                             <td class="p-3">{{ $item->organization?->title ?? '-' }}</td>
                             <td class="p-3">{{ $item->paymentMethod?->title ?? ($item->bankAccount?->title ?? '-') }}
                             </td>
@@ -67,4 +112,9 @@
             <div class="p-4">{{ $items->links() }}</div>
         </div>
     </div>
+
+    {{-- Модальное окно для офисного расхода --}}
+    @if (isset($officeCategories) && $officeCategories->count())
+        @include('admin.expenses._office_modal')
+    @endif
 @endsection

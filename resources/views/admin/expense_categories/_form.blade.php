@@ -20,4 +20,12 @@
             min="1" class="w-full border rounded p-2" />
         <x-input-error :messages="$errors->get('sort_order')" class="mt-2" />
     </div>
+
+    <div class="flex items-center gap-2">
+        <input type="hidden" name="is_office" value="0">
+        <input type="checkbox" name="is_office" id="is_office" value="1"
+            {{ old('is_office', $expenseCategory->is_office ?? false) ? 'checked' : '' }}
+            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+        <label for="is_office" class="text-sm text-gray-700">Отнести к расходам офиса</label>
+    </div>
 </div>

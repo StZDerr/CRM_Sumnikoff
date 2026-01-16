@@ -28,6 +28,19 @@
                     Расход
                 </a>
 
+                {{-- Расход (Офис) --}}
+                @if (isset($officeCategories) && $officeCategories->count())
+                    <button type="button" id="openOfficeExpenseBtn"
+                        class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white
+                        hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        Расход (Офис)
+                    </button>
+                @endif
+
                 {{-- Выставить счёт --}}
                 <a href="{{ route('invoices.create') }}"
                     class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white
@@ -72,6 +85,24 @@
             </div>
         </div>
 
+
+        {{-- Фильтры --}}
+        <div class="mb-4 flex items-center gap-4">
+            <a href="{{ route('operation.index') }}"
+                class="px-3 py-1.5 rounded text-sm {{ !request('office') ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                Все операции
+            </a>
+            <a href="{{ route('operation.index', ['office' => 1]) }}"
+                class="px-3 py-1.5 rounded text-sm {{ request('office') == '1' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                <span class="inline-flex items-center gap-1">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Только офисные
+                </span>
+            </a>
+        </div>
 
         <div class="bg-white shadow rounded p-4">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -142,6 +173,17 @@
                                             class="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold shadow-sm">
                                             Расход
                                         </span>
+                                        @if ($m->category?->is_office)
+                                            <span
+                                                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700 ml-1"
+                                                title="Офисный расход">
+                                                <svg class="h-3 w-3" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                </svg>
+                                            </span>
+                                        @endif
                                     @endif
                                 </td>
                                 <td class="px-4 py-2 text-gray-700 font-medium">{{ $m->project?->title ?? '-' }}</td>
@@ -420,4 +462,9 @@
             if (backdrop) backdrop.addEventListener('click', close);
         })();
     </script>
+
+    {{-- Модальное окно для офисного расхода --}}
+    @if (isset($officeCategories) && $officeCategories->count())
+        @include('admin.expenses._office_modal')
+    @endif
 @endsection
