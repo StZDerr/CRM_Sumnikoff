@@ -12,6 +12,24 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, SoftDeletes;
 
+    public const ROLE_ADMIN = 'admin';
+
+    public const ROLE_PROJECT_MANAGER = 'project_manager';
+
+    public const ROLE_MARKETER = 'marketer';
+
+    public const ROLE_FRONTEND = 'frontend';
+
+    public const ROLE_DESIGNER = 'designer';
+
+    public const ROLES = [
+        self::ROLE_ADMIN,
+        self::ROLE_PROJECT_MANAGER,
+        self::ROLE_MARKETER,
+        self::ROLE_FRONTEND,
+        self::ROLE_DESIGNER,
+    ];
+
     protected $fillable = [
         'name',
         'login',
@@ -42,15 +60,53 @@ class User extends Authenticatable
         ];
     }
 
-    // Роли
-    public function isAdmin(): bool
+    // ===== Роли =====
+
+    public function hasRole(string $role): bool
     {
-        return $this->role === 'admin';
+        return $this->role === $role;
     }
 
-    public function isManager(): bool
+    public function isAdmin(): bool
     {
-        return $this->role === 'manager';
+        return $this->hasRole(self::ROLE_ADMIN);
+    }
+
+    public function isProjectManager(): bool
+    {
+        return $this->hasRole(self::ROLE_PROJECT_MANAGER);
+    }
+
+    public function isMarketer(): bool
+    {
+        return $this->hasRole(self::ROLE_MARKETER);
+    }
+
+    public function isFrontend(): bool
+    {
+        return $this->hasRole(self::ROLE_FRONTEND);
+    }
+
+    public function isDesigner(): bool
+    {
+        return $this->hasRole(self::ROLE_DESIGNER);
+    }
+
+    // ===== Scope’ы =====
+
+    public function scopeAdmins($query)
+    {
+        return $query->where('role', self::ROLE_ADMIN);
+    }
+
+    public function scopeProjectManagers($query)
+    {
+        return $query->where('role', self::ROLE_PROJECT_MANAGER);
+    }
+
+    public function scopeMarketers($query)
+    {
+        return $query->where('role', self::ROLE_MARKETER);
     }
 
     // Relations
@@ -78,6 +134,12 @@ class User extends Authenticatable
     protected static function booted()
     {
         static::saving(function ($user) {
+            if (! in_array($user->role, self::ROLES, true)) {
+                throw ValidationException::withMessages([
+                    'role' => 'Недопустимая роль пользователя.',
+                ]);
+            }
+
             if ($user->is_department_head) {
                 if (is_null($user->salary_override) || $user->salary_override <= 0) {
                     throw ValidationException::withMessages([

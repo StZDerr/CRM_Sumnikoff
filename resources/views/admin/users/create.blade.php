@@ -58,11 +58,39 @@
 
                         <div>
                             <label class="block text-sm font-medium mb-1">Роль</label>
+
                             <select name="role"
                                 class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="manager" {{ old('role') === 'manager' ? 'selected' : '' }}>Менеджер</option>
-                                <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Администратор
-                                </option>
+                                <option value="">— Выберите роль —</option>
+
+                                @foreach (\App\Models\User::ROLES as $role)
+                                    <option value="{{ $role }}" @selected(old('role', $user->role ?? '') === $role)>
+                                        @switch($role)
+                                            @case('admin')
+                                                Администратор
+                                            @break
+
+                                            @case('project_manager')
+                                                Проект-менеджер
+                                            @break
+
+                                            @case('marketer')
+                                                Маркетолог
+                                            @break
+
+                                            @case('frontend')
+                                                Верстальщик
+                                            @break
+
+                                            @case('designer')
+                                                Дизайнер
+                                            @break
+
+                                            @default
+                                                {{ ucfirst($role) }}
+                                        @endswitch
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                     </div>

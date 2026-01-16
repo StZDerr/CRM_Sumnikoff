@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
@@ -36,7 +37,8 @@ class UserRequest extends FormRequest
             'password' => $this->isMethod('post')
                 ? ['required', 'confirmed', Rules\Password::defaults()]
                 : ['nullable', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'in:admin,manager'],
+            // 🔑 Роль (ENUM)
+            'role' => ['required', Rule::in(User::ROLES)],
             'specialty_id' => ['nullable', 'exists:specialties,id'],
             'is_department_head' => ['nullable', 'boolean'],
             'salary_override' => [

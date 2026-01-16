@@ -38,7 +38,19 @@
                                         работе</span>
                                 @endif
                             </td>
-                            <td class="p-3">{{ $user->role === 'admin' ? 'Администратор' : 'Менеджер' }}</td>
+                            @php
+                                $roles = [
+                                    'admin' => 'Администратор',
+                                    'project_manager' => 'Проект-менеджер',
+                                    'marketer' => 'Маркетолог',
+                                    'frontend' => 'Верстальщик',
+                                    'designer' => 'Дизайнер',
+                                ];
+                            @endphp
+
+                            <td class="p-3">
+                                {{ $roles[$user->role] ?? $user->role }}
+                            </td>
                             <td class="p-3 flex gap-2">
                                 <a href="{{ route('users.edit', $user) }}"
                                     class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition">
