@@ -12,11 +12,13 @@ class Organization extends Model
 
     /** Поля массового заполнения */
     protected $fillable = [
+        'entity_type',
         'name_full',
         'name_short',
         'phone',
         'email',
         'inn',
+        'kpp',
         'ogrnip',
         'legal_address',
         'actual_address',

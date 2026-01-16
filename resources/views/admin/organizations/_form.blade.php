@@ -6,15 +6,16 @@
     <div class="mb-6">
         <span class="block text-sm font-medium text-gray-700 mb-2">Тип организации</span>
         <div class="flex rounded-md shadow-sm overflow-hidden w-full border border-gray-300">
-            <button type="button" data-type="legal"
-                class="entity-toggle flex-1 px-4 py-2 text-center bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors duration-200 focus:outline-none">Юридическое
-                лицо</button>
             <button type="button" data-type="individual"
-                class="entity-toggle flex-1 px-4 py-2 text-center bg-white text-gray-700 font-medium hover:bg-gray-100 transition-colors duration-200 focus:outline-none">Физическое
+                class="entity-toggle flex-1 px-4 py-2 text-center bg-white text-gray-700 font-medium hover:bg-gray-100 transition-colors duration-200 focus:outline-none">Физ
                 лицо</button>
+            <button type="button" data-type="ip"
+                class="entity-toggle flex-1 px-4 py-2 text-center bg-white text-gray-700 font-medium hover:bg-gray-100 transition-colors duration-200 focus:outline-none">ИП</button>
+            <button type="button" data-type="ooo"
+                class="entity-toggle flex-1 px-4 py-2 text-center bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors duration-200 focus:outline-none">ООО</button>
         </div>
         <input type="hidden" id="entity_type" name="entity_type"
-            value="{{ old('entity_type', $organization->entity_type ?? 'legal') }}">
+            value="{{ old('entity_type', $organization->entity_type ?? 'ooo') }}">
         <x-input-error :messages="$errors->get('entity_type')" class="mt-2" />
     </div>
 
@@ -22,17 +23,18 @@
 
         {{-- Основные поля --}}
         <div class="col-span-2 p-4 bg-white shadow rounded transition-all duration-300">
-            <x-input-label for="name_full" :value="'Полное название'" />
-            <x-text-input id="name_full" name="name_full" type="text" class="mt-1 block w-full" :value="old('name_full', $organization->name_full ?? '')"
-                required />
-            <x-input-error :messages="$errors->get('name_full')" class="mt-2" />
-        </div>
 
-        <div class="p-4 bg-white shadow rounded transition-all duration-300">
             <x-input-label for="name_short" :value="'Сокращённое название'" />
             <x-text-input id="name_short" name="name_short" type="text" class="mt-1 block w-full"
                 :value="old('name_short', $organization->name_short ?? '')" />
             <x-input-error :messages="$errors->get('name_short')" class="mt-2" />
+        </div>
+
+        <div class="p-4 bg-white shadow rounded transition-all duration-300">
+            <x-input-label for="name_full" :value="'Полное название'" />
+            <x-text-input id="name_full" name="name_full" type="text" class="mt-1 block w-full" :value="old('name_full', $organization->name_full ?? '')"
+                required />
+            <x-input-error :messages="$errors->get('name_full')" class="mt-2" />
         </div>
 
         <div class="p-4 bg-white shadow rounded transition-all duration-300">
@@ -47,20 +49,28 @@
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        {{-- Поля для Юр. лица --}}
-        <div class="p-4 bg-white shadow rounded transition-all duration-300 legal-only">
+        {{-- Поля для ИП и ООО: ИНН --}}
+        <div class="p-4 bg-white shadow rounded transition-all duration-300 inn-field">
             <x-input-label for="inn" :value="'ИНН'" />
             <x-text-input id="inn" name="inn" type="text" class="mt-1 block w-full" :value="old('inn', $organization->inn ?? '')" />
             <x-input-error :messages="$errors->get('inn')" class="mt-2" />
         </div>
 
-        <div class="p-4 bg-white shadow rounded transition-all duration-300 legal-only">
+        {{-- Поле для ИП: ОГРНИП --}}
+        <div class="p-4 bg-white shadow rounded transition-all duration-300 ogrnip-field">
             <x-input-label for="ogrnip" :value="'ОГРНИП'" />
             <x-text-input id="ogrnip" name="ogrnip" type="text" class="mt-1 block w-full" :value="old('ogrnip', $organization->ogrnip ?? '')" />
             <x-input-error :messages="$errors->get('ogrnip')" class="mt-2" />
         </div>
 
-        <div class="col-span-2 p-4 bg-white shadow rounded transition-all duration-300 legal-only">
+        {{-- Поле для ООО: КПП --}}
+        <div class="p-4 bg-white shadow rounded transition-all duration-300 kpp-field">
+            <x-input-label for="kpp" :value="'КПП'" />
+            <x-text-input id="kpp" name="kpp" type="text" class="mt-1 block w-full" :value="old('kpp', $organization->kpp ?? '')" />
+            <x-input-error :messages="$errors->get('kpp')" class="mt-2" />
+        </div>
+
+        <div class="col-span-2 p-4 bg-white shadow rounded transition-all duration-300 legal-address-field">
             <x-input-label for="legal_address" :value="'Юридический адрес'" />
             <textarea id="legal_address" name="legal_address" rows="2" class="mt-1 block w-full rounded border px-3 py-2">{{ old('legal_address', $organization->legal_address ?? '') }}</textarea>
             <x-input-error :messages="$errors->get('legal_address')" class="mt-2" />
@@ -96,7 +106,8 @@
 
         <div class="p-4 bg-white shadow rounded transition-all duration-300">
             <x-input-label for="bic" :value="'БИК'" />
-            <x-text-input id="bic" name="bic" type="text" class="mt-1 block w-full" :value="old('bic', $organization->bic ?? '')" />
+            <x-text-input id="bic" name="bic" type="text" class="mt-1 block w-full"
+                :value="old('bic', $organization->bic ?? '')" />
             <x-input-error :messages="$errors->get('bic')" class="mt-2" />
         </div>
 
@@ -122,7 +133,8 @@
         <div class="p-4 bg-white shadow rounded transition-all duration-300">
             <div class="flex items-center justify-between">
                 <x-input-label for="campaign_source_id" :value="'Источник'" />
-                <button type="button" id="addSourceBtn" class="text-sm text-indigo-600 hover:underline">Добавить источник</button>
+                <button type="button" id="addSourceBtn" class="text-sm text-indigo-600 hover:underline">Добавить
+                    источник</button>
             </div>
 
             <select id="campaign_source_id" name="campaign_source_id"
@@ -141,15 +153,18 @@
                     <div id="addSourceErrors" class="text-sm text-red-600 mb-3"></div>
                     <div class="mb-3">
                         <label class="block text-sm text-gray-700">Название</label>
-                        <input id="newSourceName" type="text" class="mt-1 block w-full rounded border px-3 py-2" />
+                        <input id="newSourceName" type="text"
+                            class="mt-1 block w-full rounded border px-3 py-2" />
                     </div>
                     <div class="mb-3">
                         <label class="block text-sm text-gray-700">Позиция (опционально)</label>
-                        <input id="newSourceSort" type="number" min="1" class="mt-1 block w-full rounded border px-3 py-2" />
+                        <input id="newSourceSort" type="number" min="1"
+                            class="mt-1 block w-full rounded border px-3 py-2" />
                     </div>
                     <div class="flex justify-end gap-2 mt-4">
                         <button type="button" id="cancelAddSource" class="px-3 py-2 border rounded">Отмена</button>
-                        <button type="button" id="saveAddSource" class="px-3 py-2 bg-indigo-600 text-white rounded">Сохранить</button>
+                        <button type="button" id="saveAddSource"
+                            class="px-3 py-2 bg-indigo-600 text-white rounded">Сохранить</button>
                     </div>
                 </div>
             </div>
@@ -167,16 +182,22 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const hiddenInput = document.getElementById('entity_type');
-        const legalOnlyEls = document.querySelectorAll('.legal-only');
+        const innField = document.querySelectorAll('.inn-field');
+        const ogrnipField = document.querySelectorAll('.ogrnip-field');
+        const kppField = document.querySelectorAll('.kpp-field');
+        const legalAddressField = document.querySelectorAll('.legal-address-field');
         const toggles = document.querySelectorAll('.entity-toggle');
 
         function setType(type) {
             hiddenInput.value = type;
 
-            // Показываем/скрываем поля для юр. лица
-            legalOnlyEls.forEach(el => {
-                el.style.display = (type === 'legal' ? '' : 'none');
-            });
+            // Физ лицо: скрыть ИНН, КПП, ОГРНИП, юр. адрес
+            // ИП: показать ИНН, ОГРНИП; скрыть КПП
+            // ООО: показать ИНН, КПП; скрыть ОГРНИП
+            innField.forEach(el => el.style.display = (type === 'ip' || type === 'ooo') ? '' : 'none');
+            ogrnipField.forEach(el => el.style.display = (type === 'ip') ? '' : 'none');
+            kppField.forEach(el => el.style.display = (type === 'ooo') ? '' : 'none');
+            legalAddressField.forEach(el => el.style.display = (type === 'ip' || type === 'ooo') ? '' : 'none');
 
             // Перекрашиваем кнопки
             toggles.forEach(btn => {
@@ -196,7 +217,7 @@
         setType(hiddenInput.value);
     });
     // Inline add source modal behaviour
-    (function(){
+    (function() {
         const addBtn = document.getElementById('addSourceBtn');
         const modal = document.getElementById('addSourceModal');
         const cancelBtn = document.getElementById('cancelAddSource');
@@ -212,6 +233,7 @@
             modal.classList.remove('hidden');
             nameInput.focus();
         }
+
         function close() {
             modal.classList.add('hidden');
             nameInput.value = '';
@@ -233,7 +255,8 @@
 
             // Отправляем AJAX запрос на создание источника
             try {
-                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute(
+                    'content');
                 const res = await fetch("{{ route('campaign-sources.store') }}", {
                     method: 'POST',
                     headers: {
@@ -241,7 +264,10 @@
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': token
                     },
-                    body: JSON.stringify({ name, sort_order: sort })
+                    body: JSON.stringify({
+                        name,
+                        sort_order: sort
+                    })
                 });
 
                 if (res.status === 422) {

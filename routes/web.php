@@ -99,6 +99,10 @@ Route::middleware('auth')->group(function () {
     Route::get('organizations/{organization}/projects', [OrganizationController::class, 'projectsList'])
         ->name('organizations.projects');
 
+    // AJAX: Создание организации из модального окна
+    Route::post('organizations/store-ajax', [OrganizationController::class, 'storeAjax'])
+        ->name('organizations.store.ajax');
+
     Route::post('invoice-statuses/reorder', [InvoiceStatusController::class, 'reorder'])->name('invoice-statuses.reorder');
 
     Route::get('operation', [OperationController::class, 'index'])

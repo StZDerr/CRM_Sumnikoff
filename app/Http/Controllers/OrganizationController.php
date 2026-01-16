@@ -69,11 +69,13 @@ class OrganizationController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'entity_type' => 'nullable|in:individual,ip,ooo',
             'name_full' => 'required|string|max:500',
             'name_short' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
             'inn' => 'nullable|string|max:64|unique:organizations,inn',
+            'kpp' => 'nullable|string|max:20',
             'ogrnip' => 'nullable|string|max:64|unique:organizations,ogrnip',
             'legal_address' => 'nullable|string',
             'actual_address' => 'nullable|string',
@@ -91,6 +93,42 @@ class OrganizationController extends Controller
         Organization::create($data);
 
         return redirect()->route('organizations.index')->with('success', 'Организация создана.');
+    }
+
+    /**
+     * AJAX: Создание организации (для модального окна)
+     */
+    public function storeAjax(Request $request)
+    {
+        $data = $request->validate([
+            'entity_type' => 'nullable|in:individual,ip,ooo',
+            'name_full' => 'required|string|max:500',
+            'name_short' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'inn' => 'nullable|string|max:64|unique:organizations,inn',
+            'kpp' => 'nullable|string|max:20',
+            'ogrnip' => 'nullable|string|max:64|unique:organizations,ogrnip',
+            'legal_address' => 'nullable|string',
+            'actual_address' => 'nullable|string',
+            'account_number' => 'nullable|string|max:64',
+            'bank_name' => 'nullable|string|max:255',
+            'corr_account' => 'nullable|string|max:64',
+            'bic' => 'nullable|string|max:16',
+            'notes' => 'nullable|string',
+        ]);
+
+        $data['created_by'] = auth()->id();
+
+        $organization = Organization::create($data);
+
+        return response()->json([
+            'success' => true,
+            'organization' => [
+                'id' => $organization->id,
+                'name' => $organization->name_short ?: $organization->name_full,
+            ],
+        ]);
     }
 
     /**
@@ -121,11 +159,13 @@ class OrganizationController extends Controller
     public function update(Request $request, Organization $organization)
     {
         $data = $request->validate([
+            'entity_type' => 'nullable|in:individual,ip,ooo',
             'name_full' => 'required|string|max:500',
             'name_short' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
-            'inn' => ['required', 'string', 'max:64', Rule::unique('organizations', 'inn')->ignore($organization->id)],
+            'inn' => ['nullable', 'string', 'max:64', Rule::unique('organizations', 'inn')->ignore($organization->id)],
+            'kpp' => 'nullable|string|max:20',
             'ogrnip' => ['nullable', 'string', 'max:64', Rule::unique('organizations', 'ogrnip')->ignore($organization->id)],
             'legal_address' => 'nullable|string',
             'actual_address' => 'nullable|string',

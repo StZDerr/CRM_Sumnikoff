@@ -45,9 +45,9 @@ class ContactController extends Controller
     {
         $data = $request->validate([
             'organization_id' => 'required|exists:organizations,id',
-            'first_name' => 'required|string|max:100',
-            'middle_name' => 'required|string|max:100',
-            'last_name' => 'nullable|string|max:100',
+            'first_name' => 'nullable|string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            'last_name' => 'required|string|max:100',
             'position' => 'nullable|string|max:255',
             'phone' => 'required|string|max:50',
             'email' => 'nullable|email|max:255',
@@ -94,9 +94,9 @@ class ContactController extends Controller
     {
         $data = $request->validate([
             'organization_id' => 'required|exists:organizations,id',
-            'first_name' => 'required|string|max:100',
-            'middle_name' => 'required|string|max:100',
-            'last_name' => 'nullable|string|max:100',
+            'first_name' => 'nullable|string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            'last_name' => 'required|string|max:100',
             'position' => 'nullable|string|max:255',
             'phone' => 'required|string|max:50',
             'email' => 'nullable|email|max:255',

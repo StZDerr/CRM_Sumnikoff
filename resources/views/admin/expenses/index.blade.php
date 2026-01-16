@@ -25,11 +25,15 @@
                 <tbody class="divide-y">
                     @forelse($items as $item)
                         <tr class="hover:bg-gray-50">
-                            <td class="p-3">{{ $item->expense_date?->format('Y-m-d H:i') }}</td>
+                            <td class="p-3">
+                                <a href="{{ route('expenses.show', $item) }}">{{ $item->expense_date?->format('d/m/Y H:i') }}
+                                </a>
+                            </td>
                             <td class="p-3">{{ number_format($item->amount, 2, '.', ' ') }} ₽</td>
                             <td class="p-3">{{ $item->category?->title ?? '-' }}</td>
                             <td class="p-3">{{ $item->organization?->title ?? '-' }}</td>
-                            <td class="p-3">{{ $item->paymentMethod?->title ?? ($item->bankAccount?->title ?? '-') }}</td>
+                            <td class="p-3">{{ $item->paymentMethod?->title ?? ($item->bankAccount?->title ?? '-') }}
+                            </td>
                             <td class="p-3">{{ $item->project?->title ?? '-' }}</td>
                             <td class="p-3">
                                 @if ($item->status === 'paid')
