@@ -6,6 +6,14 @@
             <h1 class="text-2xl font-semibold">Расход #{{ $expense->id }}</h1>
             <div class="flex items-center gap-3">
                 <a href="{{ route('expenses.edit', $expense) }}" class="text-indigo-600 hover:underline">Редактировать</a>
+
+                <form action="{{ route('expenses.destroy', $expense) }}" method="POST" class="inline"
+                    onsubmit="return confirm('Удалить расход?');">
+                    @csrf
+                    @method('DELETE')
+                    <button class="text-red-600 hover:text-red-800">Удалить</button>
+                </form>
+
                 <a href="{{ route('expenses.index') }}" class="text-sm text-gray-500">Назад</a>
             </div>
         </div>
@@ -34,7 +42,8 @@
 
                 <div>
                     <dt class="text-xs text-gray-500">Метод / Счёт</dt>
-                    <dd class="text-sm">{{ $expense->paymentMethod?->title ?? ($expense->bankAccount?->display_name ?? '-') }}
+                    <dd class="text-sm">
+                        {{ $expense->paymentMethod?->title ?? ($expense->bankAccount?->display_name ?? '-') }}
                     </dd>
                 </div>
 
