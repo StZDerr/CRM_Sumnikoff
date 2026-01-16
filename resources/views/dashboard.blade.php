@@ -103,6 +103,23 @@
                 </div>
             </div>
 
+            {{-- ===== BARTER AND OWN PROJECTS (count) ===== --}}
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                <div class="bg-white rounded-xl shadow p-4">
+                    <div class="text-xs text-gray-500">Бартерные проекты</div>
+                    <div class="text-2xl font-bold mt-1 text-yellow-600">
+                        {{ $barterCount ?? 0 }}
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow p-4">
+                    <div class="text-xs text-gray-500">Свои проекты</div>
+                    <div class="text-2xl font-bold mt-1 text-indigo-600">
+                        {{ $ownCount ?? 0 }}
+                    </div>
+                </div>
+            </div>
+
             {{-- ===== TAXES SUMMARY (VAT + USN) ===== --}}
             <div class="bg-white rounded-xl shadow p-4 mt-4">
                 <div class="text-sm text-gray-500 mb-2">Налоги за выбранный месяц</div>

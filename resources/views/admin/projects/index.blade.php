@@ -82,6 +82,26 @@
                                             </button>
                                         @endif
 
+                                        {{-- Пометка бартерного проекта --}}
+                                        @if (isset($project->payment_type) && $project->payment_type === 'barter')
+                                            <button type="button"
+                                                class="inline-flex items-center px-2 py-1 bg-yellow-500 text-white rounded text-sm mr-2"
+                                                data-tippy
+                                                data-tippy-content="Бартерный проект — счета не выставляются автоматически">
+                                                Бартер
+                                            </button>
+                                        @endif
+
+                                        {{-- Пометка своих проектов --}}
+                                        @if (isset($project->payment_type) && $project->payment_type === 'own')
+                                            <button type="button"
+                                                class="inline-flex items-center px-2 py-1 bg-indigo-600 text-white rounded text-sm mr-2"
+                                                data-tippy
+                                                data-tippy-content="Свой проект — счета не выставляются автоматически">
+                                                Свой проект
+                                            </button>
+                                        @endif
+
                                         @if ($hasInvoices && $bal < 0)
                                             {{-- Долг: счета > платежей --}}
                                             <button type="button"

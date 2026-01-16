@@ -2,14 +2,20 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 class Project extends Model
 {
     use HasFactory, SoftDeletes;
+
+    public const PAYMENT_TYPE_PAID = 'paid';
+
+    public const PAYMENT_TYPE_BARTER = 'barter';
+
+    public const PAYMENT_TYPE_OWN = 'own';
 
     protected $fillable = [
         'title',
@@ -20,6 +26,7 @@ class Project extends Model
         'contract_amount',
         'contract_date',
         'payment_method_id',
+        'payment_type',
         'payment_due_day',
         'debt',
         'comment',
@@ -110,7 +117,7 @@ class Project extends Model
     {
         $invoicesTotal = $this->invoices()->sum('amount');
         $paymentsTotal = $this->payments()->sum('amount');
-        
+
         return (float) ($paymentsTotal - $invoicesTotal);
     }
 
@@ -179,6 +186,40 @@ class Project extends Model
     }
 
     /**
+     * Helpers for payment type
+     */
+    public function isBarter(): bool
+    {
+        return $this->payment_type === self::PAYMENT_TYPE_BARTER;
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->payment_type === self::PAYMENT_TYPE_PAID;
+    }
+
+    public function isOwn(): bool
+    {
+        return $this->payment_type === self::PAYMENT_TYPE_OWN;
+    }
+
+    /** Scopes */
+    public function scopeBarter($query)
+    {
+        return $query->where('payment_type', self::PAYMENT_TYPE_BARTER);
+    }
+
+    public function scopePaid($query)
+    {
+        return $query->where('payment_type', self::PAYMENT_TYPE_PAID);
+    }
+
+    public function scopeOwn($query)
+    {
+        return $query->where('payment_type', self::PAYMENT_TYPE_OWN);
+    }
+
+    /**
      * Получить статистику дней по маркетологам за период
      */
     public function getMarketerDaysStats(Carbon $from, Carbon $to): array
@@ -195,4 +236,5 @@ class Project extends Model
             ->values()
             ->toArray();
     }
+
 }

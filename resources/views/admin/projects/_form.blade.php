@@ -79,6 +79,16 @@
     </div>
 
     <div>
+        <x-input-label for="payment_type" :value="'Тип расчёта'" />
+        <select id="payment_type" name="payment_type" class="mt-1 block w-full rounded border px-3 py-2">
+            <option value="paid" @selected((string) old('payment_type', isset($project) ? $project->payment_type : 'paid') === 'paid')>Платят</option>
+            <option value="barter" @selected((string) old('payment_type', isset($project) ? $project->payment_type : 'paid') === 'barter')>Бартер</option>
+            <option value="own" @selected((string) old('payment_type', isset($project) ? $project->payment_type : 'paid') === 'own')>Свои проекты</option>
+        </select>
+        <x-input-error :messages="$errors->get('payment_type')" class="mt-2" />
+    </div>
+
+    <div>
         <x-input-label for="contract_amount" :value="'Сумма договора'" />
         <x-text-input id="contract_amount" name="contract_amount" type="number" step="0.01"
             class="mt-1 block w-full" :value="old('contract_amount', isset($project) ? $project->contract_amount : '')" />

@@ -33,12 +33,20 @@ class DashboardController extends Controller
 
             $end = Carbon::now()->endOfMonth();
 
-            // Income per month (YYYY-MM)
-            $incRows = Payment::selectRaw("DATE_FORMAT(COALESCE(payment_date, payments.created_at), '%Y-%m') as ym, SUM(amount) as total")
+            // Income per month (YYYY-MM) — исключаем платежи по бартерным и "своим" проектам
+            $incRows = Payment::leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+                ->selectRaw("DATE_FORMAT(COALESCE(payment_date, payments.created_at), '%Y-%m') as ym, SUM(payments.amount) as total")
+                ->where(function ($q) {
+                    $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                })
                 ->groupBy('ym')->orderBy('ym')->get()->pluck('total', 'ym')->toArray();
 
-            // Expense per month
-            $expRows = Expense::selectRaw("DATE_FORMAT(COALESCE(expense_date, expenses.created_at), '%Y-%m') as ym, SUM(amount) as total")
+            // Expense per month — исключаем расходы, привязанные к бартерным и "своим" проектам
+            $expRows = Expense::leftJoin('projects', 'projects.id', '=', 'expenses.project_id')
+                ->selectRaw("DATE_FORMAT(COALESCE(expense_date, expenses.created_at), '%Y-%m') as ym, SUM(expenses.amount) as total")
+                ->where(function ($q) {
+                    $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                })
                 ->groupBy('ym')->orderBy('ym')->get()->pluck('total', 'ym')->toArray();
 
             // Build per-month arrays
@@ -70,13 +78,21 @@ class DashboardController extends Controller
             $start = $monthParam ? Carbon::createFromFormat('Y-m', $monthParam)->startOfMonth() : Carbon::now()->startOfMonth();
             $end = $start->copy()->endOfMonth();
 
-            // Income per day
-            $incRows = Payment::selectRaw('DATE(COALESCE(payment_date, payments.created_at)) as day, SUM(amount) as total')
+            // Income per day — исключаем платежи по бартерным и "своим" проектам
+            $incRows = Payment::leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+                ->selectRaw('DATE(COALESCE(payment_date, payments.created_at)) as day, SUM(payments.amount) as total')
+                ->where(function ($q) {
+                    $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                })
                 ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
                 ->groupBy('day')->orderBy('day')->get()->pluck('total', 'day')->toArray();
 
-            // Expense per day
-            $expRows = Expense::selectRaw('DATE(COALESCE(expense_date, expenses.created_at)) as day, SUM(amount) as total')
+            // Expense per day — исключаем расходы, привязанные к бартерным и "своим" проектам
+            $expRows = Expense::leftJoin('projects', 'projects.id', '=', 'expenses.project_id')
+                ->selectRaw('DATE(COALESCE(expense_date, expenses.created_at)) as day, SUM(expenses.amount) as total')
+                ->where(function ($q) {
+                    $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                })
                 ->whereRaw('DATE(COALESCE(expense_date, expenses.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
                 ->groupBy('day')->orderBy('day')->get()->pluck('total', 'day')->toArray();
 
@@ -136,6 +152,9 @@ class DashboardController extends Controller
         // Top 5 projects by income for the selected month
         $topProjectsRows = Payment::selectRaw('projects.id, COALESCE(projects.title, CONCAT("Проект #", projects.id)) as title, SUM(payments.amount) as total')
             ->leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+            ->where(function ($q) {
+                $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+            })
             ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
             ->groupBy('projects.id', 'projects.title')
             ->orderByDesc('total')
@@ -234,6 +253,9 @@ class DashboardController extends Controller
         // Show top projects that owe us (balance < 0). Chart uses absolute values for bar heights.
         $debtorsRows = \App\Models\Project::select('id', 'title', 'balance')
             ->where('balance', '<', 0)
+            ->where(function ($q) {
+                $q->whereNull('payment_type')->orWhereNotIn('payment_type', ['barter', 'own']);
+            })
             ->orderBy('balance') // most negative first
             ->limit(10)
             ->get();
@@ -253,8 +275,29 @@ class DashboardController extends Controller
         $debtorMaxChart = (int) (max($debtorStep, ceil($debtorMax / $debtorStep) * $debtorStep) + $debtorStep);
 
         // Taxes totals for the selected period (or full range if period=all)
-        $monthVatTotal = (float) Payment::whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])->sum('vat_amount');
-        $monthUsnTotal = (float) Payment::whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])->sum('usn_amount');
+        $monthVatTotal = (float) Payment::leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+            ->where(function ($q) {
+                $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+            })
+            ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
+            ->sum('vat_amount');
+        $monthUsnTotal = (float) Payment::leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+            ->where(function ($q) {
+                $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+            })
+            ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
+            ->sum('usn_amount');
+
+        // Count barter projects and own projects for the selected period (or all time)
+        if ($isAll) {
+            $barterCount = \App\Models\Project::where('payment_type', 'barter')->count();
+            $ownCount = \App\Models\Project::where('payment_type', 'own')->count();
+        } else {
+            $barterCount = \App\Models\Project::where('payment_type', 'barter')
+                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
+            $ownCount = \App\Models\Project::where('payment_type', 'own')
+                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
+        }
 
         return view('dashboard', compact(
             'labels', 'incomeData', 'expenseData', 'netData',
@@ -264,7 +307,7 @@ class DashboardController extends Controller
             'topProjectsLabels', 'topProjectsData', 'topMaxChart', 'topStep',
             'activeData', 'activeStep',
             'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
-            'monthVatTotal', 'monthUsnTotal'
+            'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount'
         ));
     }
 

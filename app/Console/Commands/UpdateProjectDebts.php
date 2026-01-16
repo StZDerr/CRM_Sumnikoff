@@ -60,6 +60,22 @@ class UpdateProjectDebts extends Command
                     continue;
                 }
 
+                // Пропускаем бартерные проекты
+                if ($project->payment_type === 'barter') {
+                    $this->line("Project #{$project->id} ({$project->title}): пропущен — бартерный проект");
+                    $skipped++;
+
+                    continue;
+                }
+
+                // Пропускаем бартерные проекты
+                if ($project->payment_type === 'own') {
+                    $this->line("Project #{$project->id} ({$project->title}): пропущен — свой проект");
+                    $skipped++;
+
+                    continue;
+                }
+
                 // Проверяем, есть ли уже счёт на текущий месяц
                 $existingInvoice = Invoice::where('project_id', $project->id)
                     ->whereRaw("DATE_FORMAT(COALESCE(issued_at, created_at), '%Y-%m') = ?", [$currentYm])
