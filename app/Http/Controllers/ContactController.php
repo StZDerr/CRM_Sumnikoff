@@ -10,7 +10,17 @@ class ContactController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'admin']);
+        // Все методы требуют авторизации
+        $this->middleware('auth');
+
+        // Метод destroy — только для админа
+        $this->middleware(function ($request, $next) {
+            if (! auth()->user()->isAdmin()) {
+                abort(403); // запрещаем доступ
+            }
+
+            return $next($request);
+        })->only('destroy');
     }
 
     /**

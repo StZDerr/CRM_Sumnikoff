@@ -43,6 +43,16 @@
                                             Офис
                                         </span>
                                     @endif
+                                    @if ($item->is_salary)
+                                        <span
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            ЗП
+                                        </span>
+                                    @endif
                                     <div class="text-xs text-gray-500">{{ $item->slug ?? '-' }}</div>
                                 </div>
                                 <div class="text-sm text-gray-400">#{{ $item->sort_order }}</div>

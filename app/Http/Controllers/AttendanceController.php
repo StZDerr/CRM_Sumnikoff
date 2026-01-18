@@ -12,13 +12,25 @@ use Yasumi\Yasumi;
 
 class AttendanceController extends Controller
 {
+    public function __construct()
+    {
+        // Все методы требуют авторизации
+        $this->middleware('auth');
+    }
+
     public function index(Request $request)
     {
         // 👉 Выбранный год или текущий
         $year = (int) $request->get('year', now()->year);
 
-        // Все сотрудники
-        $users = User::orderBy('name')->get();
+        $currentUser = auth()->user();
+
+        // Admin видит всех сотрудников, остальные — только себя
+        if ($currentUser->isAdmin()) {
+            $users = User::orderBy('name')->get();
+        } else {
+            $users = User::where('id', $currentUser->id)->get();
+        }
 
         // Генерация всех дней выбранного года
         $days = collect();
@@ -28,9 +40,11 @@ class AttendanceController extends Controller
             $date->addDay();
         }
 
-        // Табель за выбранный год
+        // Табель за выбранный год (для видимых пользователей)
+        $userIds = $users->pluck('id');
         $attendance = AttendanceDay::with('status')
             ->whereYear('date', $year)
+            ->whereIn('user_id', $userIds)
             ->get()
             ->keyBy(fn ($item) => $item->user_id.'_'.$item->date->toDateString());
 
@@ -49,6 +63,11 @@ class AttendanceController extends Controller
     // Сохраняем/обновляем статус
     public function store(Request $request)
     {
+        // Только admin может вносить изменения в табель
+        if (! auth()->user()->isAdmin()) {
+            return response()->json(['success' => false, 'error' => 'Доступ запрещён'], 403);
+        }
+
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'date' => 'required|date',
@@ -111,6 +130,10 @@ class AttendanceController extends Controller
 
     public function approvals()
     {
+        if (! auth()->user()->isAdmin()) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
+
         // Получаем все табели со статусом 'submitted'
         $reports = SalaryReport::with('user')
             ->where('status', 'submitted')
@@ -120,30 +143,83 @@ class AttendanceController extends Controller
         return view('admin.attendance.approvals', compact('reports'));
     }
 
+    public function advance()
+    {
+        if (! auth()->user()->isAdmin()) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
+
+        // Получаем все табели со статусом 'payable'
+        $reports = SalaryReport::with('user')
+            ->where('status', 'advance_paid')
+            ->orderByDesc('month')
+            ->get();
+
+        // Данные для модального окна аванса
+        $salaryCategories = \App\Models\ExpenseCategory::where('is_salary', true)
+            ->where('is_office', false)
+            ->orderBy('sort_order')
+            ->get();
+        $paymentMethods = \App\Models\PaymentMethod::orderBy('sort_order')->get();
+        $bankAccounts = \App\Models\BankAccount::orderBy('title')->get();
+
+        return view('admin.attendance.advance', compact('reports', 'salaryCategories', 'paymentMethods', 'bankAccounts'));
+    }
+
     public function payable()
     {
+        if (! auth()->user()->isAdmin()) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
+
         // Получаем все табели со статусом 'payable'
         $reports = SalaryReport::with('user')
             ->where('status', 'approved')
             ->orderByDesc('month')
             ->get();
 
-        return view('admin.attendance.payable', compact('reports'));
+        // Данные для модального окна аванса
+        $salaryCategories = \App\Models\ExpenseCategory::where('is_salary', true)
+            ->where('is_office', false)
+            ->orderBy('sort_order')
+            ->get();
+        $paymentMethods = \App\Models\PaymentMethod::orderBy('sort_order')->get();
+        $bankAccounts = \App\Models\BankAccount::orderBy('title')->get();
+
+        return view('admin.attendance.payable', compact('reports', 'salaryCategories', 'paymentMethods', 'bankAccounts'));
     }
 
     public function paid()
     {
-        // Получаем все табели со статусом 'paid'
-        $reports = SalaryReport::with('user')
-            ->where('status', 'paid')
-            ->orderByDesc('month')
-            ->get();
+        $user = auth()->user();
+
+        if ($user->isAdmin()) {
+            // Админ видит все оплаченные табеля
+            $reports = SalaryReport::with(['user', 'projectBonuses.project'])
+                ->where('status', 'paid')
+                ->orderByDesc('month')
+                ->get();
+        } elseif ($user->isMarketer()) {
+            // Маркетолог видит только свои оплаченные табеля
+            $reports = SalaryReport::with(['user', 'projectBonuses.project'])
+                ->where('status', 'paid')
+                ->where('user_id', $user->id)
+                ->orderByDesc('month')
+                ->get();
+        } else {
+            // Остальные роли — доступ запрещён
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
 
         return view('admin.attendance.paid', compact('reports'));
     }
 
     public function rejected()
     {
+        if (! auth()->user()->isAdmin()) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
+
         // Получаем все табели со статусом 'payable'
         $reports = SalaryReport::with('user')
             ->where('status', 'rejected')
@@ -155,6 +231,9 @@ class AttendanceController extends Controller
 
     public function update(Request $request, SalaryReport $report)
     {
+        if (! auth()->user()->isAdmin()) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
         $request->validate([
             'ordinary_days' => 'required|numeric|min:0',
             'remote_days' => 'required|numeric|min:0',
@@ -223,6 +302,10 @@ class AttendanceController extends Controller
     // Сохраняем/обновляем только комментарий табеля
     public function updateComment(Request $request, SalaryReport $report)
     {
+        if (! auth()->user()->isAdmin()) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
+
         $request->validate([
             'comment' => 'nullable|string|max:255',
         ]);
@@ -237,6 +320,10 @@ class AttendanceController extends Controller
 
     public function approve(SalaryReport $report)
     {
+        if (! auth()->user()->isAdmin()) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
+
         $report->update([
             'status' => 'approved',
             'approved_by' => auth()->id(),
@@ -249,6 +336,10 @@ class AttendanceController extends Controller
     // Отклонение табеля начальством
     public function reject(SalaryReport $report)
     {
+        if (! auth()->user()->isAdmin()) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
+
         $report->update([
             'status' => 'rejected',
             'approved_by' => auth()->id(),
@@ -260,6 +351,10 @@ class AttendanceController extends Controller
 
     public function paidUpdate(SalaryReport $report)
     {
+        if (! auth()->user()->isAdmin()) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
+
         $report->update([
             'status' => 'paid',
             'approved_by' => auth()->id(),
@@ -275,6 +370,9 @@ class AttendanceController extends Controller
      */
     public function rejectedUserShow(SalaryReport $report)
     {
+        if (! auth()->user()->isAdmin()) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
         // Загружаем связанные данные
         $report->load(['user.specialty', 'projectBonuses.project']);
 
@@ -286,6 +384,11 @@ class AttendanceController extends Controller
 
     public function userShow(User $user)
     {
+        // Только admin может просматривать табели других пользователей
+        if (! auth()->user()->isAdmin() && auth()->id() !== $user->id) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
+
         $lastMonth = Carbon::now()->subMonth();
         $monthStart = $lastMonth->copy()->startOfMonth();
         $monthEnd = $lastMonth->copy()->endOfMonth();

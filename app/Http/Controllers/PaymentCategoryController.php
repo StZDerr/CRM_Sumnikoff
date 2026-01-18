@@ -8,6 +8,11 @@ use Illuminate\Support\Str;
 
 class PaymentCategoryController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(['auth', 'admin']);
+    }
+
     public function index()
     {
         $items = PaymentCategory::ordered()->get();

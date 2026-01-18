@@ -71,17 +71,20 @@
                 </div>
             </div>
 
+
             <div class="flex gap-3">
                 <a href="{{ route('contacts.edit', $contact) }}"
                     class="inline-flex items-center px-3 py-2 border rounded hover:bg-gray-50">Редактировать</a>
-
-                <form action="{{ route('contacts.destroy', $contact) }}" method="POST"
-                    onsubmit="return confirm('Удалить контакт?');">
-                    @csrf
-                    @method('DELETE')
-                    <button class="text-red-600 hover:text-red-800 px-3 py-2 border rounded">Удалить</button>
-                </form>
+                @if (auth()->user()->isAdmin())
+                    <form action="{{ route('contacts.destroy', $contact) }}" method="POST"
+                        onsubmit="return confirm('Удалить контакт?');">
+                        @csrf
+                        @method('DELETE')
+                        <button class="text-red-600 hover:text-red-800 px-3 py-2 border rounded">Удалить</button>
+                    </form>
+                @endif
             </div>
+
         </div>
     </div>
 @endsection

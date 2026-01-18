@@ -98,6 +98,15 @@ Route::middleware('auth')->group(function () {
     // Быстрое создание офисного расхода
     Route::post('expenses/store-office', [ExpenseController::class, 'storeOffice'])->name('expenses.store-office');
 
+    // Быстрое создание зарплатного расхода
+    Route::post('expenses/store-salary', [ExpenseController::class, 'storeSalary'])->name('expenses.store-salary');
+
+    // Выплата аванса из табеля
+    Route::post('expenses/store-advance', [ExpenseController::class, 'storeAdvance'])->name('expenses.store-advance');
+
+    // Полная выплата зарплаты из табеля
+    Route::post('expenses/store-final-salary', [ExpenseController::class, 'storeFinalSalary'])->name('expenses.store-final-salary');
+
     // Получить проекты организации в JSON
     Route::get('organizations/{organization}/projects', [OrganizationController::class, 'projectsList'])
         ->name('organizations.projects');
@@ -123,7 +132,12 @@ Route::middleware('auth')->group(function () {
         ->name('attendance.approvals')
         ->middleware('auth'); // при необходимости можно добавить middleware для роли начальника
 
-    // Список табелей на оплату
+    // Список табелей на аванс
+    Route::get('/attendance/advance', [AttendanceController::class, 'advance'])
+        ->name('attendance.advance')
+        ->middleware('auth'); // при необходимости можно добавить middleware для роли бугалтера
+
+    // Список табелей на оплату полностью
     Route::get('/attendance/payable', [AttendanceController::class, 'payable'])
         ->name('attendance.payable')
         ->middleware('auth'); // при необходимости можно добавить middleware для роли бугалтера

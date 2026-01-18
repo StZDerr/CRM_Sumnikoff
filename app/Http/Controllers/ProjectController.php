@@ -15,7 +15,9 @@ class ProjectController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'admin']);
+        // Разрешаем просмотр всем авторизованным пользователям. Создание/редактирование/удаление только для admin и project_manager
+        $this->middleware(['auth']);
+        $this->middleware(['role:admin,project_manager'])->only(['create', 'store', 'edit', 'update', 'destroy']);
     }
 
     /**
@@ -32,6 +34,11 @@ class ProjectController extends Controller
         $balance_status = $request->query('balance_status');
 
         $query = Project::with(['organization', 'marketer', 'paymentMethod', 'stages', 'importance']);
+
+        // Если пользователь — маркетолог, показываем только проекты, где он назначен
+        if (auth()->user()?->isMarketer()) {
+            $query->where('marketer_id', auth()->id());
+        }
 
         if ($q) {
             $query->where('title', 'like', '%'.$q.'%');
@@ -106,7 +113,7 @@ class ProjectController extends Controller
     public function create()
     {
         $organizations = Organization::orderBy('name_short')->pluck('name_short', 'id');
-        $marketers = User::where('role', 'manager')->orderBy('name')->pluck('name', 'id');
+        $marketers = User::whereIn('role', [User::ROLE_PROJECT_MANAGER, User::ROLE_MARKETER])->orderBy('name')->pluck('name', 'id');
         $stages = Stage::ordered()->pluck('name', 'id');
         $paymentMethods = PaymentMethod::ordered()->pluck('title', 'id');
         $importances = Importance::ordered()->pluck('name', 'id');
@@ -119,7 +126,9 @@ class ProjectController extends Controller
      */
     public function store(Request $request)
     {
-        $data = $request->validate([
+        \Illuminate\Support\Facades\Gate::authorize('create', Project::class);
+
+        $data = $request->validate([ 
             'title' => 'required|string|max:255',
             'organization_id' => 'required|exists:organizations,id',
             'city' => 'required|string|max:255',
@@ -160,6 +169,8 @@ class ProjectController extends Controller
      */
     public function show(Project $project)
     {
+        \Illuminate\Support\Facades\Gate::authorize('view', $project);
+
         $project->load(['organization', 'marketer', 'paymentMethod', 'stages', 'importance', 'comments.user']);
 
         return view('admin.projects.show', compact('project'));
@@ -171,7 +182,7 @@ class ProjectController extends Controller
     public function edit(Project $project)
     {
         $organizations = Organization::orderBy('name_short')->pluck('name_short', 'id');
-        $marketers = User::where('role', 'manager')->orderBy('name')->pluck('name', 'id');
+        $marketers = User::whereIn('role', [User::ROLE_PROJECT_MANAGER, User::ROLE_MARKETER])->orderBy('name')->pluck('name', 'id');
         $stages = Stage::ordered()->pluck('name', 'id');
         $paymentMethods = PaymentMethod::ordered()->pluck('title', 'id');
         $importances = Importance::ordered()->pluck('name', 'id');
@@ -189,7 +200,9 @@ class ProjectController extends Controller
      */
     public function update(Request $request, Project $project)
     {
-        $data = $request->validate([
+        \Illuminate\Support\Facades\Gate::authorize('update', $project);
+
+        $data = $request->validate([ 
             'title' => 'required|string|max:255',
             'organization_id' => 'required|exists:organizations,id',
             'city' => 'required|string|max:255',
@@ -232,6 +245,8 @@ class ProjectController extends Controller
      */
     public function destroy(Project $project)
     {
+        \Illuminate\Support\Facades\Gate::authorize('delete', $project);
+
         $project->delete();
 
         return redirect()->route('projects.index')->with('success', 'Проект удалён.');

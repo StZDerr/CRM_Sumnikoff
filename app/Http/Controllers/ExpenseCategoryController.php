@@ -8,6 +8,11 @@ use Illuminate\Support\Str;
 
 class ExpenseCategoryController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(['auth', 'admin']);
+    }
+
     public function index()
     {
         $items = ExpenseCategory::ordered()->paginate(25);
@@ -27,6 +32,7 @@ class ExpenseCategoryController extends Controller
             'slug' => 'nullable|string|max:255|unique:expense_categories,slug',
             'sort_order' => 'nullable|integer|min:1',
             'is_office' => 'nullable|boolean',
+            'is_salary' => 'nullable|boolean',
         ]);
 
         if (empty($data['slug'])) {
@@ -56,6 +62,7 @@ class ExpenseCategoryController extends Controller
             'slug' => 'nullable|string|max:255|unique:expense_categories,slug,'.$expenseCategory->id,
             'sort_order' => 'nullable|integer|min:1',
             'is_office' => 'nullable|boolean',
+            'is_salary' => 'nullable|boolean',
         ]);
 
         if (empty($data['slug'])) {

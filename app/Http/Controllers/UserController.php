@@ -16,7 +16,13 @@ class UserController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'admin']);
+        $this->middleware('auth');
+
+        // только admin
+        $this->middleware('admin')->except(['index', 'show']);
+
+        // index + show: admin + PM
+        $this->middleware('role:admin,project_manager')->only(['index', 'show']);
     }
 
     public function index(Request $request): View

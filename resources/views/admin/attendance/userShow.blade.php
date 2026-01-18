@@ -108,7 +108,7 @@
                             @endphp
 
                             <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center text-sm border-b last:border-b-0
-                   hover:bg-gray-50 transition"
+                    hover:bg-gray-50 transition"
                                 data-project-id="{{ $project->id }}" data-max-bonus="{{ $maxProjectBonus }}"
                                 data-bonus-per-day="{{ $bonusPerDay }}">
 
@@ -122,13 +122,11 @@
                                     {{ number_format($maxProjectBonus, 0, '', ' ') }} ₽
                                 </div>
 
-                                {{-- Days (editable) --}}
-                                <div class="col-span-2 text-center">
-                                    <input type="number" step="0.5" min="0" max="31"
-                                        class="project-days-input w-16 px-2 py-1 text-center border rounded text-xs font-semibold
-                                                  {{ $daysWorked > 0 ? 'bg-green-50 text-green-700 border-green-300' : 'bg-red-50 text-red-600 border-red-300' }}"
-                                        data-project-id="{{ $project->id }}"
-                                        value="{{ $daysWorked == intval($daysWorked) ? intval($daysWorked) : number_format($daysWorked, 1, '.', '') }}">
+                                {{-- Days (read-only) --}}
+                                <div
+                                    class="col-span-2 text-center px-2 py-1 border rounded text-xs font-semibold
+                        {{ $daysWorked > 0 ? 'bg-green-50 text-green-700 border-green-300' : 'bg-red-50 text-red-600 border-red-300' }}">
+                                    {{ $daysWorked == intval($daysWorked) ? intval($daysWorked) : number_format($daysWorked, 1, '.', '') }}
                                 </div>
 
                                 {{-- Bonus (editable) --}}
@@ -145,9 +143,7 @@
                         <div class="flex justify-between items-center px-4 py-3 bg-gray-50 text-sm font-semibold">
                             <span class="text-gray-600">Итого премия</span>
                             <span class="text-green-700">
-                                <span
-                                    id="total-project-bonus">{{ number_format($calculatedTotalBonus, 0, '', ' ') }}</span>
-                                ₽
+                                {{ number_format($calculatedTotalBonus, 0, '', ' ') }} ₽
                             </span>
                         </div>
                     </div>

@@ -28,6 +28,10 @@ class SalaryReport extends Model
         'created_by',         // кто создал
         'updated_by',         // кто обновил
         'commented_by',       // кто оставил комментарий
+        'advance_amount',     // сумма выданного аванса
+        'remaining_amount',   // остаток к выплате
+        'advance_paid_by',    // кто выдал аванс
+        'paid_by',            // кто выплатил полную зп
     ];
 
     // Привязка к пользователю, которому табель

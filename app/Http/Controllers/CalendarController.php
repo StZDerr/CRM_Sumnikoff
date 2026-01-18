@@ -7,10 +7,14 @@ use App\Models\Payment;
 use App\Models\Project;
 use App\Models\ProjectComment;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache;
 
 class CalendarController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(['auth', 'admin']);
+    }
+
     public function index(Project $project)
     {
         $months = [];
@@ -222,12 +226,12 @@ class CalendarController extends Controller
 
                 // Определяем самую раннюю дату для расчёта (может быть раньше контракта если есть счета/платежи)
                 $calcStart = $contractStart->copy();
-                
+
                 // Проверяем, есть ли счета или платежи раньше даты контракта
                 $projectInvoices = $invoicesMap[$project->id] ?? [];
                 $projectPayments = $paymentsMap[$project->id] ?? [];
                 $allMonths = array_unique(array_merge(array_keys($projectInvoices), array_keys($projectPayments)));
-                
+
                 foreach ($allMonths as $ym) {
                     $monthDate = Carbon::createFromFormat('Y-m', $ym)->startOfMonth();
                     if ($monthDate->lt($calcStart)) {
@@ -266,7 +270,7 @@ class CalendarController extends Controller
                         $futureBalance -= $contractAmount;
                         $futureCur->addMonthNoOverflow();
                         $count++;
-                        
+
                         // Останавливаемся после месяца где баланс стал <= 0
                         if ($futureBalance <= 0) {
                             break;
@@ -292,7 +296,7 @@ class CalendarController extends Controller
             // Строим данные для каждого проекта с накопительным балансом
             $projectRows = [];
             $currentMonth = Carbon::now()->startOfMonth();
-            
+
             foreach ($projects as $project) {
                 $contractStart = $project->contract_date ? Carbon::make($project->contract_date)->startOfMonth() : null;
                 $contractAmount = (float) ($project->contract_amount ?? 0);
@@ -305,21 +309,21 @@ class CalendarController extends Controller
                 // Если есть переплата - расширяем до месяца когда баланс станет <= 0
                 $projectInvoices = $invoicesMap[$project->id] ?? [];
                 $projectPayments = $paymentsMap[$project->id] ?? [];
-                
+
                 // Считаем баланс до текущего месяца
                 $calcStart = $contractStart ? $contractStart->copy() : null;
                 $allMonths = array_unique(array_merge(array_keys($projectInvoices), array_keys($projectPayments)));
                 foreach ($allMonths as $ym) {
                     $monthDate = Carbon::createFromFormat('Y-m', $ym)->startOfMonth();
-                    if (!$calcStart || $monthDate->lt($calcStart)) {
+                    if (! $calcStart || $monthDate->lt($calcStart)) {
                         $calcStart = $monthDate->copy();
                     }
                 }
-                
+
                 if ($calcStart && $contractAmount > 0) {
                     $tempBalance = 0;
                     $tempCur = $calcStart->copy();
-                    
+
                     while ($tempCur->lte($currentMonth)) {
                         $key = $tempCur->format('Y-m');
                         $invoiced = (float) ($projectInvoices[$key] ?? 0);
@@ -328,20 +332,20 @@ class CalendarController extends Controller
                         $tempBalance = $tempBalance + $paid - $expected;
                         $tempCur->addMonthNoOverflow();
                     }
-                    
+
                     // Если есть переплата - расширяем
                     if ($tempBalance > 0) {
                         $futureBalance = $tempBalance;
                         $futureCur = $currentMonth->copy()->addMonthNoOverflow();
                         $maxFutureMonths = 24;
                         $count = 0;
-                        
+
                         while ($count < $maxFutureMonths) {
                             $lastDisplayMonth = $futureCur->format('Y-m');
                             $futureBalance -= $contractAmount;
                             $futureCur->addMonthNoOverflow();
                             $count++;
-                            
+
                             if ($futureBalance <= 0) {
                                 break;
                             }
@@ -401,7 +405,7 @@ class CalendarController extends Controller
                     // Для будущих месяцев (> текущего) - только если они в пределах lastDisplayMonth
                     $isFutureMonth = $ym > $currentMonth->format('Y-m');
                     $isWithinDisplayLimit = $ym <= $lastDisplayMonth;
-                    $shouldCountForTotal = !$isFutureMonth || $isWithinDisplayLimit;
+                    $shouldCountForTotal = ! $isFutureMonth || $isWithinDisplayLimit;
 
                     if ($shouldCountForTotal) {
                         $row['owed'] += $expected;
@@ -446,11 +450,11 @@ class CalendarController extends Controller
                 $expectedByMonth[$ym] = 0;
                 foreach ($projectRows as $row) {
                     $paymentsByMonth[$ym] += $row['months'][$ym]['paid'] ?? 0;
-                    
+
                     // Для expected учитываем lastDisplayMonth
                     $isFutureMonth = $ym > $currentYm;
                     $isWithinDisplayLimit = $ym <= ($row['lastDisplayMonth'] ?? $currentYm);
-                    if (!$isFutureMonth || $isWithinDisplayLimit) {
+                    if (! $isFutureMonth || $isWithinDisplayLimit) {
                         $expectedByMonth[$ym] += $row['months'][$ym]['expected'] ?? 0;
                     }
                 }

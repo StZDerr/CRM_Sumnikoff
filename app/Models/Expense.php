@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Expense extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'expense_date',
@@ -23,6 +24,7 @@ class Expense extends Model
         'status',
         'description',
         'currency',
+        'salary_recipient',
     ];
 
     protected $casts = [
@@ -54,6 +56,12 @@ class Expense extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Project::class);
+    }
+
+    // Получатель зарплаты (если применимо)
+    public function salaryRecipient(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'salary_recipient');
     }
 
     // Вложенные документы (файлы)

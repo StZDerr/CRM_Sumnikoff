@@ -6,16 +6,18 @@
             <h1 class="text-2xl font-semibold">Операции</h1>
 
             <div class="flex gap-2">
-                {{-- Доход --}}
-                <a href="#" id="openPaymentOffcanvas" data-url="{{ route('payments.create') }}"
-                    class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white
-                  hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Доход
-                </a>
+                {{-- Доход (только admin) --}}
+                @if (auth()->user()->isAdmin())
+                    <a href="#" id="openPaymentOffcanvas" data-url="{{ route('payments.create') }}"
+                        class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white
+                      hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Доход
+                    </a>
+                @endif
 
                 {{-- Расход --}}
                 <a href="#" id="openExpenseOffcanvas" data-url="{{ route('expenses.create') }}"
@@ -38,6 +40,20 @@
                                 d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                         Расход (Офис)
+                    </button>
+                @endif
+
+                {{-- Зарплата (ЗП) --}}
+                @if (isset($salaryCategories) && $salaryCategories->count())
+                    <button type="button" id="openSalaryExpenseBtn"
+                        class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white
+                        hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2" />
+                        </svg>
+                        ЗП
                     </button>
                 @endif
 
@@ -127,18 +143,17 @@
 
                     @foreach ($groups as $date => $rows)
                         @php
-                            $label =
-                                $date === 'Без даты'
-                                    ? 'Без даты'
-                                    : \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $date);
-                            $labelText =
-                                $label instanceof \Illuminate\Support\Carbon
-                                    ? ($label->isToday()
-                                        ? 'Сегодня'
-                                        : ($label->isYesterday()
-                                            ? 'Вчера'
-                                            : $label->format('d.m.Y')))
-                                    : $label;
+                            if ($date === 'Без даты') {
+                                $labelText = 'Без даты';
+                            } else {
+                                $carbonDate = \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $date);
+                                $prefix = $carbonDate->isToday()
+                                    ? 'Сегодня, '
+                                    : ($carbonDate->isYesterday()
+                                        ? 'Вчера, '
+                                        : '');
+                                $labelText = $prefix . $carbonDate->format('d.m.Y');
+                            }
                         @endphp
 
                         <tr>
@@ -173,7 +188,17 @@
                                             class="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold shadow-sm">
                                             Расход
                                         </span>
-                                        @if ($m->category?->is_office)
+                                        @if ($m->category?->is_salary)
+                                            <span
+                                                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 ml-1"
+                                                title="Расход на ЗП">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2" />
+                                                </svg>
+                                            </span>
+                                        @elseif ($m->category?->is_office)
                                             <span
                                                 class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700 ml-1"
                                                 title="Офисный расход">
@@ -188,7 +213,12 @@
                                 </td>
                                 <td class="px-4 py-2 text-gray-700 font-medium">{{ $m->project?->title ?? '-' }}</td>
                                 <td class="px-4 py-2 max-w-xs truncate text-gray-600">
-                                    {{ $op['type'] === 'payment' ? $m->note ?? '' : $m->description ?? '' }}</td>
+                                    {{ $op['type'] === 'payment' ? $m->note ?? '' : $m->description ?? '' }}
+                                    @if ($op['type'] === 'expense' && $m->category?->is_salary && $m->salary_recipient)
+                                        <div class="mt-1 text-xs text-gray-500">Кому:
+                                            {{ optional($m->salaryRecipient)->name ?? $m->salary_recipient }}</div>
+                                    @endif
+                                </td>
                                 <td
                                     class="px-4 py-2 text-right font-semibold {{ $op['type'] === 'payment' ? 'text-green-600' : 'text-red-600' }}">
                                     {{ number_format($op['amount'], 2, '.', ' ') }} ₽
@@ -466,5 +496,10 @@
     {{-- Модальное окно для офисного расхода --}}
     @if (isset($officeCategories) && $officeCategories->count())
         @include('admin.expenses._office_modal')
+    @endif
+
+    {{-- Модальное окно для зарплатного расхода --}}
+    @if (isset($salaryCategories) && $salaryCategories->count())
+        @include('admin.expenses._salary_modal')
     @endif
 @endsection

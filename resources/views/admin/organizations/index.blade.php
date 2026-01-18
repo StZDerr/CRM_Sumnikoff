@@ -67,18 +67,20 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2">
-                            {{-- Убираем кнопку "Просмотр" --}}
-                            <a href="{{ route('organizations.edit', $org) }}"
-                                class="text-indigo-600 hover:text-indigo-800 text-sm p-2">Редактировать</a>
+                        @if (auth()->user()->isAdmin())
+                            <div class="flex items-center gap-2">
+                                {{-- Убираем кнопку "Просмотр" --}}
+                                <a href="{{ route('organizations.edit', $org) }}"
+                                    class="text-indigo-600 hover:text-indigo-800 text-sm p-2">Редактировать</a>
 
-                            <form action="{{ route('organizations.destroy', $org) }}" method="POST"
-                                onsubmit="return confirm('Удалить организацию?');">
-                                @csrf
-                                @method('DELETE')
-                                <button class="text-red-600 hover:text-red-800 text-sm p-2">Удалить</button>
-                            </form>
-                        </div>
+                                <form action="{{ route('organizations.destroy', $org) }}" method="POST"
+                                    onsubmit="return confirm('Удалить организацию?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="text-red-600 hover:text-red-800 text-sm p-2">Удалить</button>
+                                </form>
+                            </div>
+                        @endif
                     </div>
 
                 @empty

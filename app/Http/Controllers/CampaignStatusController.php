@@ -8,6 +8,11 @@ use Illuminate\Support\Str;
 
 class CampaignStatusController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(['auth', 'admin']);
+    }
+
     public function index()
     {
         $statuses = CampaignStatus::ordered()->get();

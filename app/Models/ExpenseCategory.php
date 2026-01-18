@@ -16,18 +16,21 @@ class ExpenseCategory extends Model
         'slug',
         'sort_order',
         'is_office',
+        'is_salary',
     ];
 
     /** Приведения типов */
     protected $casts = [
         'sort_order' => 'integer',
         'is_office' => 'boolean',
+        'is_salary' => 'boolean',
     ];
 
     /** Значения по умолчанию */
     protected $attributes = [
         'sort_order' => 0,
         'is_office' => false,
+        'is_salary' => false,
     ];
 
     /** При создании устанавливаем sort_order = max + 1 (если не указан) */

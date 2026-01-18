@@ -12,25 +12,31 @@
     <!-- Links -->
     <nav class="flex-1 px-2 py-4 overflow-y-auto space-y-1">
 
+        {{-- Dashboard --}}
         @if (auth()->user()->isAdmin())
-            {{-- Основные --}}
             <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 Dashboard
             </x-nav-link>
+        @endif
 
+        {{-- Пользователи: admin + project manager --}}
+        @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
             <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
                 Пользователи
             </x-nav-link>
+        @endif
 
+        {{-- Специальности: только admin --}}
+        @if (auth()->user()->isAdmin())
             <x-nav-link :href="route('specialties.index')" :active="request()->routeIs('specialties.*')">
                 Специальности
             </x-nav-link>
+        @endif
 
-            {{-- Табель и календарь --}}
-            @php
-                $activeAttendance = request()->routeIs('attendance.*') || request()->routeIs('calendar.*');
-            @endphp
-            <x-buttons-dropdawn :active="$activeAttendance" title="Табель и календарь">
+        {{-- Табель: только admin --}}
+        @if (auth()->user()->isAdmin())
+            @php $activeAttendance = request()->routeIs('attendance.*'); @endphp
+            <x-buttons-dropdawn :active="$activeAttendance" title="Табель">
                 <x-dropdown-link :href="route('attendance.index')" :active="request()->routeIs('attendance.index')">
                     Табель посещаемости
                 </x-dropdown-link>
@@ -40,7 +46,11 @@
                 </x-dropdown-link>
 
                 <x-dropdown-link :href="route('attendance.payable')" :active="request()->routeIs('attendance.payable')">
-                    Табели на оплату
+                    Табели на Аванс
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('attendance.advance')" :active="request()->routeIs('attendance.advance')">
+                    Табели на оплату Зарплаты
                 </x-dropdown-link>
 
                 <x-dropdown-link :href="route('attendance.paid')" :active="request()->routeIs('attendance.paid')">
@@ -50,13 +60,18 @@
                 <x-dropdown-link :href="route('attendance.rejected')" :active="request()->routeIs('attendance.rejected')">
                     Табели отклоненные
                 </x-dropdown-link>
-
-                <x-dropdown-link :href="route('calendar.all-projects')" :active="request()->routeIs('calendar.all-projects')">
-                    Календарь
-                </x-dropdown-link>
             </x-buttons-dropdawn>
+        @else
+            <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.index')">
+                Табель посещаемости
+            </x-nav-link>
+            <x-nav-link :href="route('attendance.paid')" :active="request()->routeIs('attendance.paid')">
+                Табели оплаченные
+            </x-nav-link>
+        @endif
 
-            {{-- Финансы --}}
+        {{-- Финансы: только admin --}}
+        @if (auth()->user()->isAdmin())
             @php
                 $activeFinance = request()->routeIs(
                     'bank-accounts.*',
@@ -82,14 +97,27 @@
                     Статьи расходов
                 </x-dropdown-link>
             </x-buttons-dropdawn>
+        @endif
 
-            {{-- Проекты --}}
-            @php
-                $activeProjects = request()->routeIs('projects.*', 'stages.*', 'payment-methods.*', 'importances.*');
-            @endphp
+        {{-- Проекты --}}
+        @php
+            $activeProjects = request()->routeIs(
+                'projects.*',
+                'calendar.*',
+                'stages.*',
+                'payment-methods.*',
+                'importances.*',
+            );
+        @endphp
+        @if (auth()->user()->isAdmin())
+            {{-- ADMIN: выпадающий список --}}
             <x-buttons-dropdawn :active="$activeProjects" title="Проекты">
                 <x-dropdown-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
                     Проекты
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('calendar.all-projects')" :active="request()->routeIs('calendar.all-projects')">
+                    Календарь выплат
                 </x-dropdown-link>
 
                 <x-dropdown-link :href="route('stages.index')" :active="request()->routeIs('stages.*')">
@@ -104,8 +132,15 @@
                     Уровень важности
                 </x-dropdown-link>
             </x-buttons-dropdawn>
+        @else
+            {{-- НЕ admin: обычная кнопка --}}
+            <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
+                Проекты
+            </x-nav-link>
+        @endif
 
-            {{-- Организации --}}
+        {{-- Организации: только admin --}}
+        @if (auth()->user()->isAdmin())
             @php
                 $activeOrgs = request()->routeIs(
                     'organizations.*',
@@ -131,13 +166,19 @@
                     Статусы организаций
                 </x-dropdown-link>
             </x-buttons-dropdawn>
-
-            {{-- Прочее --}}
-            <x-nav-link :href="route('operation.index')" :active="request()->routeIs('operation.index')">
-                Операции
+        @else
+            <x-nav-link :href="route('organizations.index')" :active="request()->routeIs('organizations.*')">
+                Организации
             </x-nav-link>
         @endif
+
+        {{-- Операции: только admin --}}
+        <x-nav-link :href="route('operation.index')" :active="request()->routeIs('operation.index')">
+            Операции
+        </x-nav-link>
+
     </nav>
+
 
     <!-- Account / actions at bottom -->
     <div class="px-4 py-3 border-t border-white/10">

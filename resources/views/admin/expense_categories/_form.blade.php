@@ -28,4 +28,26 @@
             class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
         <label for="is_office" class="text-sm text-gray-700">Отнести к расходам офиса</label>
     </div>
+
+    <div class="flex items-center gap-2">
+        <input type="hidden" name="is_salary" value="0">
+        <input type="checkbox" name="is_salary" id="is_salary" value="1"
+            {{ old('is_salary', $expenseCategory->is_salary ?? false) ? 'checked' : '' }}
+            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+        <label for="is_salary" class="text-sm text-gray-700">Отнести к расходам ЗП</label>
+    </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const office = document.getElementById('is_office');
+        const salary = document.getElementById('is_salary');
+
+        office.addEventListener('change', () => {
+            if (office.checked) salary.checked = false;
+        });
+
+        salary.addEventListener('change', () => {
+            if (salary.checked) office.checked = false;
+        });
+    });
+</script>

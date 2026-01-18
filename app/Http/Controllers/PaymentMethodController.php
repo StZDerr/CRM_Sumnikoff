@@ -11,6 +11,11 @@ class PaymentMethodController extends Controller
     /**
      * Display a listing of the resource.
      */
+    public function __construct()
+    {
+        $this->middleware(['auth', 'admin']);
+    }
+
     public function index(Request $request)
     {
         $methods = PaymentMethod::ordered()->paginate(25);

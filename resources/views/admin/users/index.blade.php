@@ -13,10 +13,11 @@
                     <tr>
                         <th class="p-3 text-left">ID</th>
                         <th class="p-3 text-left">Имя</th>
-                        <th class="p-3 text-left">Логин</th>
                         <th class="p-3 text-left">Статус</th>
                         <th class="p-3 text-left">Роль</th>
-                        <th class="p-3 text-left">Действия</th>
+                        @if (auth()->user()->isAdmin())
+                            <th class="p-3 text-left">Действия</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -24,7 +25,6 @@
                         <tr class="border-t">
                             <td class="p-3">{{ $user->id }}</td>
                             <td class="p-3">{{ $user->name }}</td>
-                            <td class="p-3">{{ $user->login }}</td>
                             <td class="p-3">
                                 @if ($user->activeVacation)
                                     <span
@@ -52,35 +52,36 @@
                                 {{ $roles[$user->role] ?? $user->role }}
                             </td>
                             <td class="p-3 flex gap-2">
-                                <a href="{{ route('users.edit', $user) }}"
-                                    class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition">
-                                    Редактировать
-                                </a>
+                                @if (auth()->user()->isAdmin())
+                                    <a href="{{ route('users.edit', $user) }}"
+                                        class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition">
+                                        Редактировать
+                                    </a>
 
-                                <button type="button"
-                                    class="px-3 py-1 rounded-md bg-yellow-400 text-yellow-900 text-sm font-medium hover:bg-yellow-500 transition open-vacation"
-                                    data-user-id="{{ $user->id }}" data-user-name="{{ e($user->name) }}">
-                                    Отпуск
-                                </button>
-
-                                <a href="{{ route('attendance.userShow', $user) }}"
-                                    class="px-3 py-1 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition">
-                                    Табель
-                                </a>
-
-                                <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline-block"
-                                    onsubmit="return confirm('Удалить пользователя? Проекты пользователя будут перераспределены.')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                        class="px-3 py-1 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition">
-                                        Удалить
+                                    <button type="button"
+                                        class="px-3 py-1 rounded-md bg-yellow-400 text-yellow-900 text-sm font-medium hover:bg-yellow-500 transition open-vacation"
+                                        data-user-id="{{ $user->id }}" data-user-name="{{ e($user->name) }}">
+                                        Отпуск
                                     </button>
-                                </form>
+
+                                    <a href="{{ route('attendance.userShow', $user) }}"
+                                        class="px-3 py-1 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition">
+                                        Табель
+                                    </a>
+
+                                    <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline-block"
+                                        onsubmit="return confirm('Удалить пользователя? Проекты пользователя будут перераспределены.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                            class="px-3 py-1 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition">
+                                            Удалить
+                                        </button>
+                                    </form>
                             </td>
+                    @endif
 
-
-                        </tr>
+                    </tr>
                     @endforeach
                 </tbody>
             </table>

@@ -12,7 +12,7 @@ class OrganizationController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'admin']);
+        $this->middleware('admin')->except(['index', 'show']);
     }
 
     /**
@@ -200,7 +200,16 @@ class OrganizationController extends Controller
      */
     public function projectsList(Organization $organization)
     {
-        $projects = $organization->projects()->orderBy('title')->get(['id', 'title']);
+        $currentUser = auth()->user();
+
+        $query = $organization->projects()->orderBy('title');
+
+        // Если маркетолог, показываем только проекты, где он назначен
+        if ($currentUser->isMarketer()) {
+            $query->where('marketer_id', $currentUser->id);
+        }
+
+        $projects = $query->get(['id', 'title']);
 
         return response()->json($projects);
     }

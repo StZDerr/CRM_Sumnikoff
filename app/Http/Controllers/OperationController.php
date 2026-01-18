@@ -17,18 +17,33 @@ class OperationController extends Controller
         $perPage = 20;
         $page = (int) $request->query('page', 1);
 
-        $payments = Payment::with(['project', 'paymentMethod', 'invoice', 'bankAccount'])
-            ->orderByDesc('payment_date')->limit(200)->get()
-            ->map(fn ($p) => [
-                'type' => 'payment',
-                'id' => $p->id,
-                'date' => $p->payment_date ?? $p->created_at,
-                'amount' => (float) $p->amount,
-                'model' => $p,
-            ]);
+        $currentUser = auth()->user();
+
+        // По умолчанию — пустые коллекции
+        $payments = collect();
+
+        // Payments: только для admin
+        if ($currentUser->isAdmin()) {
+            $payments = Payment::with(['project', 'paymentMethod', 'invoice', 'bankAccount'])
+                ->orderByDesc('payment_date')->limit(200)->get()
+                ->map(fn ($p) => [
+                    'type' => 'payment',
+                    'id' => $p->id,
+                    'date' => $p->payment_date ?? $p->created_at,
+                    'amount' => (float) $p->amount,
+                    'model' => $p,
+                ]);
+        }
 
         $expensesQuery = Expense::with(['category', 'organization', 'paymentMethod', 'bankAccount', 'project']);
-        
+
+        // Маркетологи видят только расходы по проектам, где они указаны
+        if ($currentUser->isMarketer()) {
+            $expensesQuery->whereHas('project', fn ($q) => $q->where('marketer_id', $currentUser->id));
+        }
+
+        // Проджект менеджер видит все расходы (ничего не меняем)
+
         // Фильтр: только офисные расходы
         if ($request->query('office') == '1') {
             $officeIds = ExpenseCategory::where('is_office', true)->pluck('id');
@@ -59,11 +74,15 @@ class OperationController extends Controller
             'query' => $request->query(),
         ]);
 
-        // Данные для модального окна офисного расхода
-        $officeCategories = ExpenseCategory::office()->ordered()->get();
+        // Данные для модальных окон
+        // Офисные категории — исключаем пометку is_salary
+        $officeCategories = ExpenseCategory::office()->where('is_salary', false)->ordered()->get();
+        // Категории для ЗП
+        $salaryCategories = ExpenseCategory::where('is_salary', true)->ordered()->get();
         $paymentMethods = PaymentMethod::orderBy('title')->get();
         $bankAccounts = BankAccount::orderBy('title')->get();
+        $users = \App\Models\User::orderBy('name')->get();
 
-        return view('admin.operation.index', compact('operations', 'officeCategories', 'paymentMethods', 'bankAccounts'));
+        return view('admin.operation.index', compact('operations', 'officeCategories', 'salaryCategories', 'paymentMethods', 'bankAccounts', 'users'));
     }
 }

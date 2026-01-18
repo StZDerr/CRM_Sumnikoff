@@ -115,6 +115,9 @@
     </div>
 
     <script>
+        // Флаг: может ли текущий пользователь менять табель (только admin)
+        const ATTENDANCE_CAN_EDIT = @json(auth()->user()->isAdmin());
+
         // Автоскролл к сегодняшнему дню
         document.addEventListener('DOMContentLoaded', () => {
             const todayColumn = document.getElementById('today-column');
@@ -134,6 +137,17 @@
         });
 
         document.querySelectorAll('td[data-user]').forEach(td => {
+            // Если пользователь не админ — показываем только информацию, без возможности редактирования
+            if (!ATTENDANCE_CAN_EDIT) {
+                td.addEventListener('click', (e) => {
+                    const status = td.dataset.status || '—';
+                    const comment = td.dataset.comment || '';
+                    alert('Редактирование табеля доступно только администраторам.\nСтатус: ' + status + (
+                        comment ? '\nКомментарий: ' + comment : ''));
+                });
+                return;
+            }
+
             td.addEventListener('click', async (e) => {
                 const userId = td.dataset.user;
                 const date = td.dataset.date;
@@ -144,7 +158,7 @@
                 if (e.shiftKey) {
                     const newComment = prompt('Комментарий к дню:', comment);
                     if (newComment !== null) {
-                        await fetch('{{ route('attendance.store') }}', {
+                        const res = await fetch('{{ route('attendance.store') }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -157,6 +171,12 @@
                                 comment: newComment
                             })
                         });
+
+                        if (!res.ok) {
+                            const err = await res.json().catch(() => null);
+                            alert(err?.error ?? 'Ошибка: доступ запрещён');
+                            return;
+                        }
 
                         td.dataset.comment = newComment;
 
@@ -185,7 +205,7 @@
 
                 if (!nextStatus) {
                     // Удаляем запись
-                    await fetch('{{ route('attendance.store') }}', {
+                    const res = await fetch('{{ route('attendance.store') }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -197,6 +217,12 @@
                             status: null
                         })
                     });
+
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => null);
+                        alert(err?.error ?? 'Ошибка: доступ запрещён');
+                        return;
+                    }
 
                     td.dataset.status = '';
                     td.dataset.comment = '';
@@ -222,6 +248,12 @@
                         comment: comment
                     })
                 });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => null);
+                    alert(err?.error ?? 'Ошибка: доступ запрещён');
+                    return;
+                }
 
                 const data = await res.json();
                 td.dataset.status = nextStatus;

@@ -4,20 +4,22 @@
     <div class="max-w-4xl mx-auto">
         {{-- Header --}}
         <div class="flex items-center gap-3 mb-6">
-            <a href="{{ route('projects.edit', $project) }}"
-                class="inline-flex items-center px-4 py-2 rounded-md bg-indigo-600 text-white text-sm hover:bg-indigo-700">Редактировать</a>
-
-            <a href="{{ route('invoices.index', ['project' => $project->id]) }}"
-                class="inline-flex items-center px-3 py-2 border rounded-md text-sm hover:bg-gray-50">Счета проекта</a>
-
-            <a href="{{ route('payments.index', ['project' => $project->id]) }}"
-                class="inline-flex items-center px-3 py-2 border rounded-md text-sm hover:bg-gray-50">Поступления проекта</a>
-
+            @can('update', $project)
+                <a href="{{ route('projects.edit', $project) }}"
+                    class="inline-flex items-center px-4 py-2 rounded-md bg-indigo-600 text-white text-sm hover:bg-indigo-700">Редактировать</a>
+            @endcan
             <a href="{{ route('projects.index') }}"
                 class="inline-flex items-center px-3 py-2 border rounded-md text-sm hover:bg-gray-50">← Назад</a>
+            @if (auth()->user()->isAdmin())
+                <a href="{{ route('invoices.index', ['project' => $project->id]) }}"
+                    class="inline-flex items-center px-3 py-2 border rounded-md text-sm hover:bg-gray-50">Счета проекта</a>
 
-            <a href="{{ route('calendar.index', ['project' => $project->id]) }}"
-                class="ml-auto inline-flex items-center px-3 py-2 border rounded-md text-sm hover:bg-gray-50">Календарь</a>
+                <a href="{{ route('payments.index', ['project' => $project->id]) }}"
+                    class="inline-flex items-center px-3 py-2 border rounded-md text-sm hover:bg-gray-50">Поступления
+                    проекта</a>
+                <a href="{{ route('calendar.index', ['project' => $project->id]) }}"
+                    class="ml-auto inline-flex items-center px-3 py-2 border rounded-md text-sm hover:bg-gray-50">Календарь</a>
+            @endif
         </div>
 
         {{-- Main card --}}
@@ -46,19 +48,18 @@
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Важность</div>
                     <div class="mt-1 font-medium text-gray-900">{{ $project->importance?->name ?? '-' }}</div>
                 </div>
-
-                <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Тип оплаты</div>
-                    <div class="mt-1 font-medium text-gray-900">{{ $project->paymentMethod?->title ?? '-' }}</div>
-                </div>
-
-                <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Сумма договора</div>
-                    <div class="mt-1 font-medium text-gray-900">
-                        {{ $project->contract_amount ? number_format($project->contract_amount, 2, '.', ' ') . ' ₽' : '-' }}
+                @if (auth()->user()->isAdmin())
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Тип оплаты</div>
+                        <div class="mt-1 font-medium text-gray-900">{{ $project->paymentMethod?->title ?? '-' }}</div>
                     </div>
-                </div>
-
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Сумма договора</div>
+                        <div class="mt-1 font-medium text-gray-900">
+                            {{ $project->contract_amount ? number_format($project->contract_amount, 2, '.', ' ') . ' ₽' : '-' }}
+                        </div>
+                    </div>
+                @endif
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Дата заключения договора</div>
                     <div class="mt-1 font-medium text-gray-900">
@@ -71,11 +72,11 @@
                     <div class="mt-1 font-medium text-gray-900">{{ $project->city ?? '-' }}</div>
                 </div>
 
-                <div>
+                {{-- <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Срок оплаты</div>
                     <div class="mt-1 font-medium text-gray-900">
                         {{ $project->payment_due_day ? $project->payment_due_day . ' число' : '-' }}</div>
-                </div>
+                </div> --}}
 
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Дата обновления</div>
@@ -180,8 +181,4 @@
         </div>
     </div>
     <!-- Comments JS moved to resources/js/projects/comments.js and is loaded via Vite (through resources/js/app.js) -->
-
-
-
-
 @endsection
