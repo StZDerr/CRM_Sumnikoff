@@ -14,8 +14,21 @@ use Illuminate\Support\Facades\Storage;
 
 class ExpenseController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        // все методы — только admin, кроме create и store (чтобы маркетолог мог открыть форму и отправить её)
+        $this->middleware('admin')->except(['create', 'store', 'show']);
+    }
+
     public function index(Request $request)
     {
+        if (! auth()->user()->isAdmin()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Доступ запрещён'], 403);
+            }
+            abort(403);
+        }
         $query = Expense::with(['category', 'organization', 'paymentMethod', 'project'])
             ->orderByDesc('expense_date');
 
@@ -40,6 +53,12 @@ class ExpenseController extends Controller
      */
     public function storeAdvance(Request $request)
     {
+        if (! auth()->user()->isAdmin()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Доступ запрещён'], 403);
+            }
+            abort(403);
+        }
         $data = $request->validate([
             'expense_date' => 'required|date',
             'amount' => 'required|numeric|min:0.01',
@@ -109,6 +128,12 @@ class ExpenseController extends Controller
      */
     public function storeFinalSalary(Request $request)
     {
+        if (! auth()->user()->isAdmin()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Доступ запрещён'], 403);
+            }
+            abort(403);
+        }
         $data = $request->validate([
             'expense_date' => 'required|date',
             'amount' => 'required|numeric|min:0.01',
@@ -178,6 +203,12 @@ class ExpenseController extends Controller
      */
     public function storeSalary(Request $request)
     {
+        if (! auth()->user()->isAdmin()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Доступ запрещён'], 403);
+            }
+            abort(403);
+        }
         $data = $request->validate([
             'expense_date' => 'required|date',
             'amount' => 'required|numeric|min:0.01',
@@ -240,6 +271,7 @@ class ExpenseController extends Controller
 
     public function create(Request $request)
     {
+
         // Не показываем зарплатные категории в общей форме расходов
         $categories = ExpenseCategory::ordered()->where('is_salary', false)->get();
         $organizations = Organization::ordered()->get();
@@ -268,6 +300,14 @@ class ExpenseController extends Controller
 
     public function store(Request $request)
     {
+        // ПРоверка, что бы маркетолог мог создавать только записи, где он указан в роли маркетолога проекта
+        $current = auth()->user();
+        if (! $current->isAdmin() && ! $current->isMarketer()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Доступ запрещён'], 403);
+            }
+            abort(403);
+        }
         $data = $request->validate([
             'expense_date' => 'required|date',
             'amount' => 'required|numeric|min:0',
@@ -331,11 +371,11 @@ class ExpenseController extends Controller
             return response()->json([
                 'success' => true,
                 'expense_id' => $expense->id,
-                'redirect' => route('expenses.show', $expense),
+                'redirect' => route('operation.index'),
             ], 201);
         }
 
-        return redirect()->route('expenses.index')->with('success', 'Расход сохранён.');
+        return redirect()->route('operation.index')->with('success', 'Расход сохранён.');
     }
 
     /**
@@ -344,6 +384,12 @@ class ExpenseController extends Controller
      */
     public function storeOffice(Request $request)
     {
+        if (! auth()->user()->isAdmin()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Доступ запрещён'], 403);
+            }
+            abort(403);
+        }
         $data = $request->validate([
             'expense_date' => 'required|date',
             'amount' => 'required|numeric|min:0.01',
@@ -400,6 +446,7 @@ class ExpenseController extends Controller
 
     public function show(Expense $expense)
     {
+
         $expense->load('documents', 'category', 'organization', 'paymentMethod', 'bankAccount', 'project');
 
         return view('admin.expenses.show', compact('expense'));
@@ -424,6 +471,12 @@ class ExpenseController extends Controller
 
     public function update(Request $request, Expense $expense)
     {
+        if (! auth()->user()->isAdmin()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Доступ запрещён'], 403);
+            }
+            abort(403);
+        }
         $data = $request->validate([
             'expense_date' => 'required|date',
             'amount' => 'required|numeric|min:0',

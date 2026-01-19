@@ -43,9 +43,10 @@ class ContactController extends Controller
      */
     public function create()
     {
+        $contact = new Contact;
         $organizations = Organization::orderBy('name_full')->pluck('name_full', 'id');
 
-        return view('admin.contacts.create', compact('organizations'));
+        return view('admin.contacts.create', compact('organizations', 'contact'));
     }
 
     /**

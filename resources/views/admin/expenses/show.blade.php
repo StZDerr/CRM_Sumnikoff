@@ -1,86 +1,113 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="max-w-3xl mx-auto">
+    <div class="max-w-4xl mx-auto py-8">
         <div class="flex items-center justify-between mb-6">
-            <h1 class="text-2xl font-semibold">Расход #{{ $expense->id }}</h1>
-            <div class="flex items-center gap-3">
-                <a href="{{ route('expenses.edit', $expense) }}" class="text-indigo-600 hover:underline">Редактировать</a>
+            <h1 class="text-3xl font-bold text-gray-800">Расход #{{ $expense->id }}</h1>
+            <div class="flex items-center gap-4">
+                @if (auth()->user()->isAdmin())
+                    <a href="{{ route('expenses.edit', $expense) }}"
+                        class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                        Редактировать
+                    </a>
 
-                <form action="{{ route('expenses.destroy', $expense) }}" method="POST" class="inline"
-                    onsubmit="return confirm('Удалить расход?');">
-                    @csrf
-                    @method('DELETE')
-                    <button class="text-red-600 hover:text-red-800">Удалить</button>
-                </form>
+                    <form action="{{ route('expenses.destroy', $expense) }}" method="POST" class="inline"
+                        onsubmit="return confirm('Удалить расход?');">
+                        @csrf
+                        @method('DELETE')
+                        <button class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Удалить</button>
+                    </form>
+                @endif
 
-                <a href="{{ route('expenses.index') }}" class="text-sm text-gray-500">Назад</a>
+                <a href="{{ url()->previous() }}"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+                    Назад
+                </a>
             </div>
         </div>
 
-        <div class="bg-white shadow rounded p-6">
-            <dl class="grid grid-cols-1 gap-4">
-                <div>
-                    <dt class="text-xs text-gray-500">Дата</dt>
-                    <dd class="text-sm">{{ $expense->expense_date?->format('Y-m-d H:i') }}</dd>
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden divide-y divide-gray-100">
+            @if ($expense->expense_date)
+                <div class="p-6 flex justify-between items-center">
+                    <span class="text-gray-500 text-sm">Дата</span>
+                    <span class="text-gray-800 font-medium">{{ $expense->expense_date->format('Y-m-d H:i') }}</span>
                 </div>
+            @endif
 
-                <div>
-                    <dt class="text-xs text-gray-500">Сумма</dt>
-                    <dd class="text-sm">{{ number_format($expense->amount, 2, '.', ' ') }} ₽</dd>
+            @if ($expense->amount)
+                <div class="p-6 flex justify-between items-center bg-gray-50">
+                    <span class="text-gray-500 text-sm">Сумма</span>
+                    <span class="text-gray-800 font-medium">{{ number_format($expense->amount, 2, '.', ' ') }} ₽</span>
                 </div>
+            @endif
 
-                <div>
-                    <dt class="text-xs text-gray-500">Категория</dt>
-                    <dd class="text-sm">{{ $expense->category?->title ?? '-' }}</dd>
+            @if ($expense->category)
+                <div class="p-6 flex justify-between items-center">
+                    <span class="text-gray-500 text-sm">Категория</span>
+                    <span class="text-gray-800 font-medium">{{ $expense->category->title }}</span>
                 </div>
+            @endif
 
-                <div>
-                    <dt class="text-xs text-gray-500">Контрагент</dt>
-                    <dd class="text-sm">{{ $expense->organization?->title ?? '-' }}</dd>
+            @if ($expense->organization)
+                <div class="p-6 flex justify-between items-center bg-gray-50">
+                    <span class="text-gray-500 text-sm">Контрагент</span>
+                    <span class="text-gray-800 font-medium">{{ $expense->organization->title }}</span>
                 </div>
+            @endif
 
-                <div>
-                    <dt class="text-xs text-gray-500">Метод / Счёт</dt>
-                    <dd class="text-sm">
-                        {{ $expense->paymentMethod?->title ?? ($expense->bankAccount?->display_name ?? '-') }}
-                    </dd>
+            @if ($expense->paymentMethod || $expense->bankAccount)
+                <div class="p-6 flex justify-between items-center">
+                    <span class="text-gray-500 text-sm">Метод / Счёт</span>
+                    <span class="text-gray-800 font-medium">
+                        {{ $expense->paymentMethod?->title ?? $expense->bankAccount?->display_name }}
+                    </span>
                 </div>
+            @endif
 
-                <div>
-                    <dt class="text-xs text-gray-500">Проект</dt>
-                    <dd class="text-sm">{{ $expense->project?->title ?? '-' }}</dd>
+            @if ($expense->project)
+                <div class="p-6 flex justify-between items-center bg-gray-50">
+                    <span class="text-gray-500 text-sm">Проект</span>
+                    <span class="text-gray-800 font-medium">{{ $expense->project->title }}</span>
                 </div>
+            @endif
 
-                <div>
-                    <dt class="text-xs text-gray-500">Статус</dt>
-                    <dd class="text-sm">{{ $expense->status }}</dd>
+            @if ($expense->status)
+                <div class="p-6 flex justify-between items-center">
+                    <span class="text-gray-500 text-sm">Статус</span>
+                    <span class="text-gray-800 font-medium">
+                        {{ $expense->status_label }}
+                    </span>
                 </div>
+            @endif
 
-                <div>
-                    <dt class="text-xs text-gray-500">Номер документа</dt>
-                    <dd class="text-sm">{{ $expense->document_number ?? '-' }}</dd>
+            @if ($expense->document_number)
+                <div class="p-6 flex justify-between items-center bg-gray-50">
+                    <span class="text-gray-500 text-sm">Номер документа</span>
+                    <span class="text-gray-800 font-medium">{{ $expense->document_number }}</span>
                 </div>
+            @endif
 
-                <div>
-                    <dt class="text-xs text-gray-500">Примечание</dt>
-                    <dd class="text-sm">{{ $expense->description ?? '-' }}</dd>
+            @if ($expense->description)
+                <div class="p-6">
+                    <span class="text-gray-500 text-sm">Примечание</span>
+                    <p class="mt-1 text-gray-800">{{ $expense->description }}</p>
                 </div>
+            @endif
 
-                <div>
-                    <dt class="text-xs text-gray-500">Документы</dt>
-                    <dd class="text-sm">
-                        @forelse($expense->documents as $doc)
-                            <div class="mb-2">
-                                <a href="{{ $doc->url }}" target="_blank"
-                                    class="text-indigo-600 hover:underline">{{ $doc->original_name ?? $doc->path }}</a>
-                            </div>
-                        @empty
-                            -
-                        @endforelse
-                    </dd>
+            @if ($expense->documents && $expense->documents->count())
+                <div class="p-6 bg-gray-50">
+                    <span class="text-gray-500 text-sm">Документы</span>
+                    <ul class="mt-2 space-y-2">
+                        @foreach ($expense->documents as $doc)
+                            <li>
+                                <a href="{{ $doc->url }}" target="_blank" class="text-indigo-600 hover:underline">
+                                    {{ $doc->original_name ?? $doc->path }}
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
                 </div>
-            </dl>
+            @endif
         </div>
     </div>
 @endsection

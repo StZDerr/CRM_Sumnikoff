@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -32,7 +32,26 @@ class Expense extends Model
         'amount' => 'decimal:2',
     ];
 
-    // Связи
+    // Словарь статусов
+    public const STATUSES = [
+        'paid' => ['label' => 'Оплачено', 'color' => 'green'],
+        'awaiting' => ['label' => 'Ожидает оплаты', 'color' => 'yellow'],
+        'partial' => ['label' => 'Частично оплачено', 'color' => 'orange'],
+        'stoplist' => ['label' => 'Стоп-лист', 'color' => 'red'],
+    ];
+
+    // Человекочитаемый статус
+    public function getStatusLabelAttribute(): string
+    {
+        return self::STATUSES[$this->status]['label'] ?? $this->status;
+    }
+
+    // Цвет Tailwind для статуса
+    public function getStatusColorAttribute(): string
+    {
+        return self::STATUSES[$this->status]['color'] ?? 'gray';
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(\App\Models\ExpenseCategory::class, 'expense_category_id');

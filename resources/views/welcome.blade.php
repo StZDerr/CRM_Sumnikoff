@@ -50,7 +50,7 @@
                         </div>
                     </div>
                     <div class="mt-4">
-                        <a href="{{ route('expenses.index') }}"
+                        <a href="{{ route('operation.index') }}"
                             class="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700">Перейти</a>
                     </div>
                 </div>
