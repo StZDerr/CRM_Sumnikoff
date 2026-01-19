@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\Rules\Password;
 
 class UserRequest extends FormRequest
 {
@@ -35,8 +36,26 @@ class UserRequest extends FormRequest
                 Rule::unique('users', 'email')->ignore($userId),
             ],
             'password' => $this->isMethod('post')
-                ? ['required', 'confirmed', Rules\Password::defaults()]
-                : ['nullable', 'confirmed', Rules\Password::defaults()],
+                ? [
+                    'required',
+                    'confirmed',
+                    Password::min(8)           // минимум 8 символов
+                        ->letters()            // хотя бы одна буква
+                        ->mixedCase()          // хотя бы одна заглавная и одна строчная
+                        ->numbers()            // хотя бы одна цифра
+                        ->symbols()            // хотя бы один спецсимвол
+                        ->uncompromised(),     // проверка на утечки через Have I Been Pwned
+                ]
+                : [
+                    'nullable',
+                    'confirmed',
+                    Password::min(8)
+                        ->letters()
+                        ->mixedCase()
+                        ->numbers()
+                        ->symbols()
+                        ->uncompromised(),
+                ],
             // 🔑 Роль (ENUM)
             'role' => ['required', Rule::in(User::ROLES)],
             'specialty_id' => ['nullable', 'exists:specialties,id'],

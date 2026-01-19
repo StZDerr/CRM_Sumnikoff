@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@push('scripts')
+    @vite('resources/js/password-generator.js')
+@endpush
+
 @section('content')
     <div class="max-w-4xl mx-auto px-4">
         {{-- Header --}}
@@ -163,16 +167,36 @@
                     </h2>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {{-- Поля для ввода пароля --}}
                         <div>
-                            <label class="block text-sm font-medium mb-1">Пароль (оставьте пустым, чтобы не менять)</label>
-                            <input type="password" name="password"
-                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            <label class="block text-sm font-medium mb-1">Пароль</label>
+                            <input type="password" id="password" name="password"
+                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                required>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium mb-1">Подтвердите пароль</label>
-                            <input type="password" name="password_confirmation"
-                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            <label class="block text-sm font-medium mb-1">Повтор пароля</label>
+                            <input type="password" id="password_confirmation" name="password_confirmation"
+                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                required>
+                        </div>
+                    </div>
+
+                    {{-- Сгенерированный пароль --}}
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium mb-1">Сгенерированный пароль</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="generatedPassword" readonly
+                                class="w-full rounded-md border-gray-300 bg-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                            <button type="button" id="copyPassword"
+                                class="px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300 transition">
+                                Скопировать
+                            </button>
+                            <button type="button" id="generatePassword"
+                                class="px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300 transition">
+                                Сгенерировать
+                            </button>
                         </div>
                     </div>
                 </div>
