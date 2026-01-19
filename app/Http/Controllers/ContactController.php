@@ -55,14 +55,30 @@ class ContactController extends Controller
     {
         $data = $request->validate([
             'organization_id' => 'required|exists:organizations,id',
+
             'first_name' => 'nullable|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'last_name' => 'required|string|max:100',
+
             'position' => 'nullable|string|max:255',
+
             'phone' => 'required|string|max:50',
             'email' => 'nullable|email|max:255',
+
             'preferred_messenger' => 'nullable|in:telegram,whatsapp,viber,skype,call,other',
             'messenger_contact' => 'nullable|string|max:255',
+
+            // Паспорт РФ
+            'passport_series' => 'nullable|digits:4',
+            'passport_number' => 'nullable|digits:6',
+            'passport_issued_at' => 'nullable|date',
+            'passport_issued_by' => 'nullable|string|max:255',
+            'passport_department_code' => [
+                'nullable',
+                'regex:/^\d{3}-\d{3}$/',
+            ],
+            'passport_birth_place' => 'nullable|string|max:255',
+
             'comment' => 'nullable|string',
         ]);
 
@@ -70,11 +86,9 @@ class ContactController extends Controller
 
         $contact = Contact::create($data);
 
-        if (! empty($data['organization_id'])) {
-            return redirect()->route('organizations.show', $data['organization_id'])->with('success', 'Контакт создан.');
-        }
-
-        return redirect()->route('contacts.index')->with('success', 'Контакт создан.');
+        return redirect()
+            ->route('organizations.show', $data['organization_id'])
+            ->with('success', 'Контакт создан.');
     }
 
     /**
@@ -113,6 +127,14 @@ class ContactController extends Controller
             'preferred_messenger' => 'nullable|in:telegram,whatsapp,viber,skype,call,other',
             'messenger_contact' => 'nullable|string|max:255',
             'comment' => 'nullable|string',
+
+            // Паспортные данные
+            'passport_series' => 'nullable|string|max:10',
+            'passport_number' => 'nullable|string|max:10',
+            'passport_issued_at' => 'nullable|date',
+            'passport_issued_by' => 'nullable|string|max:255',
+            'passport_department_code' => 'nullable|string|max:10',
+            'passport_birth_place' => 'nullable|string|max:255',
         ]);
 
         $data['updated_by'] = auth()->id();
@@ -120,7 +142,8 @@ class ContactController extends Controller
         $contact->update($data);
 
         if (! empty($data['organization_id'])) {
-            return redirect()->route('organizations.show', $data['organization_id'])->with('success', 'Контакт обновлён.');
+            return redirect()->route('organizations.show', $data['organization_id'])
+                ->with('success', 'Контакт обновлён.');
         }
 
         return redirect()->route('contacts.index')->with('success', 'Контакт обновлён.');

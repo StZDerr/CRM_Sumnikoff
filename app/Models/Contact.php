@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Crypt;
 
 class Contact extends Model
 {
@@ -21,6 +22,15 @@ class Contact extends Model
         'email',
         'preferred_messenger',
         'messenger_contact',
+
+        // Паспорт РФ
+        'passport_series',
+        'passport_number',
+        'passport_issued_at',
+        'passport_issued_by',
+        'passport_department_code',
+        'passport_birth_place',
+
         'comment',
         'created_by',
         'updated_by',
@@ -29,15 +39,64 @@ class Contact extends Model
     /** Приведения типов */
     protected $casts = [
         'organization_id' => 'integer',
+        'passport_issued_at' => 'date',
     ];
 
-    /** Связи */
+    /* -----------------------------------------------------------------
+     |  Шифрование паспортных данных
+     | -----------------------------------------------------------------
+     */
+
+    public function setPassportSeriesAttribute($value): void
+    {
+        $this->attributes['passport_series'] = $value
+            ? Crypt::encryptString($value)
+            : null;
+    }
+
+    public function getPassportSeriesAttribute($value): ?string
+    {
+        return $value ? Crypt::decryptString($value) : null;
+    }
+
+    public function setPassportNumberAttribute($value): void
+    {
+        $this->attributes['passport_number'] = $value
+            ? Crypt::encryptString($value)
+            : null;
+    }
+
+    public function getPassportNumberAttribute($value): ?string
+    {
+        return $value ? Crypt::decryptString($value) : null;
+    }
+
+    /* -----------------------------------------------------------------
+     |  Связи
+     | -----------------------------------------------------------------
+     */
+
     public function organization()
     {
         return $this->belongsTo(\App\Models\Organization::class, 'organization_id');
     }
 
-    /** Возвращает ФИО (читабельное) */
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /* -----------------------------------------------------------------
+     |  Аксессоры
+     | -----------------------------------------------------------------
+     */
+
+    /** Возвращает ФИО */
     public function getFullNameAttribute(): string
     {
         return trim(implode(' ', array_filter([
@@ -47,7 +106,22 @@ class Contact extends Model
         ])));
     }
 
-    /** Scope: поиск по имени/телефону/email */
+    /** Серия + номер (если есть) */
+    public function getPassportFullAttribute(): ?string
+    {
+        if (! $this->passport_series || ! $this->passport_number) {
+            return null;
+        }
+
+        return $this->passport_series.' '.$this->passport_number;
+    }
+
+    /* -----------------------------------------------------------------
+     |  Scopes
+     | -----------------------------------------------------------------
+     */
+
+    /** Поиск по имени / телефону / email */
     public function scopeSearch($query, ?string $q)
     {
         if (empty($q)) {
@@ -65,16 +139,7 @@ class Contact extends Model
 
     public function __toString()
     {
-        return $this->full_name ?: ($this->phone ?? $this->email ?? (string) $this->id);
-    }
-
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function updatedBy()
-    {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->full_name
+            ?: ($this->phone ?? $this->email ?? (string) $this->id);
     }
 }

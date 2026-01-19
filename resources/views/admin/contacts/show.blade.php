@@ -71,6 +71,52 @@
                 </div>
             </div>
 
+            <!-- Паспорт РФ -->
+            @if (
+                $contact->passport_series ||
+                    $contact->passport_number ||
+                    $contact->passport_issued_at ||
+                    $contact->passport_issued_by ||
+                    $contact->passport_department_code ||
+                    $contact->passport_birth_place)
+                <hr class="my-4">
+
+                <h2 class="text-lg font-semibold mb-3">Паспорт РФ</h2>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-sm text-gray-500">Серия</div>
+                        <div class="font-medium">{{ $contact->passport_series ?? '-' }}</div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500">Номер</div>
+                        <div class="font-medium">{{ $contact->passport_number ?? '-' }}</div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500">Дата выдачи</div>
+                        <div class="font-medium">{{ $contact->passport_issued_at?->format('d.m.Y') ?? '-' }}</div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500">Код подразделения</div>
+                        <div class="font-medium">{{ $contact->passport_department_code ?? '-' }}</div>
+                    </div>
+
+                    <div class="col-span-2">
+                        <div class="text-sm text-gray-500">Кем выдан</div>
+                        <div class="font-medium">{{ $contact->passport_issued_by ?? '-' }}</div>
+                    </div>
+
+                    <div class="col-span-2">
+                        <div class="text-sm text-gray-500">Место рождения</div>
+                        <div class="font-medium">{{ $contact->passport_birth_place ?? '-' }}</div>
+                    </div>
+                </div>
+            @endif
+
+
 
             <div class="flex gap-3">
                 <a href="{{ route('contacts.edit', $contact) }}"

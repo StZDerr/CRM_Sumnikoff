@@ -35,7 +35,7 @@ if (document.readyState === "loading") {
         },
         {
             once: true,
-        }
+        },
     );
 } else {
     loadSortableIfNeeded();

@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@push('scripts')
+    @vite('resources/js/passport-masks.js')
+@endpush
+
 @section('content')
     <div class="max-w-4xl mx-auto">
         <div class="flex items-center justify-between mb-6">
@@ -189,14 +193,15 @@
     <div id="addContactModal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="fixed inset-0 bg-black/50" onclick="closeAddContactModal()"></div>
 
-        <div class="bg-white rounded shadow-lg w-full max-w-2xl mx-4 z-10 overflow-auto" role="dialog" aria-modal="true">
+        <div class="bg-white rounded shadow-lg w-full max-w-2xl mx-4 z-10 overflow-auto max-h-[90vh]" role="dialog"
+            aria-modal="true">
             <div class="p-4 border-b flex items-center justify-between">
                 <h3 class="text-lg font-medium">Новый сотрудник кампании —
                     {{ $organization->name_short ?: $organization->name_full }}</h3>
                 <button type="button" class="text-gray-600" onclick="closeAddContactModal()">✕</button>
             </div>
 
-            <div class="p-6">
+            <div class="p-6 overflow-y-auto" style="max-height: calc(90vh - 64px);">
                 <form action="{{ route('contacts.store') }}" method="POST" class="space-y-4">
                     @csrf
                     <input type="hidden" name="organization_id" value="{{ $organization->id }}">
@@ -267,16 +272,67 @@
                         </div>
                     </div>
 
-                    <div>
-                        <x-input-label for="comment" :value="'Комментарий'" />
-                        <textarea id="comment" name="comment" rows="3" class="mt-1 block w-full rounded border px-3 py-2">{{ old('comment') }}</textarea>
-                        <x-input-error :messages="$errors->get('comment')" class="mt-2" />
-                    </div>
+                    {{-- Паспорт РФ --}}
+                    <div class="mt-4 border-t pt-4">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                            Паспорт РФ
+                        </h3>
 
-                    <div class="flex items-center gap-3 mt-4">
-                        <x-primary-button>Создать</x-primary-button>
-                        <button type="button" class="px-3 py-2 border rounded hover:bg-gray-50"
-                            onclick="closeAddContactModal()">Отмена</button>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="passport_series" :value="'Серия паспорта'" />
+                                <x-text-input id="passport_series" name="passport_series" type="text" maxlength="4"
+                                    class="mt-1 block w-full" :value="old('passport_series')" />
+                                <x-input-error :messages="$errors->get('passport_series')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="passport_number" :value="'Номер паспорта'" />
+                                <x-text-input id="passport_number" name="passport_number" type="text" maxlength="6"
+                                    class="mt-1 block w-full" :value="old('passport_number')" />
+                                <x-input-error :messages="$errors->get('passport_number')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="passport_issued_at" :value="'Дата выдачи'" />
+                                <x-text-input id="passport_issued_at" name="passport_issued_at" type="date"
+                                    class="mt-1 block w-full" :value="old('passport_issued_at')" />
+                                <x-input-error :messages="$errors->get('passport_issued_at')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="passport_department_code" :value="'Код подразделения'" />
+                                <x-text-input id="passport_department_code" name="passport_department_code"
+                                    type="text" placeholder="000-000" class="mt-1 block w-full" :value="old('passport_department_code')" />
+                                <x-input-error :messages="$errors->get('passport_department_code')" class="mt-2" />
+                            </div>
+
+                            <div class="col-span-2">
+                                <x-input-label for="passport_issued_by" :value="'Кем выдан'" />
+                                <x-text-input id="passport_issued_by" name="passport_issued_by" type="text"
+                                    class="mt-1 block w-full" :value="old('passport_issued_by')" />
+                                <x-input-error :messages="$errors->get('passport_issued_by')" class="mt-2" />
+                            </div>
+
+                            <div class="col-span-2">
+                                <x-input-label for="passport_birth_place" :value="'Место рождения'" />
+                                <x-text-input id="passport_birth_place" name="passport_birth_place" type="text"
+                                    class="mt-1 block w-full" :value="old('passport_birth_place')" />
+                                <x-input-error :messages="$errors->get('passport_birth_place')" class="mt-2" />
+                            </div>
+
+                            <div class="col-span-2">
+                                <x-input-label for="comment" :value="'Комментарий'" />
+                                <textarea id="comment" name="comment" rows="3" class="mt-1 block w-full rounded border px-3 py-2">{{ old('comment') }}</textarea>
+                                <x-input-error :messages="$errors->get('comment')" class="mt-2" />
+                            </div>
+
+                            <div class="flex items-center gap-3 mt-4">
+                                <x-primary-button>Создать</x-primary-button>
+                                <button type="button" class="px-3 py-2 border rounded hover:bg-gray-50"
+                                    onclick="closeAddContactModal()">Отмена</button>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>

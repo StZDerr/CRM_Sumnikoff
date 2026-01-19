@@ -75,7 +75,7 @@
                     <tr class="group hover:bg-gray-50 transition-colors">
                         <td
                             class="sticky left-0 bg-white group-hover:bg-gray-50 border-r px-3 py-2 font-medium text-gray-800 whitespace-nowrap z-10 min-w-[200px]">
-                            {{ $user->name }}</td>
+                            {{ $user->name_without_middle }}</td>
                         @foreach ($days as $day)
                             @php
                                 $key = $user->id . '_' . $day->toDateString();

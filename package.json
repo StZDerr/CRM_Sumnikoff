@@ -20,6 +20,7 @@
     },
     "dependencies": {
         "glightbox": "^3.3.1",
+        "imask": "^7.6.1",
         "sortablejs": "^1.15.6",
         "tippy.js": "^6.3.7",
         "tom-select": "^2.4.3"

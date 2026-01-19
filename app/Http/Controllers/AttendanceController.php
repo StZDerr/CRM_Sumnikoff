@@ -32,6 +32,20 @@ class AttendanceController extends Controller
             $users = User::where('id', $currentUser->id)->get();
         }
 
+        // Убираем отчество из ФИО
+        $users = $users->map(function ($user) {
+            $parts = explode(' ', $user->name);
+
+            if (count($parts) === 3) {
+                // Имя + Фамилия, без отчества
+                $user->name_without_middle = $parts[0].' '.$parts[2];
+            } else {
+                $user->name_without_middle = $user->name;
+            }
+
+            return $user;
+        });
+
         // Генерация всех дней выбранного года
         $days = collect();
         $date = Carbon::create($year, 1, 1);

@@ -36,7 +36,7 @@ class UserController extends Controller
     public function create(): View
     {
         $specialties = Specialty::where('active', true)
-            ->orderBy('name')
+            ->orderBy('salary')
             ->get();
 
         return view('admin.users.create', compact('specialties'));

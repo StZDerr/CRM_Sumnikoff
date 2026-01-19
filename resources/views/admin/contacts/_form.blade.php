@@ -67,6 +67,56 @@
         <x-input-error :messages="$errors->get('organization_id')" class="mt-2" />
     </div>
 
+    <!-- Паспорт РФ -->
+    <div class="col-span-2 mt-4 border-t pt-4">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">Паспорт РФ</h3>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <x-input-label for="passport_series" :value="'Серия паспорта'" />
+                <x-text-input id="passport_series" name="passport_series" type="text" maxlength="4"
+                    class="mt-1 block w-full" :value="old('passport_series', $contact->passport_series ?? '')" />
+                <x-input-error :messages="$errors->get('passport_series')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="passport_number" :value="'Номер паспорта'" />
+                <x-text-input id="passport_number" name="passport_number" type="text" maxlength="6"
+                    class="mt-1 block w-full" :value="old('passport_number', $contact->passport_number ?? '')" />
+                <x-input-error :messages="$errors->get('passport_number')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="passport_issued_at" :value="'Дата выдачи'" />
+                <x-text-input id="passport_issued_at" name="passport_issued_at" type="date" class="mt-1 block w-full"
+                    :value="old('passport_issued_at', optional($contact->passport_issued_at)->format('Y-m-d'))" />
+                <x-input-error :messages="$errors->get('passport_issued_at')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="passport_department_code" :value="'Код подразделения'" />
+                <x-text-input id="passport_department_code" name="passport_department_code" type="text"
+                    placeholder="000-000" class="mt-1 block w-full" :value="old('passport_department_code', $contact->passport_department_code ?? '')" />
+                <x-input-error :messages="$errors->get('passport_department_code')" class="mt-2" />
+            </div>
+
+            <div class="col-span-2">
+                <x-input-label for="passport_issued_by" :value="'Кем выдан'" />
+                <x-text-input id="passport_issued_by" name="passport_issued_by" type="text" class="mt-1 block w-full"
+                    :value="old('passport_issued_by', $contact->passport_issued_by ?? '')" />
+                <x-input-error :messages="$errors->get('passport_issued_by')" class="mt-2" />
+            </div>
+
+            <div class="col-span-2">
+                <x-input-label for="passport_birth_place" :value="'Место рождения'" />
+                <x-text-input id="passport_birth_place" name="passport_birth_place" type="text"
+                    class="mt-1 block w-full" :value="old('passport_birth_place', $contact->passport_birth_place ?? '')" />
+                <x-input-error :messages="$errors->get('passport_birth_place')" class="mt-2" />
+            </div>
+        </div>
+    </div>
+
+
     <div class="col-span-2">
         <x-input-label for="comment" :value="'Комментарий'" />
         <textarea id="comment" name="comment" rows="4" class="mt-1 block w-full rounded border px-3 py-2">{{ old('comment', $contact->comment ?? '') }}</textarea>
