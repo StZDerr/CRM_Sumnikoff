@@ -13,6 +13,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceStatusController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\PaymentCategoryController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentMethodController;
@@ -110,6 +111,10 @@ Route::middleware('auth')->group(function () {
     // Получить проекты организации в JSON
     Route::get('organizations/{organization}/projects', [OrganizationController::class, 'projectsList'])
         ->name('organizations.projects');
+
+    // Удаление прикреплённого документа
+    Route::delete('documents/{document}', [DocumentController::class, 'destroy'])
+        ->name('documents.destroy');
 
     // AJAX: Создание организации из модального окна
     Route::post('organizations/store-ajax', [OrganizationController::class, 'storeAjax'])

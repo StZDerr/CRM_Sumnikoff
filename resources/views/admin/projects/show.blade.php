@@ -59,14 +59,26 @@
                             {{ $project->contract_amount ? number_format($project->contract_amount, 2, '.', ' ') . ' ₽' : '-' }}
                         </div>
                     </div>
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Дата заключения договора</div>
+                        <div class="mt-1 font-medium text-gray-900">
+                            {{ \Illuminate\Support\Carbon::make($project->contract_date)?->format('Y-m-d') ?? '-' }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Дата обновления</div>
+                        <div class="mt-1 font-medium text-gray-900">{{ $project->updated_at?->format('Y-m-d H:i') ?? '-' }}
+                        </div>
+                    </div>
                 @endif
+
                 <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Дата заключения договора</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Дата отчета</div>
                     <div class="mt-1 font-medium text-gray-900">
-                        {{ \Illuminate\Support\Carbon::make($project->contract_date)?->format('Y-m-d') ?? '-' }}
+                        {{ $project->report_date?->format('Y-m-d') ?? '-' }}
                     </div>
                 </div>
-
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Город</div>
                     <div class="mt-1 font-medium text-gray-900">{{ $project->city ?? '-' }}</div>
@@ -78,11 +90,7 @@
                         {{ $project->payment_due_day ? $project->payment_due_day . ' число' : '-' }}</div>
                 </div> --}}
 
-                <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Дата обновления</div>
-                    <div class="mt-1 font-medium text-gray-900">{{ $project->updated_at?->format('Y-m-d H:i') ?? '-' }}
-                    </div>
-                </div>
+
 
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Статус</div>

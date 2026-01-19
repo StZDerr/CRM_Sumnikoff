@@ -211,6 +211,14 @@
                                                 </svg>
                                             </span>
                                         @endif
+
+                                        {{-- Статус расхода (только для строк-расходов) --}}
+                                        @if ($op['type'] === 'expense')
+                                            <span
+                                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-{{ $m->status_color }}-100 text-{{ $m->status_color }}-700 ml-2">
+                                                {{ $m->status_label }}
+                                            </span>
+                                        @endif
                                     @endif
                                 </td>
                                 <td class="px-4 py-2 text-gray-700 font-medium">{{ $m->project?->title ?? '-' }}</td>

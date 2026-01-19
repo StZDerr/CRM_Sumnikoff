@@ -97,17 +97,64 @@
             @if ($expense->documents && $expense->documents->count())
                 <div class="p-6 bg-gray-50">
                     <span class="text-gray-500 text-sm">Документы</span>
-                    <ul class="mt-2 space-y-2">
+
+                    <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         @foreach ($expense->documents as $doc)
-                            <li>
-                                <a href="{{ $doc->url }}" target="_blank" class="text-indigo-600 hover:underline">
-                                    {{ $doc->original_name ?? $doc->path }}
-                                </a>
-                            </li>
+                            <div class="bg-white border rounded p-2 flex items-center gap-3">
+                                @if (str_starts_with($doc->mime ?? '', 'image/'))
+                                    <a href="{{ $doc->url }}" target="_blank" class="inline-block">
+                                        <img src="{{ $doc->url }}" alt="{{ $doc->original_name ?? 'image' }}"
+                                            class="h-20 w-20 object-cover rounded" />
+                                    </a>
+                                    <div class="text-sm text-gray-600 truncate">{{ $doc->original_name ?? $doc->path }}
+                                    </div>
+                                @else
+                                    <div class="flex-1">
+                                        <a href="{{ $doc->url }}" target="_blank"
+                                            class="text-indigo-600 hover:underline break-words">{{ $doc->original_name ?? $doc->path }}</a>
+                                        <div class="text-xs text-gray-500">
+                                            {{ strtoupper(pathinfo($doc->path ?? '', PATHINFO_EXTENSION)) }}</div>
+                                    </div>
+                                @endif
+
+                                @if (auth()->user()->isAdmin())
+                                    <button type="button" class="text-red-600 text-sm doc-delete-btn"
+                                        data-url="{{ route('documents.destroy', $doc) }}">Удалить</button>
+                                @endif
+                            </div>
                         @endforeach
-                    </ul>
+                    </div>
                 </div>
             @endif
         </div>
     </div>
+
+    <script>
+        // Удаление документов через AJAX (для страницы просмотра)
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.doc-delete-btn');
+            if (!btn) return;
+            if (!confirm('Удалить документ?')) return;
+
+            const url = btn.getAttribute('data-url');
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(r => {
+                if (!r.ok) throw new Error('Ошибка при удалении');
+                return r.json();
+            }).then(() => {
+                const item = btn.closest('.bg-white.border.rounded.p-2');
+                if (item) item.remove();
+            }).catch(err => {
+                console.error(err);
+                alert('Не удалось удалить документ.');
+            });
+        });
+    </script>
+
 @endsection

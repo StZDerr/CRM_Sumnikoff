@@ -127,13 +127,20 @@
             <div class="mt-3 space-y-2">
                 @foreach ($expense->documents as $doc)
                     <div class="flex items-center justify-between gap-3 bg-gray-50 p-2 rounded">
-                        <a href="{{ $doc->url }}" target="_blank"
-                            class="text-sm text-indigo-600 hover:underline">{{ $doc->original_name ?? $doc->path }}</a>
-                        <form action="{{ route('documents.destroy', $doc) }}" method="POST"
-                            onsubmit="return confirm('Удалить документ?');">
-                            @csrf @method('DELETE')
-                            <button class="text-red-600 text-sm">Удалить</button>
-                        </form>
+                        <div class="flex items-center gap-3">
+                            @if (str_starts_with($doc->mime ?? '', 'image/'))
+                                <a href="{{ $doc->url }}" target="_blank" class="inline-block">
+                                    <img src="{{ $doc->url }}" alt="{{ $doc->original_name ?? 'image' }}"
+                                        class="h-12 w-12 object-cover rounded" />
+                                </a>
+                                <div class="text-sm text-gray-600">{{ $doc->original_name ?? $doc->path }}</div>
+                            @else
+                                <a href="{{ $doc->url }}" target="_blank"
+                                    class="text-sm text-indigo-600 hover:underline">{{ $doc->original_name ?? $doc->path }}</a>
+                            @endif
+                        </div>
+                        <button type="button" class="text-red-600 text-sm doc-delete-btn"
+                            data-url="{{ route('documents.destroy', $doc) }}">Удалить</button>
                     </div>
                 @endforeach
             </div>
@@ -185,5 +192,32 @@
         if (orgSelect.value) {
             loadProjects(orgSelect.value);
         }
+    });
+
+    // Удаление документов через AJAX — предотвращает отправку родительской формы
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.doc-delete-btn');
+        if (!btn) return;
+        if (!confirm('Удалить документ?')) return;
+
+        const url = btn.getAttribute('data-url');
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(r => {
+            if (!r.ok) throw new Error('Ошибка при удалении');
+            return r.json();
+        }).then(() => {
+            // удалить DOM-элемент документа
+            const item = btn.closest('.flex.items-center.justify-between');
+            if (item) item.remove();
+        }).catch(err => {
+            console.error(err);
+            alert('Не удалось удалить документ.');
+        });
     });
 </script>

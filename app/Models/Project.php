@@ -237,4 +237,16 @@ class Project extends Model
             ->toArray();
     }
 
+    public function getReportDateAttribute(): ?Carbon
+    {
+        if (! $this->contract_date) {
+            return null;
+        }
+
+        $contractDay = $this->contract_date->day;
+
+        return now()
+            ->addMonth()
+            ->setDay($contractDay);
+    }
 }
