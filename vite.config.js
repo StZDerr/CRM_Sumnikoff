@@ -9,7 +9,7 @@ export default defineConfig({
                 "resources/js/sortable.js",
                 "resources/js/app.js",
                 "resources/js/passport-masks.js",
-                "resources/js/comments.js",
+                "resources/js/projects/comments.js",
                 "resources/js/password-generator.js",
             ],
             refresh: true,
