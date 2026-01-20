@@ -12,85 +12,10 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
 
-        // Если текущий пользователь — не admin, показываем welcome (редирект после логина сюда)
+        // Если текущий пользователь — не admin, редиректим на отдельный экшен welcome
         $user = auth()->user();
         if (! $user || ! $user->isAdmin()) {
-            // Делаем данные для графика выплат по табелям (последние 12 месяцев)
-            $end = Carbon::now()->startOfMonth();
-            $start = $end->copy()->subMonths(11);
-
-            // Инициализируем пустой период (Y-m keys)
-            $periodKeys = collect();
-            $labels = [];
-            $current = $start->copy();
-            while ($current->lte($end)) {
-                $periodKeys->push($current->format('Y-m'));
-                $labels[] = $current->locale('ru')->isoFormat('MMM YYYY');
-                $current->addMonth();
-            }
-
-            // Получаем оплаченные табеля пользователя за период
-            $reports = \App\Models\SalaryReport::where('status', 'paid')
-                ->where('user_id', $user->id)
-                ->whereBetween('month', [$start->toDateString(), $end->copy()->endOfMonth()->toDateString()])
-                ->get()
-                ->groupBy(function ($r) {
-                    return \Carbon\Carbon::parse($r->month)->format('Y-m');
-                });
-
-            $data = [];
-            foreach ($periodKeys as $key) {
-                $data[] = isset($reports[$key]) ? $reports[$key]->sum('total_salary') : 0;
-            }
-
-            // Последний оплаченный табель
-            $lastPaid = \App\Models\SalaryReport::with('projectBonuses.project')
-                ->where('user_id', $user->id)
-                ->where('status', 'paid')
-                ->orderByDesc('month')
-                ->first();
-
-            // Ожидаемая зарплата за текущий месяц (фиксированные значения: 22 рабочих дня, 0 удалённых, 0 аудитов, произвольные премии = 0)
-            $projects = $user->projects()->get();
-            $individualBonusPercent = $user->individual_bonus_percent ?? 5;
-            $expectedProjectBonuses = [];
-            $calculatedTotalBonus = 0;
-
-            foreach ($projects as $project) {
-                $contractAmount = $project->contract_amount ?? 0;
-                $maxBonus = $contractAmount * ($individualBonusPercent / 100);
-                $daysWorked = 22; // фиксированное требование
-                $bonusAmount = $maxBonus; // при 22 рабочих днях = максимальная премия
-
-                $expectedProjectBonuses[] = [
-                    'project' => $project,
-                    'contract_amount' => $contractAmount,
-                    'bonus_percent' => $individualBonusPercent,
-                    'max_bonus' => $maxBonus,
-                    'days_worked' => $daysWorked,
-                    'bonus_amount' => $bonusAmount,
-                ];
-
-                $calculatedTotalBonus += $bonusAmount;
-            }
-
-            $baseSalary = $user->salary_override ?? ($user->specialty->salary ?? 0);
-            $expectedTotal = $baseSalary + $calculatedTotalBonus;
-
-            return view('welcome', [
-                'salaryLabels' => $labels,
-                'salaryData' => $data,
-                'lastPaid' => $lastPaid,
-                'expected' => [
-                    'base_salary' => $baseSalary,
-                    'ordinary_days' => 22,
-                    'remote_days' => 0,
-                    'audits_count' => 0,
-                    'individual_bonus_percent' => $individualBonusPercent,
-                    'projectBonuses' => $expectedProjectBonuses,
-                    'total_expected' => $expectedTotal,
-                ],
-            ]);
+            return redirect()->route('welcome');
         }
 
         $period = $request->query('period');
@@ -229,6 +154,9 @@ class DashboardController extends Controller
         }
 
         $monthLabel = $start->locale('ru')->isoFormat('MMMM YYYY');
+
+        // Expected profit (sum of contract_amount for open projects and those closed this month)
+        $expectedProfit = \App\Models\Project::getExpectedProfitForMonth($start);
 
         // Top 5 projects by income for the selected month
         $topProjectsRows = Payment::selectRaw('projects.id, COALESCE(projects.title, CONCAT("Проект #", projects.id)) as title, SUM(payments.amount) as total')
@@ -388,8 +316,96 @@ class DashboardController extends Controller
             'topProjectsLabels', 'topProjectsData', 'topMaxChart', 'topStep',
             'activeData', 'activeStep',
             'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
-            'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount'
+            'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'expectedProfit'
         ));
+    }
+
+    /**
+     * Показывает welcome-страницу для не-admin пользователей (маркетологов/PM).
+     */
+    public function welcome(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            abort(403);
+        }
+
+        // Делаем данные для графика выплат по табелям (последние 12 месяцев)
+        $end = Carbon::now()->startOfMonth();
+        $start = $end->copy()->subMonths(11);
+
+        // Инициализируем пустой период (Y-m keys)
+        $periodKeys = collect();
+        $labels = [];
+        $current = $start->copy();
+        while ($current->lte($end)) {
+            $periodKeys->push($current->format('Y-m'));
+            $labels[] = $current->locale('ru')->isoFormat('MMM YYYY');
+            $current->addMonth();
+        }
+
+        // Получаем оплаченные табеля пользователя за период
+        $reports = \App\Models\SalaryReport::where('status', 'paid')
+            ->where('user_id', $user->id)
+            ->whereBetween('month', [$start->toDateString(), $end->copy()->endOfMonth()->toDateString()])
+            ->get()
+            ->groupBy(function ($r) {
+                return \Carbon\Carbon::parse($r->month)->format('Y-m');
+            });
+
+        $data = [];
+        foreach ($periodKeys as $key) {
+            $data[] = isset($reports[$key]) ? $reports[$key]->sum('total_salary') : 0;
+        }
+
+        // Последний оплаченный табель
+        $lastPaid = \App\Models\SalaryReport::with('projectBonuses.project')
+            ->where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->orderByDesc('month')
+            ->first();
+
+        // Ожидаемая зарплата за текущий месяц (фиксированные значения: 22 рабочих дня, 0 удалённых, 0 аудитов, произвольные премии = 0)
+        $projects = $user->projects()->get();
+        $individualBonusPercent = $user->individual_bonus_percent ?? 5;
+        $expectedProjectBonuses = [];
+        $calculatedTotalBonus = 0;
+
+        foreach ($projects as $project) {
+            $contractAmount = $project->contract_amount ?? 0;
+            $maxBonus = $contractAmount * ($individualBonusPercent / 100);
+            $daysWorked = 22; // фиксированное требование
+            $bonusAmount = $maxBonus; // при 22 рабочих днях = максимальная премия
+
+            $expectedProjectBonuses[] = [
+                'project' => $project,
+                'contract_amount' => $contractAmount,
+                'bonus_percent' => $individualBonusPercent,
+                'max_bonus' => $maxBonus,
+                'days_worked' => $daysWorked,
+                'bonus_amount' => $bonusAmount,
+            ];
+
+            $calculatedTotalBonus += $bonusAmount;
+        }
+
+        $baseSalary = $user->salary_override ?? ($user->specialty->salary ?? 0);
+        $expectedTotal = $baseSalary + $calculatedTotalBonus;
+
+        return view('welcome', [
+            'salaryLabels' => $labels,
+            'salaryData' => $data,
+            'lastPaid' => $lastPaid,
+            'expected' => [
+                'base_salary' => $baseSalary,
+                'ordinary_days' => 22,
+                'remote_days' => 0,
+                'audits_count' => 0,
+                'individual_bonus_percent' => $individualBonusPercent,
+                'projectBonuses' => $expectedProjectBonuses,
+                'total_expected' => $expectedTotal,
+            ],
+        ]);
     }
 
     /**

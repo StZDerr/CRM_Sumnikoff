@@ -18,6 +18,7 @@
                         @if (auth()->user()->isAdmin())
                             <th class="p-3 text-left">Действия</th>
                         @endif
+                        <th class="p-3 text-left">Соц сети</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -78,10 +79,23 @@
                                             Удалить
                                         </button>
                                     </form>
+                                @endif
                             </td>
-                    @endif
-
-                    </tr>
+                            <td class="p-3">
+                                @if ($user->socials->isNotEmpty())
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        @foreach ($user->socials as $social)
+                                            <a href="{{ $social->url }}" target="_blank"
+                                                class="text-blue-600 underline flex items-center gap-1">
+                                                {{ ucfirst($social->platform) }}
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="text-gray-500 text-sm">Социальные сети не указаны</div>
+                                @endif
+                            </td>
+                        </tr>
                     @endforeach
                 </tbody>
             </table>

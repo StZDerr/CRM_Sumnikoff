@@ -6,6 +6,7 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CampaignSourceController;
 use App\Http\Controllers\CampaignStatusController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ImportanceController;
@@ -13,7 +14,6 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceStatusController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\OrganizationController;
-use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\PaymentCategoryController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentMethodController;
@@ -34,6 +34,11 @@ Route::get('/', function () {
 Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+// Welcome page for non-admin users (маркетологи / PM)
+Route::get('/welcome', [\App\Http\Controllers\DashboardController::class, 'welcome'])
+    ->middleware(['auth', 'verified'])
+    ->name('welcome');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

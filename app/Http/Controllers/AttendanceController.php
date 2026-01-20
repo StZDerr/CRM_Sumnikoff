@@ -38,7 +38,7 @@ class AttendanceController extends Controller
 
             if (count($parts) === 3) {
                 // Имя + Фамилия, без отчества
-                $user->name_without_middle = $parts[0].' '.$parts[2];
+                $user->name_without_middle = $parts[0].' '.$parts[1];
             } else {
                 $user->name_without_middle = $user->name;
             }

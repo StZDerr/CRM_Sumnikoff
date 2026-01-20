@@ -77,6 +77,7 @@
                     'bank-accounts.*',
                     'invoice-statuses.*',
                     'payment-categories.*',
+                    'payment-methods.*',
                     'expense-categories.*',
                 );
             @endphp
@@ -90,11 +91,14 @@
                 </x-dropdown-link>
 
                 <x-dropdown-link :href="route('payment-categories.index')" :active="request()->routeIs('payment-categories.*')">
-                    Статьи поступлений
+                    Категории поступлений
                 </x-dropdown-link>
 
                 <x-dropdown-link :href="route('expense-categories.index')" :active="request()->routeIs('expense-categories.*')">
                     Статьи расходов
+                </x-dropdown-link>
+                <x-dropdown-link :href="route('payment-methods.index')" :active="request()->routeIs('payment-methods.*')">
+                    Способы оплаты
                 </x-dropdown-link>
             </x-buttons-dropdawn>
         @endif
@@ -105,7 +109,7 @@
                 'projects.*',
                 'calendar.*',
                 'stages.*',
-                'payment-methods.*',
+
                 'importances.*',
             );
         @endphp
@@ -124,9 +128,7 @@
                     Этапы
                 </x-dropdown-link>
 
-                <x-dropdown-link :href="route('payment-methods.index')" :active="request()->routeIs('payment-methods.*')">
-                    Способы оплаты
-                </x-dropdown-link>
+
 
                 <x-dropdown-link :href="route('importances.index')" :active="request()->routeIs('importances.*')">
                     Уровень важности

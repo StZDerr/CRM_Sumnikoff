@@ -57,7 +57,27 @@ class UserController extends Controller
         // Индивидуальная премия по умолчанию 5%
         $data['individual_bonus_percent'] = $data['individual_bonus_percent'] ?? 5;
 
-        User::create($data);
+        // Создаем пользователя
+        $user = User::create($data);
+
+        // ==== СОЦСЕТИ ====
+        // Если пришли соцсети
+        if ($request->has('socials')) {
+            foreach ($request->input('socials') as $social) {
+                // Проверяем, что есть хотя бы платформа и ссылка
+                if (! empty($social['platform']) && ! empty($social['url'])) {
+                    // Для Telegram автоматически формируем ссылку, если введен ник
+                    $url = $social['platform'] === 'telegram'
+                        ? 'https://t.me/'.ltrim($social['url'], '@')
+                        : $social['url'];
+
+                    $user->socials()->create([
+                        'platform' => $social['platform'],
+                        'url' => $url,
+                    ]);
+                }
+            }
+        }
 
         return redirect()->route('users.index')->with('success', 'Пользователь создан');
     }
@@ -80,12 +100,14 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
+        // Хэшируем пароль, если он введён
         if (empty($data['password'])) {
             unset($data['password']);
         } else {
             $data['password'] = Hash::make($data['password']);
         }
 
+        // Если не начальник — обнуляем индивидуальный оклад
         if (empty($data['is_department_head'])) {
             $data['salary_override'] = null;
             $data['is_department_head'] = false;
@@ -94,7 +116,28 @@ class UserController extends Controller
         // Индивидуальная премия по умолчанию 5%
         $data['individual_bonus_percent'] = $data['individual_bonus_percent'] ?? 5;
 
+        // Обновляем данные пользователя
         $user->update($data);
+
+        // ==== СОЦСЕТИ ====
+        // Удаляем старые соцсети и создаем новые
+        $user->socials()->delete();
+
+        if ($request->has('socials')) {
+            foreach ($request->input('socials') as $social) {
+                if (! empty($social['platform']) && ! empty($social['url'])) {
+                    // Автоматическая ссылка для Telegram
+                    $url = $social['platform'] === 'telegram'
+                        ? 'https://t.me/'.ltrim($social['url'], '@')
+                        : $social['url'];
+
+                    $user->socials()->create([
+                        'platform' => $social['platform'],
+                        'url' => $url,
+                    ]);
+                }
+            }
+        }
 
         return redirect()->route('users.index')->with('success', 'Пользователь обновлён');
     }

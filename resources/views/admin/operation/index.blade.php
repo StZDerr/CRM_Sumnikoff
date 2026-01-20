@@ -221,7 +221,22 @@
                                         @endif
                                     @endif
                                 </td>
-                                <td class="px-4 py-2 text-gray-700 font-medium">{{ $m->project?->title ?? '-' }}</td>
+                                <td class="px-4 py-2 text-gray-700 font-medium">
+                                    @if ($m->project)
+                                        @can('view', $m->project)
+                                            <a href="{{ route('projects.show', $m->project) }}"
+                                                class="text-blue-600 hover:text-blue-800 hover:underline">
+                                                {{ $m->project->title }}
+                                            </a>
+                                        @else
+                                            <span class="text-gray-400">
+                                                {{ $m->project->title }}
+                                            </span>
+                                        @endcan
+                                    @else
+                                        -
+                                    @endif
+                                </td>
                                 <td class="px-4 py-2 max-w-xs truncate text-gray-600">
                                     {{ $op['type'] === 'payment' ? $m->note ?? '' : $m->description ?? '' }}
                                     @if ($op['type'] === 'expense' && $m->category?->is_salary && $m->salary_recipient)

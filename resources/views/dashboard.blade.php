@@ -103,23 +103,38 @@
                 </div>
             </div>
 
-            {{-- ===== BARTER AND OWN PROJECTS (count) ===== --}}
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                <div class="bg-white rounded-xl shadow p-4">
-                    <div class="text-xs text-gray-500">Бартерные проекты</div>
-                    <div class="text-2xl font-bold mt-1 text-yellow-600">
-                        {{ $barterCount ?? 0 }}
+            @php
+                $currentMonth = \Carbon\Carbon::now()->format('Y-m');
+            @endphp
+            @if (request('period') !== 'all' && ($monthParam ?? $currentMonth) === $currentMonth)
+                {{-- ===== BARTER AND OWN PROJECTS (count) ===== --}}
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                    <div class="bg-white rounded-xl shadow p-4">
+                        <div class="text-xs text-gray-500">Бартерные проекты (на
+                            {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
+                        <div class="text-2xl font-bold mt-1 text-yellow-600">
+                            {{ $barterCount ?? 0 }}
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-4">
+                        <div class="text-xs text-gray-500">Свои проекты (на
+                            {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
+                        <div class="text-2xl font-bold mt-1 text-indigo-600">
+                            {{ $ownCount ?? 0 }}
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-4">
+                        <div class="text-xs text-gray-500">Ожидаемая прибыль (сумма по контрактам на
+                            {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
+                        <div class="text-2xl font-bold mt-1 text-indigo-600">
+                            {{ number_format($expectedProfit ?? 0, 2, '.', ' ') }} ₽
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">Не учитываются бартерные и свои проекты</div>
                     </div>
                 </div>
-
-                <div class="bg-white rounded-xl shadow p-4">
-                    <div class="text-xs text-gray-500">Свои проекты</div>
-                    <div class="text-2xl font-bold mt-1 text-indigo-600">
-                        {{ $ownCount ?? 0 }}
-                    </div>
-                </div>
-            </div>
-
+            @endif
             {{-- ===== TAXES SUMMARY (VAT + USN) ===== --}}
             <div class="bg-white rounded-xl shadow p-4 mt-4">
                 <div class="text-sm text-gray-500 mb-2">Налоги за выбранный месяц</div>

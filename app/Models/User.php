@@ -34,6 +34,7 @@ class User extends Authenticatable
         'name',
         'login',
         'email',
+        'birth_date',
         'password',
         'role',
         'specialty_id',
@@ -57,6 +58,7 @@ class User extends Authenticatable
             'is_department_head' => 'boolean',
             'specialty_id' => 'integer',
             'individual_bonus_percent' => 'integer', // новое поле
+            'birth_date' => 'date',
         ];
     }
 
@@ -128,6 +130,11 @@ class User extends Authenticatable
     public function activeVacation()
     {
         return $this->hasOne(\App\Models\Vacation::class)->where('active', true);
+    }
+
+    public function socials()
+    {
+        return $this->hasMany(UserSocial::class);
     }
 
     // Валидируем перед сохранением

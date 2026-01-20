@@ -98,6 +98,13 @@
                                 @endforeach
                             </select>
                         </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Дата рождения</label>
+                            <input type="date" name="birth_date"
+                                value="{{ old('birth_date', $user->birth_date ? $user->birth_date->format('Y-m-d') : '') }}"
+                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
                     </div>
                 </div>
 
@@ -160,6 +167,47 @@
                     </div>
                 </div>
 
+                {{-- Социальные сети --}}
+                <div>
+                    <h2 class="text-lg font-medium text-gray-800 mb-4">
+                        Социальные сети
+                    </h2>
+
+                    <div id="socialsContainer" class="space-y-2">
+                        @php
+                            $oldSocials = old('socials', $user->socials->toArray());
+                        @endphp
+
+                        @forelse($oldSocials as $i => $social)
+                            <div class="flex gap-2 items-center">
+                                <input type="text" name="socials[{{ $i }}][platform]"
+                                    placeholder="Название соцсети" value="{{ $social['platform'] ?? '' }}"
+                                    class="rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                <input type="text" name="socials[{{ $i }}][url]"
+                                    placeholder="Ссылка или логин" value="{{ $social['url'] ?? '' }}"
+                                    class="flex-1 rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                <button type="button"
+                                    class="removeSocial px-2 py-1 text-red-600 hover:bg-red-100 rounded">×</button>
+                            </div>
+                        @empty
+                            <div class="flex gap-2 items-center">
+                                <input type="text" name="socials[0][platform]" placeholder="Название соцсети"
+                                    class="rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                <input type="text" name="socials[0][url]" placeholder="Ссылка или логин"
+                                    class="flex-1 rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                <button type="button"
+                                    class="removeSocial px-2 py-1 text-red-600 hover:bg-red-100 rounded">×</button>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    <button type="button" id="addSocial"
+                        class="mt-2 px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300 transition">
+                        Добавить соцсеть
+                    </button>
+                </div>
+
+
                 {{-- Пароль --}}
                 <div>
                     <h2 class="text-lg font-medium text-gray-800 mb-4">
@@ -171,15 +219,13 @@
                         <div>
                             <label class="block text-sm font-medium mb-1">Пароль</label>
                             <input type="password" id="password" name="password"
-                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                                required>
+                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium mb-1">Повтор пароля</label>
                             <input type="password" id="password_confirmation" name="password_confirmation"
-                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                                required>
+                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
                     </div>
 
@@ -226,6 +272,28 @@
 
             checkbox.addEventListener('change', () => {
                 block.style.display = checkbox.checked ? 'block' : 'none';
+            });
+            const container = document.getElementById('socialsContainer');
+            const addBtn = document.getElementById('addSocial');
+
+            addBtn.addEventListener('click', () => {
+                const index = container.children.length;
+                const div = document.createElement('div');
+                div.className = 'flex gap-2 items-center';
+                div.innerHTML = `
+            <input type="text" name="socials[${index}][platform]" placeholder="Название соцсети"
+                class="rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+            <input type="text" name="socials[${index}][url]" placeholder="Ссылка или логин"
+                class="flex-1 rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+            <button type="button" class="removeSocial px-2 py-1 text-red-600 hover:bg-red-100 rounded">×</button>
+        `;
+                container.appendChild(div);
+            });
+
+            container.addEventListener('click', (e) => {
+                if (e.target.classList.contains('removeSocial')) {
+                    e.target.parentElement.remove();
+                }
             });
         });
     </script>

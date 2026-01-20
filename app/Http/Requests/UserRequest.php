@@ -35,6 +35,7 @@ class UserRequest extends FormRequest
                 'nullable', 'email', 'max:255',
                 Rule::unique('users', 'email')->ignore($userId),
             ],
+            'birth_date' => ['nullable', 'date'],
             'password' => $this->isMethod('post')
                 ? [
                     'required',

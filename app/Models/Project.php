@@ -54,6 +54,34 @@ class Project extends Model
         'closed_at' => 'datetime',
     ];
 
+    /**
+     * Scope: ожидаемая прибыль на текущий месяц
+     */
+    public function scopeExpectedProfitForMonth($query, ?Carbon $month = null)
+    {
+        $month = $month ?: Carbon::now();
+        $start = $month->copy()->startOfMonth();
+        $end = $month->copy()->endOfMonth();
+
+        // Выбираем проекты, которые либо открытые, либо закрыты в этом месяце
+        // И при этом исключаем бартерные и "свои" проекты (payment_type = 'barter'|'own')
+        return $query->where(function ($q) use ($start, $end) {
+            $q->whereNull('closed_at') // открытые проекты
+                ->orWhereBetween('closed_at', [$start, $end]); // закрытые в этом месяце
+        })->where(function ($q) {
+            $q->whereNull('payment_type')
+                ->orWhereNotIn('payment_type', ['barter', 'own']);
+        });
+    }
+
+    /**
+     * Получить сумму ожидаемой прибыли
+     */
+    public static function getExpectedProfitForMonth(?Carbon $month = null): float
+    {
+        return self::expectedProfitForMonth($month)->sum('contract_amount'); // или 'profit', если есть поле
+    }
+
     // Organization
     public function organization()
     {

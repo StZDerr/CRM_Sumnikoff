@@ -4,7 +4,7 @@
     <div class="max-w-3xl mx-auto">
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
-                <a href="{{ url()->previous() }}" class="px-3 py-1 border rounded hover:bg-gray-100">← Назад</a>
+                <a href="{{ route('operation.index') }}" class="px-3 py-1 border rounded hover:bg-gray-100">← Назад</a>
                 <h1 class="text-2xl">Поступление — {{ number_format($payment->amount, 2) }} ₽</h1>
             </div>
 
