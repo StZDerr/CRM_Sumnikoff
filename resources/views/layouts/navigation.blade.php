@@ -22,7 +22,7 @@
         {{-- Пользователи: admin + project manager --}}
         @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
             <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                Пользователи
+                Сотрудники
             </x-nav-link>
         @endif
 

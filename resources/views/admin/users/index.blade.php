@@ -25,7 +25,14 @@
                     @foreach ($users as $user)
                         <tr class="border-t">
                             <td class="p-3">{{ $user->id }}</td>
-                            <td class="p-3">{{ $user->name }}</td>
+
+                            <td class="p-3">
+                                <a href="{{ route('user.dashboard', $user) }}">
+
+                                    {{ $user->name }}
+                                </a>
+                            </td>
+
                             <td class="p-3">
                                 @if ($user->activeVacation)
                                     <span
