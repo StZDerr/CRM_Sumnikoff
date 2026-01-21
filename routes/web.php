@@ -23,6 +23,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SpecialtyController;
 use App\Http\Controllers\StageController;
+use App\Http\Controllers\RegDomainController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VacationController;
 use Illuminate\Support\Facades\Route;
@@ -69,6 +70,9 @@ Route::middleware('auth')->group(function () {
     Route::post('vacations/{vacation}/end', [VacationController::class, 'end'])->name('vacations.end');
 
     Route::get('users/{user}/dashboard', [UserController::class, 'userDashboard'])->name('user.dashboard');
+    Route::get('reg/domains', [RegDomainController::class, 'index'])
+        ->name('reg.domains.index')
+        ->middleware('admin');
     // Получить отпуска пользователя (HTML partial для offcanvas)
     Route::get('users/{user}/vacations', [VacationController::class, 'userVacations'])->name('users.vacations');
     // endpoint для сохранения порядка (название: importances.reorder)
