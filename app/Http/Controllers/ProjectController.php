@@ -95,7 +95,7 @@ class ProjectController extends Controller
             ->orderByRaw("(COALESCE({$hasInvoicesSubquery}, 0) > 0 AND {$balanceSubquery} < 0) DESC")
             ->orderByRaw("{$balanceSubquery} ASC")
             ->orderBy('title')
-            ->paginate(25)
+            ->paginate(100)
             ->withQueryString();
 
         $organizations = Organization::orderBy('name_full')->pluck('name_full', 'id');
@@ -128,7 +128,7 @@ class ProjectController extends Controller
     {
         \Illuminate\Support\Facades\Gate::authorize('create', Project::class);
 
-        $data = $request->validate([ 
+        $data = $request->validate([
             'title' => 'required|string|max:255',
             'organization_id' => 'required|exists:organizations,id',
             'city' => 'required|string|max:255',
@@ -202,7 +202,7 @@ class ProjectController extends Controller
     {
         \Illuminate\Support\Facades\Gate::authorize('update', $project);
 
-        $data = $request->validate([ 
+        $data = $request->validate([
             'title' => 'required|string|max:255',
             'organization_id' => 'required|exists:organizations,id',
             'city' => 'required|string|max:255',
