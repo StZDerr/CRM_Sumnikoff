@@ -117,4 +117,24 @@ class RegDomainController extends Controller
         return redirect()->route('domains.index')
             ->with('success', $output ?: 'Синхронизация выполнена');
     }
+
+    public function renew(Request $request, Domain $domain): RedirectResponse
+    {
+        // Разрешаем продление только для доменов, созданных вручную
+        abort_unless($domain->provider === 'manual', 403);
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $amount = (float) $data['amount'];
+
+        // Обновляем дату истечения и цену
+        $expires = $domain->expires_at ? $domain->expires_at->copy()->addYear() : now()->addYear();
+        $domain->expires_at = $expires;
+        $domain->renew_price = $amount;
+        $domain->save();
+
+        return redirect()->route('domains.index')->with('success', "Домен {$domain->name} продлён на год");
+    }
 }

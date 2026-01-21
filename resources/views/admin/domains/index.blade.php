@@ -104,6 +104,8 @@
                                                 Привязать проект
                                             </button>
                                         @else
+                                            <button type="button" class="text-emerald-600 hover:underline mr-2"
+                                                onclick="openRenewModal('{{ $domain->id }}')">Продлить на год</button>
                                             <a href="{{ route('domains.edit', $domain) }}"
                                                 class="text-indigo-600 hover:underline">Изменить</a>
                                             <form action="{{ route('domains.destroy', $domain) }}" method="POST"
@@ -161,6 +163,37 @@
         @endif
     @endforeach
 
+    @foreach ($domains as $domain)
+        @if ($domain->provider === 'manual')
+            <div id="renewModal-{{ $domain->id }}" class="fixed inset-0 z-50 hidden items-center justify-center">
+                <div class="fixed inset-0 bg-black/50" onclick="closeRenewModal('{{ $domain->id }}')"></div>
+                <div class="bg-white rounded shadow-lg w-full max-w-md mx-4 z-10" role="dialog" aria-modal="true">
+                    <div class="p-4 border-b flex items-center justify-between">
+                        <h3 class="text-lg font-semibold">Продление домена на год</h3>
+                        <button type="button" class="text-gray-600"
+                            onclick="closeRenewModal('{{ $domain->id }}')">✕</button>
+                    </div>
+                    <form method="POST" action="{{ route('domains.renew', $domain) }}" class="p-4 space-y-4">
+                        @csrf
+                        <div>
+                            <p class="text-sm text-gray-600 mb-2">Домен: <strong>{{ $domain->name }}</strong></p>
+                            <label class="block text-sm text-gray-500 mb-1">Сумма продления</label>
+                            <input type="number" step="0.01" name="amount" required
+                                class="w-full border rounded px-3 py-2"
+                                value="{{ old('amount', $domain->renew_price ?? '') }}">
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" class="px-3 py-2 text-sm border rounded"
+                                onclick="closeRenewModal('{{ $domain->id }}')">Отмена</button>
+                            <button type="submit"
+                                class="px-3 py-2 text-sm bg-indigo-600 text-white rounded">Продлить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endif
+    @endforeach
+
     <script>
         function openProjectModal(id) {
             const modal = document.getElementById('projectModal-' + id);
@@ -171,6 +204,20 @@
 
         function closeProjectModal(id) {
             const modal = document.getElementById('projectModal-' + id);
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function openRenewModal(id) {
+            const modal = document.getElementById('renewModal-' + id);
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeRenewModal(id) {
+            const modal = document.getElementById('renewModal-' + id);
             if (!modal) return;
             modal.classList.add('hidden');
             modal.classList.remove('flex');

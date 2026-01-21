@@ -82,6 +82,9 @@ Route::middleware('auth')->group(function () {
     Route::post('reg/domains/sync', [RegDomainController::class, 'sync'])
         ->name('domains.sync')
         ->middleware('admin');
+    Route::post('reg/domains/{domain}/renew', [RegDomainController::class, 'renew'])
+        ->name('domains.renew')
+        ->middleware('admin');
     Route::get('reg/domains/{domain}/edit', [RegDomainController::class, 'edit'])
         ->name('domains.edit')
         ->middleware('admin');
