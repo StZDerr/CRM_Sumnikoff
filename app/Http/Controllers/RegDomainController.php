@@ -17,6 +17,9 @@ class RegDomainController extends Controller
     {
         $domains = [];
         $error = null;
+        $priceError = null;
+        $renewPrices = [];
+        $currency = 'RUR';
 
         $username = config('regapi.username');
         $password = config('regapi.password');
@@ -27,17 +30,30 @@ class RegDomainController extends Controller
             try {
                 $client = RegApiClient::make();
                 $domains = $client->getDomains();
-
                 $domains = collect($domains)
                     ->filter(fn ($item) => ! empty($item['dname']))
                     ->sortBy('expiration_date')
                     ->values()
                     ->all();
+
+                try {
+                    $pricesData = $client->getDomainPrices();
+                    $currency = $pricesData['currency'] ?? $currency;
+                    $prices = $pricesData['prices'] ?? [];
+
+                    foreach ($prices as $tld => $priceData) {
+                        if (isset($priceData['renew_price'])) {
+                            $renewPrices[$tld] = $priceData['renew_price'];
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $priceError = $e->getMessage();
+                }
             } catch (\Throwable $e) {
                 $error = $e->getMessage();
             }
         }
 
-        return view('admin.domains.index', compact('domains', 'error'));
+        return view('admin.domains.index', compact('domains', 'error', 'priceError', 'renewPrices', 'currency'));
     }
 }

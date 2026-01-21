@@ -17,6 +17,12 @@
             </div>
         @endif
 
+        @if ($priceError)
+            <div class="rounded-lg bg-yellow-50 border border-yellow-200 p-4 text-yellow-700 text-sm">
+                {{ $priceError }}
+            </div>
+        @endif
+
         <div class="rounded-xl bg-white p-5 shadow">
             @if (empty($domains))
                 <p class="text-sm text-gray-500">Нет данных для отображения.</p>
@@ -28,6 +34,7 @@
                                 <th class="py-2 pr-4">Домен</th>
                                 <th class="py-2 pr-4">Истекает</th>
                                 <th class="py-2 pr-4">Статус</th>
+                                <th class="py-2 pr-4">Продление</th>
                                 <th class="py-2 pr-4">ID услуги</th>
                             </tr>
                         </thead>
@@ -41,7 +48,34 @@
                                         {{ isset($domain['expiration_date']) ? \Carbon\Carbon::parse($domain['expiration_date'])->format('d.m.Y') : '—' }}
                                     </td>
                                     <td class="py-2 pr-4">
-                                        {{ $domain['state'] ?? '—' }}
+                                        @php
+                                            $stateMap = [
+                                                'N' => 'Неактивна',
+                                                'A' => 'Активна',
+                                                'S' => 'Приостановлена',
+                                            ];
+                                            $stateCode = $domain['state'] ?? null;
+                                        @endphp
+                                        {{ $stateCode ? $stateMap[$stateCode] ?? $stateCode : '—' }}
+                                    </td>
+                                    <td class="py-2 pr-4">
+                                        @php
+                                            $dname = $domain['dname'] ?? '';
+                                            $parts = $dname ? explode('.', $dname) : [];
+                                            $tld = $parts ? strtolower(end($parts)) : null;
+                                            $price = $tld
+                                                ? $renewPrices[$tld] ?? ($renewPrices['__idn.' . $tld] ?? null)
+                                                : null;
+                                            $currencyMap = [
+                                                'RUR' => '₽',
+                                                'RUB' => '₽',
+                                                'USD' => '$',
+                                                'EUR' => '€',
+                                                'UAH' => '₴',
+                                            ];
+                                            $currencySymbol = $currencyMap[$currency ?? 'RUR'] ?? ($currency ?? 'RUR');
+                                        @endphp
+                                        {{ $price !== null ? number_format((float) $price, 0, '.', ' ') . ' ' . $currencySymbol : '—' }}
                                     </td>
                                     <td class="py-2 pr-4">
                                         {{ $domain['service_id'] ?? '—' }}
