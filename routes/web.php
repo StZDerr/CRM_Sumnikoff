@@ -71,7 +71,25 @@ Route::middleware('auth')->group(function () {
 
     Route::get('users/{user}/dashboard', [UserController::class, 'userDashboard'])->name('user.dashboard');
     Route::get('reg/domains', [RegDomainController::class, 'index'])
-        ->name('reg.domains.index')
+        ->name('domains.index')
+        ->middleware('admin');
+    Route::get('reg/domains/create', [RegDomainController::class, 'create'])
+        ->name('domains.create')
+        ->middleware('admin');
+    Route::post('reg/domains', [RegDomainController::class, 'store'])
+        ->name('domains.store')
+        ->middleware('admin');
+    Route::post('reg/domains/sync', [RegDomainController::class, 'sync'])
+        ->name('domains.sync')
+        ->middleware('admin');
+    Route::get('reg/domains/{domain}/edit', [RegDomainController::class, 'edit'])
+        ->name('domains.edit')
+        ->middleware('admin');
+    Route::put('reg/domains/{domain}', [RegDomainController::class, 'update'])
+        ->name('domains.update')
+        ->middleware('admin');
+    Route::delete('reg/domains/{domain}', [RegDomainController::class, 'destroy'])
+        ->name('domains.destroy')
         ->middleware('admin');
     // Получить отпуска пользователя (HTML partial для offcanvas)
     Route::get('users/{user}/vacations', [VacationController::class, 'userVacations'])->name('users.vacations');

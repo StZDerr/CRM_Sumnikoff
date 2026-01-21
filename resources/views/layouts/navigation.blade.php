@@ -134,6 +134,10 @@
                     Уровень важности
                 </x-dropdown-link>
             </x-buttons-dropdawn>
+
+            <x-nav-link :href="route('domains.index')" :active="request()->routeIs('domains.*')">
+                Домены REG.RU
+            </x-nav-link>
         @else
             {{-- НЕ admin: обычная кнопка --}}
             <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">

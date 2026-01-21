@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\RegApiClient;
+use App\Models\Domain;
+use App\Models\Project;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\View\View;
 
 class RegDomainController extends Controller
@@ -15,45 +19,102 @@ class RegDomainController extends Controller
 
     public function index(): View
     {
-        $domains = [];
-        $error = null;
-        $priceError = null;
-        $renewPrices = [];
-        $currency = 'RUR';
+        $domains = Domain::with('project')
+            ->orderBy('expires_at')
+            ->orderBy('name')
+            ->get();
 
-        $username = config('regapi.username');
-        $password = config('regapi.password');
+        $projects = Project::orderBy('title')->get();
 
-        if (empty($username) || empty($password)) {
-            $error = 'Не заполнены REG_API_USERNAME / REG_API_PASSWORD в .env.';
-        } else {
-            try {
-                $client = RegApiClient::make();
-                $domains = $client->getDomains();
-                $domains = collect($domains)
-                    ->filter(fn ($item) => ! empty($item['dname']))
-                    ->sortBy('expiration_date')
-                    ->values()
-                    ->all();
+        return view('admin.domains.index', compact('domains', 'projects'));
+    }
 
-                try {
-                    $pricesData = $client->getDomainPrices();
-                    $currency = $pricesData['currency'] ?? $currency;
-                    $prices = $pricesData['prices'] ?? [];
+    public function create(): View
+    {
+        $projects = Project::orderBy('title')->get();
 
-                    foreach ($prices as $tld => $priceData) {
-                        if (isset($priceData['renew_price'])) {
-                            $renewPrices[$tld] = $priceData['renew_price'];
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    $priceError = $e->getMessage();
-                }
-            } catch (\Throwable $e) {
-                $error = $e->getMessage();
-            }
+        return view('admin.domains.create', compact('projects'));
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:domains,name'],
+            'status' => ['required', 'string', 'max:50'],
+            'expires_at' => ['nullable', 'date'],
+            'renew_price' => ['nullable', 'numeric'],
+            'currency' => ['nullable', 'string', 'max:10'],
+            'auto_renew' => ['nullable', 'boolean'],
+            'project_id' => ['nullable', 'exists:projects,id'],
+        ]);
+
+        $data['provider'] = 'manual';
+        $data['provider_service_id'] = null;
+        $data['auto_renew'] = (bool) ($data['auto_renew'] ?? false);
+
+        Domain::create($data);
+
+        return redirect()->route('domains.index')->with('success', 'Домен добавлен');
+    }
+
+    public function edit(Domain $domain): View
+    {
+        abort_unless($domain->provider === 'manual', 403);
+
+        $projects = Project::orderBy('title')->get();
+
+        return view('admin.domains.edit', compact('domain', 'projects'));
+    }
+
+    public function update(Request $request, Domain $domain): RedirectResponse
+    {
+        if ($domain->provider === 'reg_ru') {
+            $data = $request->validate([
+                'project_id' => ['nullable', 'exists:projects,id'],
+            ]);
+
+            $domain->update($data);
+
+            return redirect()->route('domains.index')->with('success', 'Проект привязан');
         }
 
-        return view('admin.domains.index', compact('domains', 'error', 'priceError', 'renewPrices', 'currency'));
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:domains,name,'.$domain->id],
+            'status' => ['required', 'string', 'max:50'],
+            'expires_at' => ['nullable', 'date'],
+            'renew_price' => ['nullable', 'numeric'],
+            'currency' => ['nullable', 'string', 'max:10'],
+            'auto_renew' => ['nullable', 'boolean'],
+            'project_id' => ['nullable', 'exists:projects,id'],
+        ]);
+
+        $data['auto_renew'] = (bool) ($data['auto_renew'] ?? false);
+
+        $domain->update($data);
+
+        return redirect()->route('domains.index')->with('success', 'Домен обновлён');
+    }
+
+    public function destroy(Domain $domain): RedirectResponse
+    {
+        abort_unless($domain->provider === 'manual', 403);
+
+        $domain->delete();
+
+        return redirect()->route('domains.index')->with('success', 'Домен удалён');
+    }
+
+    public function sync(): RedirectResponse
+    {
+        $exitCode = Artisan::call('reg:sync-domains');
+        $output = trim(Artisan::output());
+
+        if ($exitCode !== 0) {
+            return redirect()->route('domains.index')
+                ->with('error', $output ?: 'Ошибка синхронизации доменов');
+        }
+
+        return redirect()->route('domains.index')
+            ->with('success', $output ?: 'Синхронизация выполнена');
     }
 }
