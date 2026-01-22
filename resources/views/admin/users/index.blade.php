@@ -22,7 +22,7 @@
             <table class="w-full text-sm">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="p-3 text-left">ID</th>
+                        <th class="p-3 text-left">№</th>
                         <th class="p-3 text-left">Имя</th>
                         <th class="p-3 text-left">Статус</th>
                         <th class="p-3 text-left">Роль</th>
@@ -35,6 +35,7 @@
                 <tbody>
                     @if (!empty($groupedUsers) && $groupedUsers->isNotEmpty())
                         @foreach ($groupedUsers as $role => $users)
+                            @php $counter = $counter ?? 0; @endphp
                             <tr class="bg-gray-100">
                                 <td colspan="{{ $colspan }}" class="p-3 font-medium text-sm">
                                     {{ $roles[$role] ?? ucfirst($role) }} — {{ $users->count() }}
@@ -42,8 +43,9 @@
                             </tr>
 
                             @foreach ($users as $user)
+                                @php $counter++; @endphp
                                 <tr class="border-t">
-                                    <td class="p-3">{{ $user->id }}</td>
+                                    <td class="p-3">{{ $counter }}</td>
 
                                     <td class="p-3">
                                         <a href="{{ route('user.dashboard', $user) }}">{{ $user->name }}</a>
@@ -106,7 +108,7 @@
                     @else
                         @foreach ($users as $user)
                             <tr class="border-t">
-                                <td class="p-3">{{ $user->id }}</td>
+                                <td class="p-3">{{ ($users->firstItem() ?? 0) + $loop->iteration - 1 }}</td>
 
                                 <td class="p-3">
                                     <a href="{{ route('user.dashboard', $user) }}">{{ $user->name }}</a>
