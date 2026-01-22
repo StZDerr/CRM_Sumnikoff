@@ -83,14 +83,45 @@
                                             $hasInvoices = $invoicesTotal > 0;
                                         @endphp
 
-                                        {{-- Пометка закрытого проекта --}}
+                                        {{-- Пометка закрытого / закрывающегося проекта --}}
                                         @if (!empty($project->closed_at))
-                                            <button type="button"
-                                                class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
-                                                data-tippy
-                                                data-tippy-content="Дата закрытия: {{ \Illuminate\Support\Carbon::make($project->closed_at)->format('Y-m-d') }}">
-                                                Закрыт
-                                            </button>
+                                            @php
+                                                $closedDate = \Illuminate\Support\Carbon::make(
+                                                    $project->closed_at,
+                                                )->startOfDay();
+                                                $today = \Illuminate\Support\Carbon::today();
+                                                $daysLeft = $today->diffInDays($closedDate, false);
+                                            @endphp
+
+                                            @if ($daysLeft < 0)
+                                                <button type="button"
+                                                    class="inline-flex items-center px-2 py-1 bg-black text-white rounded text-sm mr-2"
+                                                    data-tippy
+                                                    data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
+                                                    Закрыт
+                                                </button>
+                                            @elseif ($daysLeft === 0)
+                                                <button type="button"
+                                                    class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
+                                                    data-tippy
+                                                    data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
+                                                    Сегодня закрытия
+                                                </button>
+                                            @elseif ($daysLeft === 1)
+                                                <button type="button"
+                                                    class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
+                                                    data-tippy
+                                                    data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
+                                                    Остался 1 день до закрытия
+                                                </button>
+                                            @elseif ($daysLeft <= 7)
+                                                <button type="button"
+                                                    class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
+                                                    data-tippy
+                                                    data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
+                                                    На стадии закрытия
+                                                </button>
+                                            @endif
                                         @endif
 
                                         {{-- Пометка бартерного проекта --}}
