@@ -63,11 +63,12 @@ class Project extends Model
         $start = $month->copy()->startOfMonth();
         $end = $month->copy()->endOfMonth();
 
-        // Выбираем проекты, которые либо открытые, либо закрыты в этом месяце
-        // И при этом исключаем бартерные и "свои" проекты (payment_type = 'barter'|'own')
-        return $query->where(function ($q) use ($start, $end) {
-            $q->whereNull('closed_at') // открытые проекты
-                ->orWhereBetween('closed_at', [$start, $end]); // закрытые в этом месяце
+        // Выбираем проекты, которые активны в этот месяц (т.е. не закрыты в этом месяце).
+        // Включаем проекты без даты закрытия (еще открыты) и те, что закрыты ПОЗЖЕ than end of month.
+        // Исключаем бартерные и "свои" проекты (payment_type = 'barter'|'own').
+        return $query->where(function ($q) use ($end) {
+            $q->whereNull('closed_at')
+                ->orWhere('closed_at', '>', $end);
         })->where(function ($q) {
             $q->whereNull('payment_type')
                 ->orWhereNotIn('payment_type', ['barter', 'own']);
