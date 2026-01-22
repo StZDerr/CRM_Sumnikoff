@@ -28,10 +28,22 @@ class UserController extends Controller
 
     public function index(Request $request): View
     {
-        $users = User::with('activeVacation')->orderBy('id', 'desc')->paginate(15);
+        // Группируем список: сначала по роли, затем по алфавиту внутри роли
+        $usersAll = User::with('activeVacation')
+            ->orderBy('role')
+            ->orderBy('name')
+            ->get();
+
+        // groupedUsers: ['admin' => Collection, 'marketer' => Collection, ...]
+        $groupedUsers = $usersAll->groupBy('role');
+
+        // Для формы отпусков и других нужд
         $marketers = User::where('role', 'manager')->orderBy('name')->pluck('name', 'id');
 
-        return view('admin.users.index', compact('users', 'marketers'));
+        // keep paginated collection for backwards compatibility (if needed)
+        $users = User::with('activeVacation')->orderBy('id', 'desc')->paginate(15);
+
+        return view('admin.users.index', compact('groupedUsers', 'marketers', 'users'));
     }
 
     public function create(): View
