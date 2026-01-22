@@ -79,6 +79,7 @@
                     'payment-categories.*',
                     'payment-methods.*',
                     'expense-categories.*',
+                    'monthly-expenses.*',
                 );
             @endphp
             <x-buttons-dropdawn :active="$activeFinance" title="Финансы">
@@ -96,6 +97,9 @@
 
                 <x-dropdown-link :href="route('expense-categories.index')" :active="request()->routeIs('expense-categories.*')">
                     Статьи расходов
+                </x-dropdown-link>
+                <x-dropdown-link :href="route('monthly-expenses.index')" :active="request()->routeIs('monthly-expenses.*')">
+                    Ежемесячные расходы
                 </x-dropdown-link>
                 <x-dropdown-link :href="route('payment-methods.index')" :active="request()->routeIs('payment-methods.*')">
                     Способы оплаты

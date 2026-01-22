@@ -13,6 +13,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ImportanceController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceStatusController;
+use App\Http\Controllers\MonthlyExpenseController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PaymentCategoryController;
@@ -187,6 +188,11 @@ Route::middleware('auth')->group(function () {
 
     // Быстрое создание расхода домены/хостинг
     Route::post('expenses/store-domain-hosting', [ExpenseController::class, 'storeDomainHosting'])->name('expenses.store-domain-hosting');
+
+    Route::post('monthly-expenses/{monthlyExpense}/pay', [MonthlyExpenseController::class, 'pay'])
+        ->name('monthly-expenses.pay');
+
+    Route::resource('monthly-expenses', MonthlyExpenseController::class)->except(['show']);
 
     // Выплата аванса из табеля
     Route::post('expenses/store-advance', [ExpenseController::class, 'storeAdvance'])->name('expenses.store-advance');

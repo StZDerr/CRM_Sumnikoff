@@ -137,6 +137,11 @@ class User extends Authenticatable
         return $this->hasMany(UserSocial::class);
     }
 
+    public function monthlyExpenses()
+    {
+        return $this->hasMany(MonthlyExpense::class);
+    }
+
     // Валидируем перед сохранением
     protected static function booted()
     {

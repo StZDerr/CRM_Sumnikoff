@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Models\MonthlyExpense;
+use App\Models\MonthlyExpenseStatus;
 use App\Models\Payment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -311,6 +313,56 @@ class DashboardController extends Controller
                 ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
         }
 
+        $monthlyExpenses = collect();
+        $monthlyExpensesMonth = null;
+
+        if (! $isAll) {
+            $monthlyExpensesMonth = $start->format('Y-m');
+            $today = Carbon::today();
+
+            $monthlyExpenses = MonthlyExpense::query()
+                ->where('user_id', $user->id)
+                ->where('is_active', true)
+                ->orderBy('day_of_month')
+                ->get();
+
+            $statusMap = MonthlyExpenseStatus::query()
+                ->whereIn('monthly_expense_id', $monthlyExpenses->pluck('id'))
+                ->where('month', $monthlyExpensesMonth)
+                ->get()
+                ->keyBy('monthly_expense_id');
+
+            $monthlyExpenses = $monthlyExpenses->map(function ($expense) use ($statusMap, $monthlyExpensesMonth, $today) {
+                $status = $statusMap->get($expense->id);
+                $monthStart = Carbon::createFromFormat('Y-m', $monthlyExpensesMonth)->startOfMonth();
+                $day = min(max((int) $expense->day_of_month, 1), $monthStart->daysInMonth);
+                $dueDate = $monthStart->copy()->day($day)->startOfDay();
+
+                $state = 'awaiting';
+                $label = 'Ожидает оплаты';
+                $class = 'bg-yellow-100 text-yellow-800';
+
+                if ($status && $status->paid_at) {
+                    $state = 'paid';
+                    $label = 'Оплачено';
+                    $class = 'bg-green-100 text-green-800';
+                } elseif ($dueDate->lt($today)) {
+                    $state = 'overdue';
+                    $label = 'Просрочено';
+                    $class = 'bg-red-100 text-red-800';
+                }
+
+                $expense->status_state = $state;
+                $expense->status_label = $label;
+                $expense->status_class = $class;
+                $expense->status_paid_at = $status?->paid_at;
+                $expense->status_expense_id = $status?->expense_id;
+                $expense->due_date = $dueDate;
+
+                return $expense;
+            });
+        }
+
         return view('dashboard', compact(
             'labels', 'incomeData', 'expenseData', 'netData',
             'monthTotalIncome', 'monthTotalExpense', 'monthTotalNet',
@@ -319,7 +371,8 @@ class DashboardController extends Controller
             'topProjectsLabels', 'topProjectsData', 'topMaxChart', 'topStep',
             'activeData', 'activeStep',
             'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
-            'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit'
+            'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit',
+            'monthlyExpenses', 'monthlyExpensesMonth'
         ));
     }
 

@@ -171,6 +171,64 @@
                 </div>
             </div>
 
+            @if (request('period') !== 'all')
+                {{-- ===== MONTHLY EXPENSES ===== --}}
+                <div class="bg-white rounded-xl shadow p-6 mt-6">
+                    <div class="mb-4">
+                        <div class="text-sm font-medium text-gray-800">Ежемесячные расходы</div>
+                        <div class="text-xs text-gray-500">
+                            Статусы за
+                            {{ \Carbon\Carbon::createFromFormat('Y-m', $monthlyExpensesMonth)->locale('ru')->isoFormat('MMMM YYYY') }}
+                        </div>
+                    </div>
+
+                    @if ($monthlyExpenses->isEmpty())
+                        <div class="text-sm text-gray-500">Нет активных ежемесячных расходов.</div>
+                    @else
+                        <div class="divide-y">
+                            @foreach ($monthlyExpenses as $me)
+                                <div class="flex items-center justify-between py-3">
+                                    <div class="min-w-0">
+                                        <div class="font-medium text-gray-900">{{ $me->title }}</div>
+                                        <div class="text-xs text-gray-500">
+                                            Дата оплаты: {{ $me->due_date->format('d.m.Y') }}
+                                            @if (!empty($me->note))
+                                                • {{ $me->note }}
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-3">
+                                        <div class="text-sm font-semibold text-gray-900">
+                                            {{ number_format($me->amount, 2, '.', ' ') }} ₽
+                                        </div>
+                                        <span
+                                            class="inline-flex items-center px-2 py-1 rounded text-xs {{ $me->status_class }}">
+                                            {{ $me->status_label }}
+                                        </span>
+
+                                        @if ($me->status_state !== 'paid')
+                                            <form method="POST" action="{{ route('monthly-expenses.pay', $me) }}">
+                                                @csrf
+                                                <input type="hidden" name="month"
+                                                    value="{{ $monthlyExpensesMonth }}">
+                                                <button
+                                                    class="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700">
+                                                    Оплатить
+                                                </button>
+                                            </form>
+                                        @elseif (!empty($me->status_expense_id))
+                                            <span class="text-xs text-gray-400">Expense
+                                                #{{ $me->status_expense_id }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            @endif
+
 
             {{-- ===== CHART ===== --}}
             <div class="bg-white rounded-xl shadow p-6">
