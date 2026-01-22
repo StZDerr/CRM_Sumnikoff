@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BankAccount;
 use App\Models\Domain;
+use App\Models\ExpenseCategory;
+use App\Models\PaymentMethod;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,7 +29,19 @@ class RegDomainController extends Controller
 
         $projects = Project::orderBy('title')->get();
 
-        return view('admin.domains.index', compact('domains', 'projects'));
+        $domainHostingCategories = ExpenseCategory::where('is_domains_hosting', true)->ordered()->get();
+        $paymentMethods = PaymentMethod::orderBy('title')->get();
+        $bankAccounts = BankAccount::orderBy('title')->get();
+        $domainsForModal = Domain::where('provider', 'manual')->orderBy('name')->get();
+
+        return view('admin.domains.index', compact(
+            'domains',
+            'projects',
+            'domainHostingCategories',
+            'paymentMethods',
+            'bankAccounts',
+            'domainsForModal'
+        ));
     }
 
     public function create(): View

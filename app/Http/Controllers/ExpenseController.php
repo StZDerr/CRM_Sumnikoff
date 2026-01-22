@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
+use App\Models\Domain;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Organization;
@@ -273,7 +274,10 @@ class ExpenseController extends Controller
     {
 
         // Не показываем зарплатные категории в общей форме расходов
-        $categories = ExpenseCategory::ordered()->where('is_salary', false)->get();
+        $categories = ExpenseCategory::ordered()
+            ->where('is_salary', false)
+            ->where('is_domains_hosting', false)
+            ->get();
         $organizations = Organization::ordered()->get();
         $paymentMethods = PaymentMethod::orderBy('title')->get();
         $bankAccounts = BankAccount::orderBy('title')->get();
@@ -290,7 +294,7 @@ class ExpenseController extends Controller
         // If request is AJAX, return only the form wrapper for offcanvas (без офисных категорий)
         if ($request->ajax()) {
             // Для offcanvas формы исключаем зарплатные категории
-            $categories = ExpenseCategory::notOffice()->where('is_salary', false)->ordered()->get();
+            $categories = ExpenseCategory::notOffice()->where('is_salary', false)->where('is_domains_hosting', false)->ordered()->get();
 
             return view('admin.expenses._form_offcanvas', compact('expense', 'categories', 'organizations', 'paymentMethods', 'bankAccounts', 'projects'));
         }
@@ -442,6 +446,80 @@ class ExpenseController extends Controller
         }
 
         return redirect()->route('expenses.index')->with('success', 'Офисный расход сохранён.');
+    }
+
+    /**
+     * Создание расхода на домены/хостинг (быстрая форма).
+     * Категория ограничена is_domains_hosting.
+     */
+    public function storeDomainHosting(Request $request)
+    {
+        if (! auth()->user()->isAdmin()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Доступ запрещён'], 403);
+            }
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'expense_date' => 'required|date',
+            'amount' => 'required|numeric|min:0.01',
+            'expense_category_id' => 'required|exists:expense_categories,id',
+            'payment_method_id' => 'nullable|exists:payment_methods,id',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'document_number' => 'nullable|string|max:255',
+            'status' => 'required|string|in:paid,awaiting,partial,stoplist',
+            'description' => 'nullable|string',
+            'domain_id' => 'required|exists:domains,id',
+            'renew_until' => 'nullable|date',
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx|max:5120',
+        ]);
+
+        $category = ExpenseCategory::find($data['expense_category_id']);
+        if (! $category || ! $category->is_domains_hosting) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Категория должна быть помечена как домены/хостинг.',
+            ], 422);
+        }
+
+        $domain = Domain::find($data['domain_id']);
+        if ($domain && $domain->project_id) {
+            $data['project_id'] = $domain->project_id;
+        }
+        $data['organization_id'] = null;
+
+        if (! empty($data['renew_until']) && $domain) {
+            $domain->expires_at = \Illuminate\Support\Carbon::parse($data['renew_until']);
+            $domain->save();
+        }
+
+        $expense = Expense::create($data);
+
+        foreach ($request->file('documents', []) as $file) {
+            $path = $file->store('documents', 'public');
+            $expense->documents()->create([
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+            ]);
+        }
+
+        if ($expense->bank_account_id) {
+            $this->recalcBankBalance($expense->bank_account_id);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'expense_id' => $expense->id,
+                'message' => 'Расход на домены/хостинг сохранён.',
+            ], 201);
+        }
+
+        return redirect()->route('expenses.index')->with('success', 'Расход на домены/хостинг сохранён.');
     }
 
     public function show(Expense $expense)

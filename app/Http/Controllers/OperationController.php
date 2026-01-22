@@ -6,6 +6,7 @@ use App\Models\BankAccount;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Payment;
+use App\Models\PaymentCategory;
 use App\Models\PaymentMethod;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -30,6 +31,7 @@ class OperationController extends Controller
         $expenseFlag = $request->query('expense_flag');
         $isSalary = $expenseFlag === 'salary' ? '1' : null;
         $isOffice = $expenseFlag === 'office' ? '1' : null;
+        $isDomains = $expenseFlag === 'domains' ? '1' : null;
         $amountMin = $request->query('amount_min');
         $amountMax = $request->query('amount_max');
         $q = $request->query('q');
@@ -107,8 +109,8 @@ class OperationController extends Controller
             $expensesQuery->whereHas('project', fn ($q) => $q->where('marketer_id', $currentUser->id));
         }
 
-        // Date
-        $expensesQuery->whereBetween('expense_date', [$dateFrom->toDateString(), $dateTo->toDateString()]);
+        // Date (include full day range for datetime values)
+        $expensesQuery->whereBetween('expense_date', [$dateFrom->toDateTimeString(), $dateTo->toDateTimeString()]);
 
         if ($projectId) {
             $expensesQuery->where('project_id', $projectId);
@@ -156,19 +158,31 @@ class OperationController extends Controller
             $expensesQuery->whereNull('project_id');
         }
 
-        // Filters: is_salary / is_office (categories flags)
-        if ($isSalary == '1' || $isOffice == '1') {
+        // Filters: is_salary / is_office / is_domains (categories flags)
+        if ($isSalary == '1' || $isOffice == '1' || $isDomains == '1') {
             $catQuery = \App\Models\ExpenseCategory::query();
-            $catQuery->where(function ($q) use ($isSalary, $isOffice) {
+            $catQuery->where(function ($q) use ($isSalary, $isOffice, $isDomains) {
                 if ($isSalary == '1') {
                     $q->orWhere('is_salary', true);
                 }
                 if ($isOffice == '1') {
                     $q->orWhere('is_office', true);
                 }
+                if ($isDomains == '1') {
+                    $q->orWhere('is_domains_hosting', true);
+                }
             });
             $catIds = $catQuery->pluck('id');
-            $expensesQuery->whereIn('expense_category_id', $catIds);
+
+            if ($isDomains == '1') {
+                // domains filter should include expenses tied to a domain even if category flag missing
+                $expensesQuery->where(function ($q) use ($catIds) {
+                    $q->whereIn('expense_category_id', $catIds)
+                        ->orWhereNotNull('domain_id');
+                });
+            } else {
+                $expensesQuery->whereIn('expense_category_id', $catIds);
+            }
         }
 
         $expenses = $expensesQuery->orderByDesc('expense_date')->limit(1000)->get()
@@ -181,7 +195,7 @@ class OperationController extends Controller
             ]);
 
         // If specific type requested or if type-specific filters are applied
-        $expenseOnlyFilters = ($expenseCategoryId || $expenseStatus || $isSalary == '1' || $isOffice == '1');
+        $expenseOnlyFilters = ($expenseCategoryId || $expenseStatus || $isSalary == '1' || $isOffice == '1' || $isDomains == '1');
         $paymentOnlyFilters = ($paymentCategoryId || $invoiceId);
 
         if ($type === 'payment' || ($paymentOnlyFilters && ! $expenseOnlyFilters)) {
@@ -212,14 +226,18 @@ class OperationController extends Controller
         $officeCategories = ExpenseCategory::office()->where('is_salary', false)->ordered()->get();
         // Категории для ЗП
         $salaryCategories = ExpenseCategory::where('is_salary', true)->ordered()->get();
+
+        // Категории для Домена и Хостинга
+        $domainHostingCategories = ExpenseCategory::where('is_domains_hosting', true)->ordered()->get();
+        $domains = \App\Models\Domain::where('provider', 'manual')->orderBy('name')->get();
         $paymentMethods = PaymentMethod::orderBy('title')->get();
         $bankAccounts = BankAccount::orderBy('title')->get();
         $users = \App\Models\User::orderBy('name')->get();
 
         // Доп. фильтровые справочники
         $projects = \App\Models\Project::orderBy('title')->get();
-        $expenseCategories = \App\Models\ExpenseCategory::ordered()->get();
-        $paymentCategories = \App\Models\PaymentCategory::ordered()->get();
+        $expenseCategories = ExpenseCategory::ordered()->get();
+        $paymentCategories = PaymentCategory::ordered()->get();
 
         // Итоги по текущему набору айтемов
         $sumIncome = $items->where('type', 'payment')->sum('amount');
@@ -236,7 +254,9 @@ class OperationController extends Controller
             'expenseCategories',
             'paymentCategories',
             'sumIncome',
-            'sumExpense'
+            'sumExpense',
+            'domainHostingCategories',
+            'domains'
         ));
     }
 }

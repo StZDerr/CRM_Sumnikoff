@@ -25,6 +25,7 @@ class Expense extends Model
         'description',
         'currency',
         'salary_recipient',
+        'domain_id',
     ];
 
     protected $casts = [
@@ -87,5 +88,11 @@ class Expense extends Model
     public function documents(): MorphMany
     {
         return $this->morphMany(\App\Models\Document::class, 'documentable')->orderBy('sort_order');
+    }
+
+    // Домены
+    public function domain()
+    {
+        return $this->belongsTo(Domain::class);
     }
 }

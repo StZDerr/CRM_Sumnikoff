@@ -31,4 +31,10 @@ class Domain extends Model
     {
         return $this->belongsTo(Project::class);
     }
+
+    // расходы
+    public function expenses()
+    {
+        return $this->hasMany(Expense::class);
+    }
 }

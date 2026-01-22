@@ -53,6 +53,26 @@
                                             ЗП
                                         </span>
                                     @endif
+                                    @if ($item->is_domains_hosting)
+                                        <span
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                class="h-4 w-4 transition-transform duration-200 hover:scale-110"
+                                                fill="none" viewBox="0 0 26 27" stroke="currentColor" stroke-width="2">
+                                                <path d="M2.33301 17.0908H23.6663" stroke="currentColor"
+                                                    stroke-linecap="round" stroke-linejoin="round" />
+                                                <path d="M2.33301 9.09082H23.6663" stroke="currentColor"
+                                                    stroke-linecap="round" stroke-linejoin="round" />
+                                                <path
+                                                    d="M13 25.0908C19.6274 25.0908 25 19.7182 25 13.0908C25 6.4634 19.6274 1.09082 13 1.09082C6.37258 1.09082 1 6.4634 1 13.0908C1 19.7182 6.37258 25.0908 13 25.0908Z"
+                                                    stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                                                <path
+                                                    d="M8.56543 14.0908C8.76021 17.3432 9.89724 20.3411 11.71 22.8145C11.5867 22.9501 11.4622 23.085 11.334 23.2158L11.2451 23.3057C9.30961 20.7035 8.09464 17.5335 7.89648 14.0908H8.56543ZM18.1045 14.0908C17.9063 17.5332 16.6911 20.7026 14.7559 23.3047L14.667 23.2148C14.5387 23.0839 14.4133 22.9501 14.29 22.8145C16.1029 20.341 17.2417 17.3435 17.4365 14.0908H18.1045ZM14.7549 2.87598C16.6906 5.47823 17.9063 8.64792 18.1045 12.0908H17.4365C17.2417 8.83789 16.1032 5.83978 14.29 3.36621C14.4132 3.23071 14.5389 3.09757 14.667 2.9668L14.7549 2.87598ZM11.334 2.9668C11.462 3.09741 11.587 3.23088 11.71 3.36621C9.89698 5.83969 8.76028 8.83812 8.56543 12.0908H7.89648C8.09468 8.64813 9.30967 5.47814 11.2451 2.87598L11.334 2.9668Z"
+                                                    fill="black" stroke="currentColor" stroke-width="2" />
+                                            </svg>
+                                            Домены
+                                        </span>
+                                    @endif
                                     <div class="text-xs text-gray-500">{{ $item->slug ?? '-' }}</div>
                                 </div>
                                 <div class="text-sm text-gray-400">#{{ $item->sort_order }}</div>

@@ -58,6 +58,38 @@
                         </button>
                     @endif
 
+                    {{-- Домен --}}
+                    @if (isset($domainHostingCategories) && $domainHostingCategories->count())
+                        <button type="button" id="openDomainHostingCategoriesBtn"
+                            class="group inline-flex items-center gap-2 rounded-xl
+                                bg-gradient-to-r from-indigo-600 to-violet-600
+                                px-4 py-2 text-sm font-semibold text-white
+                                shadow-md shadow-indigo-500/30
+                                hover:from-indigo-700 hover:to-violet-700
+                                hover:shadow-lg hover:shadow-indigo-500/40
+                                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+                                transition-all duration-200">
+                            {{-- Иконка домен + сервер --}}
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4 transition-transform duration-200 hover:scale-110" fill="none"
+                                viewBox="0 0 26 27" stroke="currentColor" stroke-width="2">
+                                <path d="M2.33301 17.0908H23.6663" stroke="currentColor" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M2.33301 9.09082H23.6663" stroke="currentColor" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path
+                                    d="M13 25.0908C19.6274 25.0908 25 19.7182 25 13.0908C25 6.4634 19.6274 1.09082 13 1.09082C6.37258 1.09082 1 6.4634 1 13.0908C1 19.7182 6.37258 25.0908 13 25.0908Z"
+                                    stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                                <path
+                                    d="M8.56543 14.0908C8.76021 17.3432 9.89724 20.3411 11.71 22.8145C11.5867 22.9501 11.4622 23.085 11.334 23.2158L11.2451 23.3057C9.30961 20.7035 8.09464 17.5335 7.89648 14.0908H8.56543ZM18.1045 14.0908C17.9063 17.5332 16.6911 20.7026 14.7559 23.3047L14.667 23.2148C14.5387 23.0839 14.4133 22.9501 14.29 22.8145C16.1029 20.341 17.2417 17.3435 17.4365 14.0908H18.1045ZM14.7549 2.87598C16.6906 5.47823 17.9063 8.64792 18.1045 12.0908H17.4365C17.2417 8.83789 16.1032 5.83978 14.29 3.36621C14.4132 3.23071 14.5389 3.09757 14.667 2.9668L14.7549 2.87598ZM11.334 2.9668C11.462 3.09741 11.587 3.23088 11.71 3.36621C9.89698 5.83969 8.76028 8.83812 8.56543 12.0908H7.89648C8.09468 8.64813 9.30967 5.47814 11.2451 2.87598L11.334 2.9668Z"
+                                    fill="black" stroke="currentColor" stroke-width="2" />
+                            </svg>
+
+                            <span>Домены</span>
+                        </button>
+                    @endif
+
+
                     {{-- Выставить счёт --}}
                     <a href="{{ route('invoices.create') }}"
                         class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white
@@ -105,221 +137,247 @@
 
 
         {{-- Фильтры --}}
-        <form method="GET" action="{{ route('operation.index') }}" class="mb-4 bg-white p-4 rounded shadow-sm">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <!-- Period + Search -->
-                <div class="lg:col-span-4">
-                    <div class="p-3 bg-gray-50 rounded border border-gray-100">
-                        <div class="flex flex-wrap items-end gap-3">
-                            <div class="w-40">
-                                <label class="text-xs text-gray-500">От</label>
-                                <input type="date" name="date_from"
-                                    value="{{ request('date_from', now()->startOfMonth()->format('Y-m-d')) }}"
-                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                                    required>
+        <details class="mb-4 rounded shadow-sm bg-white">
+            <summary
+                class="cursor-pointer select-none px-4 py-3 font-semibold text-gray-800 flex items-center justify-between">
+                <span>Фильтры</span>
+                <svg class="h-4 w-4 text-gray-500 transition-transform duration-200" viewBox="0 0 20 20"
+                    fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd"
+                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08z"
+                        clip-rule="evenodd" />
+                </svg>
+            </summary>
+            <form method="GET" action="{{ route('operation.index') }}" class="p-4">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <!-- Period + Search -->
+                    <div class="lg:col-span-4">
+                        <div class="p-3 bg-gray-50 rounded border border-gray-100">
+                            <div class="flex flex-wrap items-end gap-3">
+                                <div class="w-40">
+                                    <label class="text-xs text-gray-500">От</label>
+                                    <input type="date" name="date_from"
+                                        value="{{ request('date_from', now()->startOfMonth()->format('Y-m-d')) }}"
+                                        class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                        required>
+                                </div>
+
+                                <div class="w-40">
+                                    <label class="text-xs text-gray-500">До</label>
+                                    <input type="date" name="date_to"
+                                        value="{{ request('date_to', now()->endOfMonth()->format('Y-m-d')) }}"
+                                        class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                        required>
+                                </div>
+
+                                <div class="flex-1 min-w-[180px]">
+                                    <label class="text-xs text-gray-500">Поиск</label>
+                                    <input type="search" name="q" value="{{ request('q') }}"
+                                        placeholder="По описанию, счёту, заметке"
+                                        class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
                             </div>
 
-                            <div class="w-40">
-                                <label class="text-xs text-gray-500">До</label>
-                                <input type="date" name="date_to"
-                                    value="{{ request('date_to', now()->endOfMonth()->format('Y-m-d')) }}"
-                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                                    required>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <button type="button"
+                                    class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
+                                    onclick="setPreset('today')">Сегодня</button>
+                                <button type="button"
+                                    class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
+                                    onclick="setPreset('yesterday')">Вчера</button>
+                                <button type="button"
+                                    class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
+                                    onclick="setPreset('week')">Неделя</button>
+                                <button type="button"
+                                    class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
+                                    onclick="setPreset('month')">Месяц</button>
+                                <button type="button"
+                                    class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
+                                    onclick="setPreset('quarter')">Квартал</button>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="flex-1 min-w-[180px]">
-                                <label class="text-xs text-gray-500">Поиск</label>
-                                <input type="search" name="q" value="{{ request('q') }}"
-                                    placeholder="По описанию, счёту, заметке"
+                    <!-- Main filters -->
+                    <div class="lg:col-span-8">
+                        <div class="p-3 bg-gray-50 rounded border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="text-xs text-gray-500">Тип</label>
+                                <select name="type"
                                     class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
-                            </div>
-                        </div>
-
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <button type="button"
-                                class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
-                                onclick="setPreset('today')">Сегодня</button>
-                            <button type="button"
-                                class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
-                                onclick="setPreset('yesterday')">Вчера</button>
-                            <button type="button"
-                                class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
-                                onclick="setPreset('week')">Неделя</button>
-                            <button type="button"
-                                class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
-                                onclick="setPreset('month')">Месяц</button>
-                            <button type="button"
-                                class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
-                                onclick="setPreset('quarter')">Квартал</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Main filters -->
-                <div class="lg:col-span-8">
-                    <div class="p-3 bg-gray-50 rounded border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div>
-                            <label class="text-xs text-gray-500">Тип</label>
-                            <select name="type"
-                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="all" @selected(request('type', 'all') === 'all')>Все</option>
-                                <option value="payment" @selected(request('type') === 'payment')>Платёж</option>
-                                <option value="expense" @selected(request('type') === 'expense')>Расход</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="text-xs text-gray-500">Проект</label>
-                            <select name="project_id"
-                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">— все —</option>
-                                @foreach ($projects as $project)
-                                    <option value="{{ $project->id }}" @selected((string) request('project_id') === (string) $project->id)>{{ $project->title }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="text-xs text-gray-500">Категория расхода</label>
-                            <select name="expense_category_id"
-                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">— все —</option>
-                                @foreach ($expenseCategories as $cat)
-                                    <option value="{{ $cat->id }}" @selected((string) request('expense_category_id') === (string) $cat->id)>{{ $cat->title }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="text-xs text-gray-500">Категория платёжа</label>
-                            <select name="payment_category_id"
-                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">— все —</option>
-                                @foreach ($paymentCategories as $pc)
-                                    <option value="{{ $pc->id }}" @selected((string) request('payment_category_id') === (string) $pc->id)>{{ $pc->title }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="text-xs text-gray-500">Статус расхода</label>
-                            <select name="expense_status"
-                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">— все —</option>
-                                @foreach (\App\Models\Expense::STATUSES as $k => $v)
-                                    <option value="{{ $k }}" @selected(request('expense_status') === $k)>{{ $v['label'] }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="text-xs text-gray-500">Источник / метод</label>
-                            <select name="payment_method_id"
-                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">— все —</option>
-                                @foreach ($paymentMethods as $pm)
-                                    <option value="{{ $pm->id }}" @selected((string) request('payment_method_id') === (string) $pm->id)>{{ $pm->title }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="text-xs text-gray-500">Счёт</label>
-                            <select name="bank_account_id"
-                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">— все —</option>
-                                @foreach ($bankAccounts as $ba)
-                                    <option value="{{ $ba->id }}" @selected((string) request('bank_account_id') === (string) $ba->id)>{{ $ba->title }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="text-xs text-gray-500">Кто создал</label>
-                            <select name="created_by"
-                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">— все —</option>
-                                @foreach ($users as $u)
-                                    <option value="{{ $u->id }}" @selected((string) request('created_by') === (string) $u->id)>{{ $u->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="text-xs text-gray-500">Проектность</label>
-                            <select name="has_project"
-                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">— все —</option>
-                                <option value="1" @selected(request('has_project') === '1')>С проектом</option>
-                                <option value="0" @selected(request('has_project') === '0')>Без проекта</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="text-xs text-gray-500">Сортировать по сумме</label>
-                            <select name="sort_amount"
-                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">— по дате —</option>
-                                <option value="asc" @selected(request('sort_amount') === 'asc')>По возрастанию</option>
-                                <option value="desc" @selected(request('sort_amount') === 'desc')>По убыванию</option>
-                            </select>
-                        </div>
-
-                        <div class="md:col-span-3 flex items-center gap-3">
-                            <div class="flex items-center gap-3">
-                                <label class="text-xs text-gray-500">Флаги</label>
-                                <label class="inline-flex items-center gap-2 text-sm">
-                                    <input type="radio" name="expense_flag" value=""
-                                        @checked(!request('expense_flag'))>
-                                    Все
-                                </label>
-                                <label class="inline-flex items-center gap-2 text-sm">
-                                    <input type="radio" name="expense_flag" value="salary"
-                                        @checked(request('expense_flag') === 'salary')>
-                                    ЗП
-                                </label>
-                                <label class="inline-flex items-center gap-2 text-sm">
-                                    <input type="radio" name="expense_flag" value="office"
-                                        @checked(request('expense_flag') === 'office')>
-                                    Офис
-                                </label>
+                                    <option value="all" @selected(request('type', 'all') === 'all')>Все</option>
+                                    <option value="payment" @selected(request('type') === 'payment')>Платёж</option>
+                                    <option value="expense" @selected(request('type') === 'expense')>Расход</option>
+                                </select>
                             </div>
 
-                            <div class="flex items-center gap-2 ml-auto">
-                                <label class="text-xs text-gray-500">Сумма от / до</label>
-                                <input type="number" step="0.01" name="amount_min"
-                                    value="{{ request('amount_min') }}"
-                                    class="border-gray-200 rounded-md px-3 py-2 text-sm w-32 bg-white" placeholder="min">
-                                <input type="number" step="0.01" name="amount_max"
-                                    value="{{ request('amount_max') }}"
-                                    class="border-gray-200 rounded-md px-3 py-2 text-sm w-32 bg-white" placeholder="max">
+                            <div>
+                                <label class="text-xs text-gray-500">Проект</label>
+                                <select name="project_id"
+                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">— все —</option>
+                                    @foreach ($projects as $project)
+                                        <option value="{{ $project->id }}" @selected((string) request('project_id') === (string) $project->id)>
+                                            {{ $project->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs text-gray-500">Категория расхода</label>
+                                <select name="expense_category_id"
+                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">— все —</option>
+                                    @foreach ($expenseCategories as $cat)
+                                        <option value="{{ $cat->id }}" @selected((string) request('expense_category_id') === (string) $cat->id)>
+                                            {{ $cat->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs text-gray-500">Категория платёжа</label>
+                                <select name="payment_category_id"
+                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">— все —</option>
+                                    @foreach ($paymentCategories as $pc)
+                                        <option value="{{ $pc->id }}" @selected((string) request('payment_category_id') === (string) $pc->id)>
+                                            {{ $pc->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs text-gray-500">Статус расхода</label>
+                                <select name="expense_status"
+                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">— все —</option>
+                                    @foreach (\App\Models\Expense::STATUSES as $k => $v)
+                                        <option value="{{ $k }}" @selected(request('expense_status') === $k)>
+                                            {{ $v['label'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs text-gray-500">Источник / метод</label>
+                                <select name="payment_method_id"
+                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">— все —</option>
+                                    @foreach ($paymentMethods as $pm)
+                                        <option value="{{ $pm->id }}" @selected((string) request('payment_method_id') === (string) $pm->id)>
+                                            {{ $pm->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs text-gray-500">Счёт</label>
+                                <select name="bank_account_id"
+                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">— все —</option>
+                                    @foreach ($bankAccounts as $ba)
+                                        <option value="{{ $ba->id }}" @selected((string) request('bank_account_id') === (string) $ba->id)>
+                                            {{ $ba->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs text-gray-500">Кто создал</label>
+                                <select name="created_by"
+                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">— все —</option>
+                                    @foreach ($users as $u)
+                                        <option value="{{ $u->id }}" @selected((string) request('created_by') === (string) $u->id)>
+                                            {{ $u->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs text-gray-500">Проектность</label>
+                                <select name="has_project"
+                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">— все —</option>
+                                    <option value="1" @selected(request('has_project') === '1')>С проектом</option>
+                                    <option value="0" @selected(request('has_project') === '0')>Без проекта</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs text-gray-500">Сортировать по сумме</label>
+                                <select name="sort_amount"
+                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">— по дате —</option>
+                                    <option value="asc" @selected(request('sort_amount') === 'asc')>По возрастанию</option>
+                                    <option value="desc" @selected(request('sort_amount') === 'desc')>По убыванию</option>
+                                </select>
+                            </div>
+
+                            <div class="md:col-span-3 flex items-center gap-3">
+                                <div class="flex items-center gap-3">
+                                    <label class="text-xs text-gray-500">Флаги</label>
+                                    <label class="inline-flex items-center gap-2 text-sm">
+                                        <input type="radio" name="expense_flag" value=""
+                                            @checked(!request('expense_flag'))>
+                                        Все
+                                    </label>
+                                    <label class="inline-flex items-center gap-2 text-sm">
+                                        <input type="radio" name="expense_flag" value="salary"
+                                            @checked(request('expense_flag') === 'salary')>
+                                        ЗП
+                                    </label>
+                                    <label class="inline-flex items-center gap-2 text-sm">
+                                        <input type="radio" name="expense_flag" value="office"
+                                            @checked(request('expense_flag') === 'office')>
+                                        Офис
+                                    </label>
+                                    <label class="inline-flex items-center gap-2 text-sm">
+                                        <input type="radio" name="expense_flag" value="domains"
+                                            @checked(request('expense_flag') === 'domains')>
+                                        Домены
+                                    </label>
+                                </div>
+
+                                <div class="flex items-center gap-2 ml-auto">
+                                    <label class="text-xs text-gray-500">Сумма от / до</label>
+                                    <input type="number" step="0.01" name="amount_min"
+                                        value="{{ request('amount_min') }}"
+                                        class="border-gray-200 rounded-md px-3 py-2 text-sm w-32 bg-white"
+                                        placeholder="min">
+                                    <input type="number" step="0.01" name="amount_max"
+                                        value="{{ request('amount_max') }}"
+                                        class="border-gray-200 rounded-md px-3 py-2 text-sm w-32 bg-white"
+                                        placeholder="max">
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="mt-3 flex items-center gap-2">
-                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded text-sm">Применить</button>
-                <a href="{{ route('operation.index') }}" class="px-4 py-2 border rounded text-sm">Сброс</a>
+                <div class="mt-3 flex items-center gap-2">
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded text-sm">Применить</button>
+                    <a href="{{ route('operation.index') }}" class="px-4 py-2 border rounded text-sm">Сброс</a>
 
-                <div class="ml-auto text-sm text-gray-700">
-                    <span class="font-semibold">Доход:</span> {{ number_format($sumIncome ?? 0, 2, '.', ' ') }} ₽
-                    &nbsp;•&nbsp;
-                    <span class="font-semibold">Расход:</span> {{ number_format($sumExpense ?? 0, 2, '.', ' ') }} ₽
-                    &nbsp;•&nbsp;
-                    <span class="font-semibold">Баланс:</span>
-                    {{ number_format(($sumIncome ?? 0) - ($sumExpense ?? 0), 2, '.', ' ') }} ₽
+                    <div class="ml-auto text-sm text-gray-700">
+                        <span class="font-semibold">Доход:</span> {{ number_format($sumIncome ?? 0, 2, '.', ' ') }} ₽
+                        &nbsp;•&nbsp;
+                        <span class="font-semibold">Расход:</span> {{ number_format($sumExpense ?? 0, 2, '.', ' ') }} ₽
+                        &nbsp;•&nbsp;
+                        <span class="font-semibold">Баланс:</span>
+                        {{ number_format(($sumIncome ?? 0) - ($sumExpense ?? 0), 2, '.', ' ') }} ₽
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </details>
 
         <script>
             function setPreset(preset) {
@@ -438,24 +496,53 @@
                                             class="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold shadow-sm">
                                             Расход
                                         </span>
+                                        @php
+                                            $buttonBaseClasses =
+                                                'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200';
+                                        @endphp
+
                                         @if ($m->category?->is_salary)
                                             <span
-                                                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 ml-1"
+                                                class="{{ $buttonBaseClasses }} bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-red-500/30 hover:from-red-600 hover:to-pink-600 hover:shadow-red-500/40 focus:ring-red-500"
                                                 title="Расход на ЗП">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                                    viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-4 w-4 transition-transform duration-200 hover:scale-110"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                    stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
                                                         d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2" />
                                                 </svg>
                                             </span>
                                         @elseif ($m->category?->is_office)
                                             <span
-                                                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700 ml-1"
+                                                class="{{ $buttonBaseClasses }} bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-emerald-500/30 hover:from-emerald-600 hover:to-green-600 hover:shadow-emerald-500/40 focus:ring-emerald-500"
                                                 title="Офисный расход">
-                                                <svg class="h-3 w-3" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                <svg class="h-4 w-4 transition-transform duration-200 hover:scale-110"
+                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
                                                         d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                </svg>
+                                            </span>
+                                        @elseif ($m->category?->is_domains_hosting)
+                                            <span
+                                                class="{{ $buttonBaseClasses }} bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-indigo-500/30 hover:from-indigo-700 hover:to-violet-700 hover:shadow-indigo-500/40 focus:ring-indigo-500"
+                                                title="Оплата доменов и хостинга">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-4 w-4 transition-transform duration-200 hover:scale-110"
+                                                    fill="none" viewBox="0 0 26 27" stroke="currentColor"
+                                                    stroke-width="2">
+                                                    <path d="M2.33301 17.0908H23.6663" stroke="currentColor"
+                                                        stroke-linecap="round" stroke-linejoin="round" />
+                                                    <path d="M2.33301 9.09082H23.6663" stroke="currentColor"
+                                                        stroke-linecap="round" stroke-linejoin="round" />
+                                                    <path
+                                                        d="M13 25.0908C19.6274 25.0908 25 19.7182 25 13.0908C25 6.4634 19.6274 1.09082 13 1.09082C6.37258 1.09082 1 6.4634 1 13.0908C1 19.7182 6.37258 25.0908 13 25.0908Z"
+                                                        stroke="currentColor" stroke-linecap="round"
+                                                        stroke-linejoin="round" />
+                                                    <path
+                                                        d="M8.56543 14.0908C8.76021 17.3432 9.89724 20.3411 11.71 22.8145C11.5867 22.9501 11.4622 23.085 11.334 23.2158L11.2451 23.3057C9.30961 20.7035 8.09464 17.5335 7.89648 14.0908H8.56543ZM18.1045 14.0908C17.9063 17.5332 16.6911 20.7026 14.7559 23.3047L14.667 23.2148C14.5387 23.0839 14.4133 22.9501 14.29 22.8145C16.1029 20.341 17.2417 17.3435 17.4365 14.0908H18.1045ZM14.7549 2.87598C16.6906 5.47823 17.9063 8.64792 18.1045 12.0908H17.4365C17.2417 8.83789 16.1032 5.83978 14.29 3.36621C14.4132 3.23071 14.5389 3.09757 14.667 2.9668L14.7549 2.87598ZM11.334 2.9668C11.462 3.09741 11.587 3.23088 11.71 3.36621C9.89698 5.83969 8.76028 8.83812 8.56543 12.0908H7.89648C8.09468 8.64813 9.30967 5.47814 11.2451 2.87598L11.334 2.9668Z"
+                                                        fill="black" stroke="currentColor" stroke-width="2" />
                                                 </svg>
                                             </span>
                                         @endif
@@ -486,6 +573,14 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-2 max-w-xs truncate text-gray-600">
+                                    @if ($op['type'] === 'expense' && ($m->category?->is_domains_hosting || $m->domain_id))
+                                        <span class="inline-flex items-center gap-1 text-indigo-600 mr-2"
+                                            title="Оплата домена">
+
+                                            <span class="text-xs">Оплата за
+                                                домен{{ $m->domain?->name ? ': ' . $m->domain?->name : '' }}</span>
+                                        </span>
+                                    @endif
                                     {{ $op['type'] === 'payment' ? $m->note ?? '' : $m->description ?? '' }}
                                     @if ($op['type'] === 'expense' && $m->category?->is_salary && $m->salary_recipient)
                                         <div class="mt-1 text-xs text-gray-500">Кому:
@@ -774,5 +869,10 @@
     {{-- Модальное окно для зарплатного расхода --}}
     @if (isset($salaryCategories) && $salaryCategories->count())
         @include('admin.expenses._salary_modal')
+    @endif
+
+    {{-- Модальное окно для доменов/хостинга --}}
+    @if (isset($domainHostingCategories) && $domainHostingCategories->count())
+        @include('admin.expenses._domain_hosting_modal')
     @endif
 @endsection

@@ -17,6 +17,7 @@ class ExpenseCategory extends Model
         'sort_order',
         'is_office',
         'is_salary',
+        'is_domains_hosting',
     ];
 
     /** Приведения типов */
@@ -24,6 +25,7 @@ class ExpenseCategory extends Model
         'sort_order' => 'integer',
         'is_office' => 'boolean',
         'is_salary' => 'boolean',
+        'is_domains_hosting' => 'boolean',
     ];
 
     /** Значения по умолчанию */
@@ -31,6 +33,7 @@ class ExpenseCategory extends Model
         'sort_order' => 0,
         'is_office' => false,
         'is_salary' => false,
+        'is_domains_hosting' => false,
     ];
 
     /** При создании устанавливаем sort_order = max + 1 (если не указан) */

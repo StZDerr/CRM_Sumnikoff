@@ -33,6 +33,7 @@ class ExpenseCategoryController extends Controller
             'sort_order' => 'nullable|integer|min:1',
             'is_office' => 'nullable|boolean',
             'is_salary' => 'nullable|boolean',
+            'is_domains_hosting' => 'nullable|boolean',
         ]);
 
         if (empty($data['slug'])) {
@@ -63,6 +64,7 @@ class ExpenseCategoryController extends Controller
             'sort_order' => 'nullable|integer|min:1',
             'is_office' => 'nullable|boolean',
             'is_salary' => 'nullable|boolean',
+            'is_domains_hosting' => 'nullable|boolean',
         ]);
 
         if (empty($data['slug'])) {

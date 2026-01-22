@@ -36,18 +36,33 @@
             class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
         <label for="is_salary" class="text-sm text-gray-700">Отнести к расходам ЗП</label>
     </div>
+
+    <div class="flex items-center gap-2">
+        <input type="hidden" name="is_domains_hosting" value="0">
+        <input type="checkbox" name="is_domains_hosting" id="is_domains_hosting" value="1"
+            {{ old('is_domains_hosting', $expenseCategory->is_domains_hosting ?? false) ? 'checked' : '' }}
+            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+        <label for="is_domains_hosting" class="text-sm text-gray-700">Отнести к расходам на домены и хостинг</label>
+    </div>
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const office = document.getElementById('is_office');
-        const salary = document.getElementById('is_salary');
+        const flags = [
+            document.getElementById('is_office'),
+            document.getElementById('is_salary'),
+            document.getElementById('is_domains_hosting'),
+        ];
 
-        office.addEventListener('change', () => {
-            if (office.checked) salary.checked = false;
-        });
+        flags.forEach(current => {
+            current.addEventListener('change', () => {
+                if (!current.checked) return;
 
-        salary.addEventListener('change', () => {
-            if (salary.checked) office.checked = false;
+                flags.forEach(other => {
+                    if (other !== current) {
+                        other.checked = false;
+                    }
+                });
+            });
         });
     });
 </script>

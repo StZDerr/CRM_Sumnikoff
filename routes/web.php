@@ -133,6 +133,9 @@ Route::middleware('auth')->group(function () {
     // Быстрое создание зарплатного расхода
     Route::post('expenses/store-salary', [ExpenseController::class, 'storeSalary'])->name('expenses.store-salary');
 
+    // Быстрое создание расхода домены/хостинг
+    Route::post('expenses/store-domain-hosting', [ExpenseController::class, 'storeDomainHosting'])->name('expenses.store-domain-hosting');
+
     // Выплата аванса из табеля
     Route::post('expenses/store-advance', [ExpenseController::class, 'storeAdvance'])->name('expenses.store-advance');
 
