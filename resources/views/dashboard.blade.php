@@ -126,6 +126,14 @@
                     </div>
 
                     <div class="bg-white rounded-xl shadow p-4">
+                        <div class="text-xs text-gray-500">Коммерчиские проекты (на
+                            {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
+                        <div class="text-2xl font-bold mt-1 text-indigo-600">
+                            {{ $commercialCount }}
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-4">
                         <div class="text-xs text-gray-500">Ожидаемая прибыль (сумма по контрактам на
                             {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
                         <div class="text-2xl font-bold mt-1 text-indigo-600">

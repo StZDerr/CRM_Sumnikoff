@@ -301,10 +301,13 @@ class DashboardController extends Controller
         if ($isAll) {
             $barterCount = \App\Models\Project::where('payment_type', 'barter')->count();
             $ownCount = \App\Models\Project::where('payment_type', 'own')->count();
+            $commercialCount = \App\Models\Project::where('payment_type', 'paid')->count();
         } else {
             $barterCount = \App\Models\Project::where('payment_type', 'barter')
                 ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
             $ownCount = \App\Models\Project::where('payment_type', 'own')
+                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
+            $commercialCount = \App\Models\Project::where('payment_type', 'paid')
                 ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
         }
 
@@ -316,7 +319,7 @@ class DashboardController extends Controller
             'topProjectsLabels', 'topProjectsData', 'topMaxChart', 'topStep',
             'activeData', 'activeStep',
             'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
-            'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'expectedProfit'
+            'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit'
         ));
     }
 

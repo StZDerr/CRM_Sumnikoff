@@ -7,7 +7,7 @@
     <div class="flex flex-wrap gap-2 mb-4">
         <a href="{{ route('account-credentials.createSite', ['project' => $project, 'type' => 'website_user']) }}"
             class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
-            + Доступ к сайту
+            + Доступ
         </a>
         <a href="{{ route('account-credentials.createBD', ['project' => $project, 'type' => 'database']) }}"
             class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
