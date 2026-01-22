@@ -1,6 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
+    <a href="{{ route('projects.show', ['project' => $project]) }}"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white text-sm font-semibold shadow-md hover:from-indigo-700 hover:via-blue-700 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-indigo-300 transform transition hover:-translate-y-0.5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Назад к проекту
+    </a>
+    <br><br>
     <h1 class="text-xl font-bold mb-4">Доступы проекта {{ $project->title }}</h1>
 
     {{-- Панель кнопок добавления разных типов доступа --}}
@@ -24,7 +32,7 @@
 
         <a href="{{ route('account-credentials.createOther', ['project' => $project, 'type' => 'other']) }}"
             class="inline-flex items-center px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium
-           hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
             + Доступ
         </a>
     </div>
