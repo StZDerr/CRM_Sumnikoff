@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountCredentialController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CalendarController;
@@ -20,10 +21,10 @@ use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectCommentController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\RegDomainController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SpecialtyController;
 use App\Http\Controllers\StageController;
-use App\Http\Controllers\RegDomainController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VacationController;
 use Illuminate\Support\Facades\Route;
@@ -65,7 +66,43 @@ Route::middleware('auth')->group(function () {
         'payment-categories' => PaymentCategoryController::class,
         'vacations' => VacationController::class,
         'specialties' => SpecialtyController::class,
+        // 'account-credentials' => AccountCredentialController::class,
     ]);
+
+    Route::prefix('projects/{project}')->group(function () {
+        Route::get('account-credentials', [AccountCredentialController::class, 'index'])
+            ->name('account-credentials.index');
+
+        Route::get('account-credentials/create', [AccountCredentialController::class, 'create'])
+            ->name('account-credentials.create');
+
+        Route::get('account-credentials/createSite', [AccountCredentialController::class, 'createSite'])
+            ->name('account-credentials.createSite');
+
+        Route::post('account-credentials/storeSite', [AccountCredentialController::class, 'storeSite'])
+            ->name('account-credentials.storeSite');
+
+        Route::get('account-credentials/createBD', [AccountCredentialController::class, 'createBD'])
+            ->name('account-credentials.createBD');
+
+        Route::post('account-credentials/storeBD', [AccountCredentialController::class, 'storeBD'])
+            ->name('account-credentials.storeBD');
+
+        Route::get('account-credentials/createSSH', [AccountCredentialController::class, 'createSSH'])
+            ->name('account-credentials.createSSH');
+
+        Route::post('account-credentials/storeSSH', [AccountCredentialController::class, 'storeSSH'])
+            ->name('account-credentials.storeSSH');
+
+        Route::get('account-credentials/createFTP', [AccountCredentialController::class, 'createFTP'])
+            ->name('account-credentials.createFTP');
+
+        Route::post('account-credentials/storeFTP', [AccountCredentialController::class, 'storeFTP'])
+            ->name('account-credentials.storeFTP');
+
+        Route::post('account-credentials', [AccountCredentialController::class, 'store'])
+            ->name('account-credentials.store');
+    });
 
     Route::post('vacations/{vacation}/end', [VacationController::class, 'end'])->name('vacations.end');
 
@@ -100,6 +137,15 @@ Route::middleware('auth')->group(function () {
     Route::post('importances/reorder', [ImportanceController::class, 'reorder'])->name('importances.reorder');
 
     Route::post('stages/reorder', [StageController::class, 'reorder'])->name('stages.reorder');
+
+    Route::get('account-credentials/{accountCredential}', [AccountCredentialController::class, 'show'])
+        ->name('account-credentials.show');
+    Route::get('account-credentials/{accountCredential}/edit', [AccountCredentialController::class, 'edit'])
+        ->name('account-credentials.edit');
+    Route::put('account-credentials/{accountCredential}', [AccountCredentialController::class, 'update'])
+        ->name('account-credentials.update');
+    Route::delete('account-credentials/{accountCredential}', [AccountCredentialController::class, 'destroy'])
+        ->name('account-credentials.destroy');
 
     Route::post('payment-categories/reorder', [PaymentCategoryController::class, 'reorder'])->name('payment-categories.reorder');
 

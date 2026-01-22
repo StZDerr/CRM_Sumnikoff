@@ -4,23 +4,41 @@
     <div class="max-w-4xl mx-auto">
         {{-- Header --}}
         <div class="flex items-center gap-3 mb-6">
+            {{-- Кнопка Назад --}}
+            <a href="{{ route('projects.index') }}"
+                class="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 mr-auto">
+                ← Назад
+            </a>
+
             @can('update', $project)
                 <a href="{{ route('projects.edit', $project) }}"
-                    class="inline-flex items-center px-4 py-2 rounded-md bg-indigo-600 text-white text-sm hover:bg-indigo-700">Редактировать</a>
+                    class="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 text-white text-sm font-medium shadow hover:from-indigo-700 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    Редактировать
+                </a>
             @endcan
-            <a href="{{ route('projects.index') }}"
-                class="inline-flex items-center px-3 py-2 border rounded-md text-sm hover:bg-gray-50">← Назад</a>
+
             @if (auth()->user()->isAdmin())
                 <a href="{{ route('invoices.index', ['project' => $project->id]) }}"
-                    class="inline-flex items-center px-3 py-2 border rounded-md text-sm hover:bg-gray-50">Счета проекта</a>
+                    class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                    Счета проекта
+                </a>
 
                 <a href="{{ route('payments.index', ['project' => $project->id]) }}"
-                    class="inline-flex items-center px-3 py-2 border rounded-md text-sm hover:bg-gray-50">Поступления
-                    проекта</a>
+                    class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                    Поступления проекта
+                </a>
+
                 <a href="{{ route('calendar.index', ['project' => $project->id]) }}"
-                    class="ml-auto inline-flex items-center px-3 py-2 border rounded-md text-sm hover:bg-gray-50">Календарь</a>
+                    class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                    Календарь
+                </a>
             @endif
+            <a href="{{ route('account-credentials.index', ['project' => $project->id]) }}"
+                class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                Доступы проекта
+            </a>
         </div>
+
 
         {{-- Main card --}}
         <div class="bg-white shadow rounded-lg p-6 space-y-6">
