@@ -185,9 +185,10 @@ class CalendarController extends Controller
             $start = Carbon::make($minContract)->startOfMonth();
             $end = Carbon::now()->endOfMonth();
 
-            // Получаем все проекты с контрактами
+            // Получаем все платные проекты с контрактами (исключаем barter и own)
             $projects = Project::whereNotNull('contract_date')
                 ->where('contract_amount', '>', 0)
+                ->where('payment_type', Project::PAYMENT_TYPE_PAID)
                 ->orderBy('title')
                 ->get();
 
