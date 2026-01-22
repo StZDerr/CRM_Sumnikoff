@@ -7,7 +7,7 @@
     <div class="flex flex-wrap gap-2 mb-4">
         <a href="{{ route('account-credentials.createSite', ['project' => $project, 'type' => 'website_user']) }}"
             class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
-            + Доступ
+            + Доступ Сайта
         </a>
         <a href="{{ route('account-credentials.createBD', ['project' => $project, 'type' => 'database']) }}"
             class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
@@ -20,6 +20,12 @@
         <a href="{{ route('account-credentials.createFTP', ['project' => $project, 'type' => 'ftp']) }}"
             class="inline-flex items-center px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700">
             + Доступ к FTP
+        </a>
+
+        <a href="{{ route('account-credentials.createOther', ['project' => $project, 'type' => 'other']) }}"
+            class="inline-flex items-center px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium
+           hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            + Доступ
         </a>
     </div>
 

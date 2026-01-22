@@ -63,6 +63,13 @@ class AccountCredentialController extends Controller
         return view('admin.account_credentials.createFTP', compact('organization', 'project'));
     }
 
+    public function createOther(Project $project, Request $request)
+    {
+        $organization = $project->organization;
+
+        return view('admin.account_credentials.createOther', compact('organization', 'project'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -166,6 +173,26 @@ class AccountCredentialController extends Controller
 
         return redirect()->route('account-credentials.index', ['project' => $credential->project_id])
             ->with('success', 'Доступ к FTP создан успешно!');
+    }
+
+    public function storeOther(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'login' => 'nullable|string|max:255',
+            'password' => 'required|string',
+            'notes' => 'nullable|string',
+            'status' => 'required|in:active,stop_list',
+            'organization_id' => 'required|exists:organizations,id',
+            'project_id' => 'required|exists:projects,id',
+        ]);
+        $credential = new AccountCredential($request->all());
+        $credential->user_id = Auth::id();
+        $credential['type'] = 'other';
+        $credential->save();
+
+        return redirect()->route('account-credentials.index', ['project' => $credential->project_id])
+            ->with('success', 'Доступ создан успешно!');
     }
 
     public function show(AccountCredential $accountCredential)

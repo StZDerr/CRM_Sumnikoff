@@ -102,7 +102,22 @@ Route::middleware('auth')->group(function () {
 
         Route::post('account-credentials', [AccountCredentialController::class, 'store'])
             ->name('account-credentials.store');
+
+        Route::get('account-credentials/createOther', [AccountCredentialController::class, 'createOther'])
+            ->name('account-credentials.createOther');
+
+        Route::post('account-credentials/storeOther', [AccountCredentialController::class, 'storeOther'])
+            ->name('account-credentials.storeOther');
     });
+
+    Route::get('account-credentials/{accountCredential}', [AccountCredentialController::class, 'show'])
+        ->name('account-credentials.show');
+    Route::get('account-credentials/{accountCredential}/edit', [AccountCredentialController::class, 'edit'])
+        ->name('account-credentials.edit');
+    Route::put('account-credentials/{accountCredential}', [AccountCredentialController::class, 'update'])
+        ->name('account-credentials.update');
+    Route::delete('account-credentials/{accountCredential}', [AccountCredentialController::class, 'destroy'])
+        ->name('account-credentials.destroy');
 
     Route::post('vacations/{vacation}/end', [VacationController::class, 'end'])->name('vacations.end');
 
@@ -137,15 +152,6 @@ Route::middleware('auth')->group(function () {
     Route::post('importances/reorder', [ImportanceController::class, 'reorder'])->name('importances.reorder');
 
     Route::post('stages/reorder', [StageController::class, 'reorder'])->name('stages.reorder');
-
-    Route::get('account-credentials/{accountCredential}', [AccountCredentialController::class, 'show'])
-        ->name('account-credentials.show');
-    Route::get('account-credentials/{accountCredential}/edit', [AccountCredentialController::class, 'edit'])
-        ->name('account-credentials.edit');
-    Route::put('account-credentials/{accountCredential}', [AccountCredentialController::class, 'update'])
-        ->name('account-credentials.update');
-    Route::delete('account-credentials/{accountCredential}', [AccountCredentialController::class, 'destroy'])
-        ->name('account-credentials.destroy');
 
     Route::post('payment-categories/reorder', [PaymentCategoryController::class, 'reorder'])->name('payment-categories.reorder');
 
