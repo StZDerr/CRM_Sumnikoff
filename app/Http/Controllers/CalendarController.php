@@ -25,6 +25,7 @@ class CalendarController extends Controller
         $totalPayments = 0;
         $contractAmount = 0;
         $contractStart = null;
+        $expectedByMonth = [];
 
         // Определяем период: от самой ранней даты (контракт или счёт) до сейчас
         $start = null;
@@ -73,7 +74,8 @@ class CalendarController extends Controller
                 ->all();
 
             $contractAmount = (float) ($project->contract_amount ?? 0);
-            $contractStart = $project->contract_date ? Carbon::make($project->contract_date)->startOfMonth() : null;
+            $contractDate = $project->contract_date ? Carbon::make($project->contract_date) : null;
+            $contractStart = $contractDate ? $contractDate->copy()->startOfMonth() : null;
 
             // Базовый конец — текущий месяц
             $end = Carbon::now()->endOfMonth();
@@ -91,6 +93,7 @@ class CalendarController extends Controller
                 $tempBalance = 0;
                 $tempCur = $start->copy();
                 $currentMonth = Carbon::now()->startOfMonth();
+                $expectedSchedule = $this->buildContractExpectedSchedule($project, $currentMonth->copy()->endOfMonth());
 
                 while ($tempCur->lte($currentMonth)) {
                     $key = $tempCur->format('Y-m');
@@ -98,31 +101,41 @@ class CalendarController extends Controller
                     $paid = (float) ($paymentsByMonth[$key] ?? 0);
 
                     // Ожидаемая сумма
-                    $expected = $invoiced;
-                    if ($invoiced == 0 && $tempCur->gte($contractStart)) {
-                        $expected = $contractAmount;
-                    }
+                    $expected = $invoiced > 0 ? $invoiced : (float) ($expectedSchedule[$key] ?? 0);
 
                     $tempBalance = $tempBalance + $paid - $expected;
                     $tempCur->addMonthNoOverflow();
                 }
 
                 // Если есть переплата — расширяем период вперёд, пока баланс положительный
-                if ($tempBalance > 0) {
+                if ($tempBalance > 0 && $contractDate) {
                     $futureBalance = $tempBalance;
-                    $futureCur = $currentMonth->copy()->addMonthNoOverflow();
                     $maxFutureMonths = 24; // Ограничение на 2 года вперёд
                     $count = 0;
 
-                    while ($futureBalance > 0 && $count < $maxFutureMonths) {
-                        $end = $futureCur->copy()->endOfMonth();
-                        $futureBalance -= $contractAmount;
-                        $futureCur->addMonthNoOverflow();
-                        $count++;
+                    $futurePeriodStart = $contractDate->copy()->startOfDay();
+                    $futurePeriodEnd = $futurePeriodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
+                    while ($futurePeriodEnd->lte($currentMonth->copy()->endOfMonth())) {
+                        $futurePeriodStart->addMonthNoOverflow();
+                        $futurePeriodEnd = $futurePeriodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
                     }
-                    // Останавливаемся на первом месяце с отрицательным балансом (не добавляем лишние)
+
+                    while ($count < $maxFutureMonths) {
+                        $end = $futurePeriodEnd->copy()->endOfMonth();
+                        $futureBalance -= $contractAmount;
+                        $futurePeriodStart->addMonthNoOverflow();
+                        $futurePeriodEnd = $futurePeriodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
+                        $count++;
+
+                        if ($futureBalance <= 0) {
+                            break;
+                        }
+                    }
                 }
             }
+
+            // График ожидаемых начислений по периодам договора
+            $expectedByMonth = $this->buildContractExpectedSchedule($project, $end->copy()->endOfMonth());
 
             // Названия месяцев
             $monthsRus = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
@@ -162,7 +175,8 @@ class CalendarController extends Controller
             'totalInvoices',
             'totalPayments',
             'contractAmount',
-            'contractStart'
+            'contractStart',
+            'expectedByMonth'
         ));
     }
 
@@ -177,6 +191,8 @@ class CalendarController extends Controller
         $difference = 0;
         $commentsMap = [];
         $projectRows = [];
+
+        $currentMonth = Carbon::now()->startOfMonth();
 
         // найдём самую раннюю дату контракта
         $minContract = Project::whereNotNull('contract_date')->min('contract_date');
@@ -217,7 +233,8 @@ class CalendarController extends Controller
             $monthsRus = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
             foreach ($projects as $project) {
-                $contractStart = Carbon::make($project->contract_date)->startOfMonth();
+                $contractDate = $project->contract_date ? Carbon::make($project->contract_date) : null;
+                $contractStart = $contractDate ? $contractDate->copy()->startOfMonth() : null;
                 $contractAmount = (float) $project->contract_amount;
                 $closedAt = $project->closed_at ? Carbon::make($project->closed_at)->endOfMonth() : null;
 
@@ -240,39 +257,45 @@ class CalendarController extends Controller
                     }
                 }
 
-                // Рассчитываем баланс до текущего месяца
+                // Рассчитываем баланс до текущего месяца по периодам договора (с 19 по 18 и т.п.)
                 $tempBalance = 0;
                 $tempCur = $calcStart->copy();
-                $currentMonth = Carbon::now()->startOfMonth();
+                $expectedSchedule = $this->buildContractExpectedSchedule($project, $currentMonth->copy()->endOfMonth());
 
                 while ($tempCur->lte($currentMonth)) {
                     $key = $tempCur->format('Y-m');
                     $invoiced = (float) ($invoicesMap[$project->id][$key] ?? 0);
                     $paid = (float) ($paymentsMap[$project->id][$key] ?? 0);
 
-                    $expected = $invoiced > 0 ? $invoiced : ($tempCur->gte($contractStart) ? $contractAmount : 0);
+                    $expected = $invoiced > 0 ? $invoiced : (float) ($expectedSchedule[$key] ?? 0);
                     $tempBalance = $tempBalance + $paid - $expected;
                     $tempCur->addMonthNoOverflow();
                 }
 
                 // Если есть переплата — расширяем период вперёд
-                if ($tempBalance > 0) {
+                if ($tempBalance > 0 && $contractDate) {
                     $futureBalance = $tempBalance;
-                    $futureCur = $currentMonth->copy()->addMonthNoOverflow();
                     $maxFutureMonths = 24;
                     $count = 0;
 
-                    // Расширяем пока баланс положительный, плюс один месяц когда станет 0 или отрицательным
+                    $futurePeriodStart = $contractDate->copy()->startOfDay();
+                    $futurePeriodEnd = $futurePeriodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
+                    while ($futurePeriodEnd->lte($currentMonth->copy()->endOfMonth())) {
+                        $futurePeriodStart->addMonthNoOverflow();
+                        $futurePeriodEnd = $futurePeriodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
+                    }
+
+                    // Расширяем пока баланс положительный, плюс один период когда станет 0 или отрицательным
                     while ($count < $maxFutureMonths) {
-                        $futureEnd = $futureCur->copy()->endOfMonth();
+                        $futureEnd = $futurePeriodEnd->copy()->endOfMonth();
                         if ($futureEnd->gt($maxEnd)) {
                             $maxEnd = $futureEnd->copy();
                         }
                         $futureBalance -= $contractAmount;
-                        $futureCur->addMonthNoOverflow();
+                        $futurePeriodStart->addMonthNoOverflow();
+                        $futurePeriodEnd = $futurePeriodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
                         $count++;
 
-                        // Останавливаемся после месяца где баланс стал <= 0
                         if ($futureBalance <= 0) {
                             break;
                         }
@@ -296,10 +319,10 @@ class CalendarController extends Controller
 
             // Строим данные для каждого проекта с накопительным балансом
             $projectRows = [];
-            $currentMonth = Carbon::now()->startOfMonth();
 
             foreach ($projects as $project) {
-                $contractStart = $project->contract_date ? Carbon::make($project->contract_date)->startOfMonth() : null;
+                $contractDate = $project->contract_date ? Carbon::make($project->contract_date) : null;
+                $contractStart = $contractDate ? $contractDate->copy()->startOfMonth() : null;
                 $contractAmount = (float) ($project->contract_amount ?? 0);
                 $closedAt = $project->closed_at ? Carbon::make($project->closed_at)->endOfMonth() : null;
 
@@ -324,27 +347,35 @@ class CalendarController extends Controller
                 if ($calcStart && $contractAmount > 0) {
                     $tempBalance = 0;
                     $tempCur = $calcStart->copy();
+                    $expectedSchedule = $this->buildContractExpectedSchedule($project, $currentMonth->copy()->endOfMonth());
 
                     while ($tempCur->lte($currentMonth)) {
                         $key = $tempCur->format('Y-m');
                         $invoiced = (float) ($projectInvoices[$key] ?? 0);
                         $paid = (float) ($projectPayments[$key] ?? 0);
-                        $expected = $invoiced > 0 ? $invoiced : ($contractStart && $tempCur->gte($contractStart) ? $contractAmount : 0);
+                        $expected = $invoiced > 0 ? $invoiced : (float) ($expectedSchedule[$key] ?? 0);
                         $tempBalance = $tempBalance + $paid - $expected;
                         $tempCur->addMonthNoOverflow();
                     }
 
                     // Если есть переплата - расширяем
-                    if ($tempBalance > 0) {
+                    if ($tempBalance > 0 && $contractDate) {
                         $futureBalance = $tempBalance;
-                        $futureCur = $currentMonth->copy()->addMonthNoOverflow();
                         $maxFutureMonths = 24;
                         $count = 0;
 
+                        $futurePeriodStart = $contractDate->copy()->startOfDay();
+                        $futurePeriodEnd = $futurePeriodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
+                        while ($futurePeriodEnd->lte($currentMonth->copy()->endOfMonth())) {
+                            $futurePeriodStart->addMonthNoOverflow();
+                            $futurePeriodEnd = $futurePeriodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
+                        }
+
                         while ($count < $maxFutureMonths) {
-                            $lastDisplayMonth = $futureCur->format('Y-m');
+                            $lastDisplayMonth = $futurePeriodEnd->format('Y-m');
                             $futureBalance -= $contractAmount;
-                            $futureCur->addMonthNoOverflow();
+                            $futurePeriodStart->addMonthNoOverflow();
+                            $futurePeriodEnd = $futurePeriodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
                             $count++;
 
                             if ($futureBalance <= 0) {
@@ -368,6 +399,7 @@ class CalendarController extends Controller
                 // Сортируем месяцы хронологически для расчёта накопительного баланса
                 $monthsChronological = array_reverse($months);
                 $runningBalance = 0;
+                $expectedSchedule = $this->buildContractExpectedSchedule($project, $end->copy()->endOfMonth());
 
                 foreach ($monthsChronological as $m) {
                     $ym = $m['ym'];
@@ -384,13 +416,8 @@ class CalendarController extends Controller
                     $invoiced = (float) ($invoicesMap[$project->id][$ym] ?? 0);
                     $paid = (float) ($paymentsMap[$project->id][$ym] ?? 0);
 
-                    // Ожидаемая сумма: счёт учитывается всегда, contract_amount только если активен
-                    $expected = 0;
-                    if ($invoiced > 0) {
-                        $expected = $invoiced;
-                    } elseif ($isActive && $contractAmount > 0) {
-                        $expected = $contractAmount;
-                    }
+                    // Ожидаемая сумма: счёт учитывается всегда, иначе — по периоду договора (например, 19->18)
+                    $expected = $invoiced > 0 ? $invoiced : (float) ($expectedSchedule[$ym] ?? 0);
 
                     $runningBalance = $runningBalance + $paid - $expected;
 
@@ -501,6 +528,41 @@ class CalendarController extends Controller
         }
 
         return $months;
+    }
+
+    /**
+     * Построить ожидаемые платежи по периодам договора (например, 19->18).
+     * Ожидаемое начисляется в месяц даты окончания периода.
+     *
+     * @return array<string, float> [ym => expectedAmount]
+     */
+    protected function buildContractExpectedSchedule(Project $project, Carbon $limitEnd): array
+    {
+        $schedule = [];
+
+        $contractDate = $project->contract_date ? Carbon::make($project->contract_date)->startOfDay() : null;
+        $contractAmount = (float) ($project->contract_amount ?? 0);
+        if (! $contractDate || $contractAmount <= 0) {
+            return $schedule;
+        }
+
+        $closedAt = $project->closed_at ? Carbon::make($project->closed_at)->endOfDay() : null;
+        $hardEnd = $closedAt ? $closedAt->copy()->min($limitEnd->copy()->endOfDay()) : $limitEnd->copy()->endOfDay();
+
+        $periodStart = $contractDate->copy();
+        $periodEnd = $periodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
+        $guard = 0;
+
+        while ($periodEnd->lte($hardEnd) && $guard < 240) {
+            $ym = $periodStart->format('Y-m');
+            $schedule[$ym] = ($schedule[$ym] ?? 0) + $contractAmount;
+
+            $periodStart->addMonthNoOverflow();
+            $periodEnd = $periodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
+            $guard++;
+        }
+
+        return $schedule;
     }
 
     /**

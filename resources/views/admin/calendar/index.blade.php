@@ -42,21 +42,16 @@
                             $monthsChronological = array_reverse($months);
                             $runningBalance = 0; // Накопительный баланс (переплата переносится на следующие месяцы)
                             $balanceByMonth = [];
-                            $expectedByMonth = []; // Ожидаемые счета (contract_amount если нет явного счёта)
+                            $expectedBase = $expectedByMonth ?? []; // Ожидаемые по периодам договора (из контроллера)
+                            $expectedByMonth = [];
 
                             foreach ($monthsChronological as $m) {
                                 $key = $m['ym'];
                                 $invoiced = (float) ($invoicesByMonth[$key] ?? 0);
                                 $paid = (float) ($paymentsByMonth[$key] ?? 0);
 
-                                // Если нет явного счёта, но месяц >= даты начала контракта — используем contract_amount
-                                $expected = $invoiced;
-                                if ($invoiced == 0 && $contractAmount > 0 && $contractStart) {
-                                    $monthDate = \Carbon\Carbon::createFromFormat('Y-m', $key)->startOfMonth();
-                                    if ($monthDate->gte($contractStart)) {
-                                        $expected = $contractAmount;
-                                    }
-                                }
+                                // Если нет явного счёта, используем ожидание по периоду договора (например, 19->18)
+                                $expected = $invoiced > 0 ? $invoiced : (float) ($expectedBase[$key] ?? 0);
                                 $expectedByMonth[$key] = $expected;
 
                                 // Баланс = предыдущий баланс + оплата текущего месяца - ожидаемая сумма
@@ -102,6 +97,10 @@
                                     data-month="{{ $key }}" data-month-label="{{ $m['label'] }}" data-tippy
                                     data-tippy-content="{{ $isExpectedFromContract ? 'Ожидаемо (контракт)' : 'Счета' }}: {{ number_format($expected, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paid, 0, '.', ' ') }} ₽<br>За месяц: {{ ($monthDiff >= 0 ? '+' : '') . number_format($monthDiff, 0, '.', ' ') }} ₽<br>Накоп. баланс: {{ $balanceText }}">
 
+                                    @php
+                                        $showCell = $expected > 0 || $paid > 0 || $invoiced > 0;
+                                    @endphp
+
                                     {{-- Уголок, если есть комментарии за месяц --}}
                                     @if (!empty($commentsByMonth[$key] ?? 0))
                                         <span title="Комментарии: {{ $commentsByMonth[$key] }}"
@@ -109,27 +108,28 @@
                                             style="clip-path: polygon(100% 0, 0 0, 100% 100%);" aria-hidden="true"></span>
                                     @endif
 
-                                    {{-- Счета / Ожидаемо --}}
-                                    @if ($expected > 0)
-                                        <div
-                                            class="text-xs {{ $isExpectedFromContract ? 'text-orange-500' : 'text-gray-500' }}">
-                                            {{ $isExpectedFromContract ? 'Ожидаемо:' : 'Счета:' }}
-                                        </div>
-                                        <div
-                                            class="font-medium {{ $isExpectedFromContract ? 'text-orange-600' : 'text-gray-800' }}">
-                                            {{ number_format($expected, 0, '.', ' ') }} ₽
-                                        </div>
-                                    @endif
+                                    @if ($showCell)
+                                        {{-- Счета / Ожидаемо --}}
+                                        @if ($expected > 0)
+                                            <div
+                                                class="text-xs {{ $isExpectedFromContract ? 'text-orange-500' : 'text-gray-500' }}">
+                                                {{ $isExpectedFromContract ? 'Ожидаемо:' : 'Счета:' }}
+                                            </div>
+                                            <div
+                                                class="font-medium {{ $isExpectedFromContract ? 'text-orange-600' : 'text-gray-800' }}">
+                                                {{ number_format($expected, 0, '.', ' ') }} ₽
+                                            </div>
+                                        @endif
 
-                                    {{-- Оплачено --}}
-                                    @if ($paid > 0)
-                                        <div class="text-xs text-gray-500 mt-1">Оплачено:</div>
-                                        <div class="font-medium text-gray-800">{{ number_format($paid, 0, '.', ' ') }} ₽
-                                        </div>
-                                    @endif
+                                        {{-- Оплачено --}}
+                                        @if ($paid > 0)
+                                            <div class="text-xs text-gray-500 mt-1">Оплачено:</div>
+                                            <div class="font-medium text-gray-800">
+                                                {{ number_format($paid, 0, '.', ' ') }} ₽
+                                            </div>
+                                        @endif
 
-                                    {{-- Накопительный баланс --}}
-                                    @if ($expected > 0 || $paid > 0 || $balance != 0)
+                                        {{-- Накопительный баланс --}}
                                         <div class="mt-1 pt-1 border-t border-gray-200">
                                             <div class="text-xs text-gray-400">Баланс:</div>
                                             <span class="font-semibold {{ $balanceClass }}">{{ $balanceText }}</span>
