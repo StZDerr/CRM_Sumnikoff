@@ -74,6 +74,9 @@ Route::middleware('auth')->group(function () {
     ]);
 
     Route::prefix('projects/{project}')->group(function () {
+        Route::get('history', [ProjectController::class, 'userHistory'])->name('projects.userHistory');
+        Route::patch('history/{history}', [ProjectController::class, 'updateHistory'])->name('projects.history.update');
+        Route::delete('history/{history}', [ProjectController::class, 'destroyHistory'])->name('projects.history.destroy');
         Route::get('account-credentials', [AccountCredentialController::class, 'index'])
             ->name('account-credentials.index');
 

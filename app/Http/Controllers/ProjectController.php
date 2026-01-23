@@ -6,11 +6,13 @@ use App\Models\Importance;
 use App\Models\Organization;
 use App\Models\PaymentMethod;
 use App\Models\Project;
+use App\Models\ProjectMarketerHistory;
 use App\Models\Stage;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Validation\ValidationException;
 
 class ProjectController extends Controller
 {
@@ -318,5 +320,71 @@ class ProjectController extends Controller
         $project->delete();
 
         return redirect()->route('projects.index')->with('success', 'Проект удалён.');
+    }
+
+    public function userHistory(Project $project)
+    {
+        $history = $project->marketerHistory()
+            ->with(['marketer', 'assignedBy'])
+            ->get();
+
+        return view('admin.projects.userHistory', compact('project', 'history'));
+    }
+
+    public function updateHistory(Request $request, Project $project, ProjectMarketerHistory $history)
+    {
+        if ((int) $history->project_id !== (int) $project->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'assigned_at' => 'required|date',
+            'unassigned_at' => 'nullable|date|after_or_equal:assigned_at',
+        ]);
+
+        $start = Carbon::parse($data['assigned_at']);
+        $end = isset($data['unassigned_at']) && $data['unassigned_at']
+            ? Carbon::parse($data['unassigned_at'])
+            : null;
+
+        $newEnd = $end ?? Carbon::create(2999, 12, 31, 23, 59, 59);
+
+        $others = ProjectMarketerHistory::where('project_id', $project->id)
+            ->where('id', '<>', $history->id)
+            ->get();
+
+        foreach ($others as $other) {
+            $otherStart = $other->assigned_at;
+            $otherEnd = $other->unassigned_at ?? Carbon::create(2999, 12, 31, 23, 59, 59);
+
+            if ($start->lt($otherEnd) && $newEnd->gt($otherStart)) {
+                throw ValidationException::withMessages([
+                    'assigned_at' => 'Периоды назначений не должны пересекаться.',
+                ]);
+            }
+        }
+
+        $history->update([
+            'assigned_at' => $start,
+            'unassigned_at' => $end,
+        ]);
+
+        return redirect()->back()->with('success', 'Даты назначения обновлены.');
+    }
+
+    public function destroyHistory(Project $project, ProjectMarketerHistory $history)
+    {
+        if ((int) $history->project_id !== (int) $project->id) {
+            abort(404);
+        }
+
+        // Нельзя удалять текущего назначенного (active) маркетолога
+        if (empty($history->unassigned_at)) {
+            return redirect()->back()->with('error', 'Нельзя удалить текущее назначение.');
+        }
+
+        $history->delete();
+
+        return redirect()->back()->with('success', 'Назначение удалено.');
     }
 }

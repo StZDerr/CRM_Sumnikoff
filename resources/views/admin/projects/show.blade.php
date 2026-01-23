@@ -20,17 +20,22 @@
             @if (auth()->user()->isAdmin())
                 <a href="{{ route('invoices.index', ['project' => $project->id]) }}"
                     class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
-                    Счета проекта
+                    Счета
                 </a>
 
                 <a href="{{ route('payments.index', ['project' => $project->id]) }}"
                     class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
-                    Поступления проекта
+                    Поступления
                 </a>
 
                 <a href="{{ route('calendar.index', ['project' => $project->id]) }}"
                     class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
                     Календарь
+                </a>
+
+                <a href="{{ route('projects.userHistory', $project) }}"
+                    class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                    История
                 </a>
             @endif
             <a href="{{ route('account-credentials.index', ['project' => $project->id]) }}"
