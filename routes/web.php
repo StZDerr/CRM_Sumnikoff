@@ -13,6 +13,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ImportanceController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceStatusController;
+use App\Http\Controllers\LinkCardController;
 use App\Http\Controllers\MonthlyExpenseController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\OrganizationController;
@@ -199,6 +200,12 @@ Route::middleware('auth')->group(function () {
         ->name('monthly-expenses.pay');
 
     Route::resource('monthly-expenses', MonthlyExpenseController::class)->except(['show']);
+
+    // Link cards
+    Route::post('link-cards', [LinkCardController::class, 'store'])->name('link-cards.store');
+    Route::match(['put','patch'], 'link-cards/{linkCard}', [LinkCardController::class, 'update'])->name('link-cards.update');
+    Route::post('link-cards/reorder', [LinkCardController::class, 'reorder'])->name('link-cards.reorder');
+    Route::delete('link-cards/{linkCard}', [LinkCardController::class, 'destroy'])->name('link-cards.destroy');
 
     // Выплата аванса из табеля
     Route::post('expenses/store-advance', [ExpenseController::class, 'storeAdvance'])->name('expenses.store-advance');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Models\LinkCard;
 use App\Models\MonthlyExpense;
 use App\Models\MonthlyExpenseStatus;
 use App\Models\Payment;
@@ -24,6 +25,10 @@ class DashboardController extends Controller
         $period = $request->query('period');
         $monthParam = $request->query('month');
         $isAll = ($period === 'all');
+
+        $linkCards = LinkCard::where('user_id', $user->id)
+            ->orderBy('position')
+            ->get();
 
         if ($isAll) {
             // For 'all time' view aggregate by month from the earliest record to now
@@ -378,7 +383,8 @@ class DashboardController extends Controller
             'activeData', 'activeStep',
             'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
             'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit',
-            'monthlyExpenses', 'monthlyExpensesMonth', 'expectedProjects'
+            'monthlyExpenses', 'monthlyExpensesMonth', 'expectedProjects',
+            'linkCards'
         ));
     }
 
