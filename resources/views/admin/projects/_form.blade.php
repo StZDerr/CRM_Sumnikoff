@@ -67,6 +67,8 @@
         <x-input-error :messages="$errors->get('importance_id')" class="mt-2" />
     </div>
 
+
+
     <div>
         <x-input-label for="payment_method_id" :value="'Тип оплаты'" />
         <select id="payment_method_id" name="payment_method_id" class="mt-1 block w-full rounded border px-3 py-2">
@@ -121,6 +123,17 @@
     </div> --}}
 
     <div>
+        <x-input-label for="status" :value="'Статус проекта'" />
+        <select id="status" name="status" class="mt-1 block w-full rounded border px-3 py-2">
+            <option value="">—</option>
+            <option value="in_progress" @selected(old('status', $project->status ?? '') === 'in_progress')>В работе</option>
+            <option value="paused" @selected(old('status', $project->status ?? '') === 'paused')>На паузе</option>
+            <option value="stopped" @selected(old('status', $project->status ?? '') === 'stopped')>Остановлен</option>
+        </select>
+        <x-input-error :messages="$errors->get('status')" class="mt-2" />
+    </div>
+
+    <div>
         <x-input-label for="closed_at" :value="'Дата закрытия'" />
         <x-text-input id="closed_at" name="closed_at" type="date" :value="old('closed_at', isset($project) && $project->closed_at ? $project->closed_at->format('Y-m-d') : '')" class="mt-1 block w-48" />
         <x-input-error :messages="$errors->get('closed_at')" class="mt-2" />
@@ -136,8 +149,8 @@
                     class="stage-item flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded bg-white/0 border hover:bg-gray-50 cursor-grab {{ $selected ? 'selected bg-indigo-50 border-indigo-200' : '' }}">
                     <div class="flex items-center gap-3">
                         <div class="drag-handle cursor-grab text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor" stroke-width="1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M8 9h.01M8 15h.01M12 9h.01M12 15h.01M16 9h.01M16 15h.01" />
                             </svg>

@@ -50,10 +50,12 @@
             {{-- Meta grid --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Дата создания</div>
-                    <div class="mt-1 font-medium text-gray-900">{{ $project->created_at?->format('Y-m-d H:i') ?? '-' }}
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Название проекта</div>
+                    <div class="mt-1 font-medium text-gray-900">
+                        {{ $project->title ?? '-' }}
                     </div>
                 </div>
+
 
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Организация</div>
@@ -71,6 +73,10 @@
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Важность</div>
                     <div class="mt-1 font-medium text-gray-900">{{ $project->importance?->name ?? '-' }}</div>
                 </div>
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Город</div>
+                    <div class="mt-1 font-medium text-gray-900">{{ $project->city ?? '-' }}</div>
+                </div>
                 @if (auth()->user()->isAdmin())
                     <div>
                         <div class="text-xs text-gray-500 uppercase tracking-wide">Тип оплаты</div>
@@ -82,6 +88,7 @@
                             {{ $project->contract_amount ? number_format($project->contract_amount, 2, '.', ' ') . ' ₽' : '-' }}
                         </div>
                     </div>
+
                     <div>
                         <div class="text-xs text-gray-500 uppercase tracking-wide">Дата заключения договора</div>
                         <div class="mt-1 font-medium text-gray-900">
@@ -90,8 +97,21 @@
                     </div>
 
                     <div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Дата закрытия проекта</div>
+                        <div class="mt-1 font-medium text-gray-900">
+                            {{ \Illuminate\Support\Carbon::make($project->closed_at)?->format('Y-m-d') ?? '-' }}
+                        </div>
+                    </div>
+
+                    <div>
                         <div class="text-xs text-gray-500 uppercase tracking-wide">Дата обновления</div>
                         <div class="mt-1 font-medium text-gray-900">{{ $project->updated_at?->format('Y-m-d H:i') ?? '-' }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Дата создания</div>
+                        <div class="mt-1 font-medium text-gray-900">{{ $project->created_at?->format('Y-m-d H:i') ?? '-' }}
                         </div>
                     </div>
                 @endif
@@ -102,10 +122,7 @@
                         {{ $project->report_date?->format('Y-m-d') ?? '-' }}
                     </div>
                 </div>
-                <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Город</div>
-                    <div class="mt-1 font-medium text-gray-900">{{ $project->city ?? '-' }}</div>
-                </div>
+
 
                 {{-- <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Срок оплаты</div>
@@ -113,13 +130,35 @@
                         {{ $project->payment_due_day ? $project->payment_due_day . ' число' : '-' }}</div>
                 </div> --}}
 
-
-
                 <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Статус</div>
-                    <div class="mt-1 font-medium text-gray-900">
-                        {{ $project->deleted_at ? 'Удалён ' . $project->deleted_at->format('Y-m-d H:i') : 'Активен' }}
-                    </div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Статус проекта</div>
+
+                    @php
+                        $statusMap = [
+                            'in_progress' => [
+                                'label' => 'В работе',
+                                'class' => 'bg-green-100 text-green-800 border-green-300',
+                            ],
+                            'paused' => [
+                                'label' => 'На паузе',
+                                'class' => 'bg-yellow-100 text-yellow-800 border-yellow-300',
+                            ],
+                            'stopped' => [
+                                'label' => 'Остановлен',
+                                'class' => 'bg-red-100 text-red-800 border-red-300',
+                            ],
+                        ];
+
+                        $status = $statusMap[$project->status] ?? [
+                            'label' => 'Неизвестно',
+                            'class' => 'bg-gray-100 text-gray-800 border-gray-300',
+                        ];
+                    @endphp
+
+                    <span
+                        class="inline-flex items-center px-3 py-1 mt-1 text-sm font-medium rounded-full border {{ $status['class'] }}">
+                        {{ $status['label'] }}
+                    </span>
                 </div>
 
                 <div class="md:col-span-2">

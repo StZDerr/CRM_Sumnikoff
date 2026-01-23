@@ -110,7 +110,9 @@ class ProjectController extends Controller
             ->withQueryString();
 
         $organizations = Organization::orderBy('name_full')->pluck('name_full', 'id');
-        $marketers = User::orderBy('name')->pluck('name', 'id');
+        $marketers = User::where('role', 'marketer')
+            ->orderBy('name')
+            ->pluck('name', 'id');
         $importances = Importance::ordered()->pluck('name', 'id');
 
         return view('admin.projects.index', compact(
@@ -213,6 +215,7 @@ class ProjectController extends Controller
             'comment' => 'nullable|string',
             'stages' => 'nullable|array',
             'stages.*' => 'integer|exists:stages,id',
+            'status' => 'nullable|string|in:in_progress,paused,stopped',
         ]);
 
         $data['created_by'] = auth()->id();
@@ -228,9 +231,6 @@ class ProjectController extends Controller
             $project->stages()->sync($sync);
         }
 
-        // Запустить пересчёт долгов/поступлений для этого проекта
-        // Artisan::call('projects:update-debts', ['--project' => $project->id]);
-
         return redirect()->route('projects.index')->with('success', 'Проект создан.');
     }
 
@@ -239,6 +239,7 @@ class ProjectController extends Controller
      */
     public function show(Project $project)
     {
+
         \Illuminate\Support\Facades\Gate::authorize('view', $project);
 
         $project->load(['organization', 'marketer', 'paymentMethod', 'stages', 'importance', 'comments.user']);
@@ -287,10 +288,17 @@ class ProjectController extends Controller
             'comment' => 'nullable|string',
             'stages' => 'nullable|array',
             'stages.*' => 'integer|exists:stages,id',
+            'status' => 'nullable|string|in:in_progress,paused,stopped',
         ]);
 
+        if (
+            ($data['status'] == Project::STATUS_STOPPED || $data['status'] == Project::STATUS_PAUSED) &&
+            empty($data['closed_at'])
+        ) {
+            $data['closed_at'] = Carbon::now();
+        }
         $data['updated_by'] = auth()->id();
-
+        // dd($data);
         $project->update($data);
 
         // Синхронизируем этапы (с порядком)

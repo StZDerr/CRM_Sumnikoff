@@ -120,7 +120,7 @@
         @if (auth()->user()->isAdmin())
             {{-- ADMIN: выпадающий список --}}
             <x-buttons-dropdawn :active="$activeProjects" title="Проекты">
-                <x-dropdown-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
+                <x-dropdown-link :href="route('projects.index')" :active="request()->routeIs('projects.index')">
                     Проекты
                 </x-dropdown-link>
 

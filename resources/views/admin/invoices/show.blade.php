@@ -5,7 +5,7 @@
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
                 <!-- Кнопка назад -->
-                <a href="{{ url()->previous() }}" class="px-3 py-1 border rounded hover:bg-gray-100">
+                <a href="{{ route('projects.show', $invoice->project) }}" class="px-3 py-1 border rounded hover:bg-gray-100">
                     ← Назад
                 </a>
                 <h1 class="text-2xl">{{ $invoice->number }}</h1>

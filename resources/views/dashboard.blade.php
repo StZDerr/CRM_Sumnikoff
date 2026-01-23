@@ -133,14 +133,15 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow p-4">
+                    <button type="button" id="expected-profit-open"
+                        class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
                         <div class="text-xs text-gray-500">Ожидаемая прибыль (сумма по контрактам на
                             {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
                         <div class="text-2xl font-bold mt-1 text-indigo-600">
                             {{ number_format($expectedProfit ?? 0, 2, '.', ' ') }} ₽
                         </div>
                         <div class="text-xs text-gray-500 mt-1">Не учитываются бартерные и свои проекты</div>
-                    </div>
+                    </button>
                 </div>
             @endif
             {{-- ===== TAXES SUMMARY (VAT + USN) ===== --}}
@@ -285,6 +286,64 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    {{-- ===== EXPECTED PROFIT MODAL ===== --}}
+    <div id="expected-profit-modal" class="fixed inset-0 z-50 hidden">
+        <div id="expected-profit-overlay" class="absolute inset-0 bg-black/50"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b">
+                    <div>
+                        <div class="text-lg font-semibold text-gray-800">Ожидаемая прибыль — детали</div>
+                        <div class="text-xs text-gray-500">
+                            {{ now()->locale('ru')->isoFormat('MMMM YYYY') }}
+                        </div>
+                    </div>
+                    <button type="button" id="expected-profit-close"
+                        class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+
+                <div class="p-5">
+                    @if (($expectedProjects ?? collect())->isEmpty())
+                        <div class="text-sm text-gray-500">Нет проектов для расчёта.</div>
+                    @else
+                        <div class="overflow-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Проект</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Сумма контракта</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Дата закрытия</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @foreach ($expectedProjects as $proj)
+                                        <tr>
+                                            <td class="px-3 py-2">
+                                                <a href="{{ route('projects.show', $proj) }}"
+                                                    class="text-indigo-600 hover:underline">
+                                                    {{ $proj->title }}
+                                                </a>
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ $proj->closed_at?->format('d.m.Y') ?? '—' }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
 
@@ -594,6 +653,28 @@
 
         })();
         document.addEventListener('DOMContentLoaded', function() {
+            const expectedModal = document.getElementById('expected-profit-modal');
+            const expectedOpen = document.getElementById('expected-profit-open');
+            const expectedClose = document.getElementById('expected-profit-close');
+            const expectedOverlay = document.getElementById('expected-profit-overlay');
+
+            function openExpectedModal() {
+                if (!expectedModal) return;
+                expectedModal.classList.remove('hidden');
+            }
+
+            function closeExpectedModal() {
+                if (!expectedModal) return;
+                expectedModal.classList.add('hidden');
+            }
+
+            if (expectedOpen) expectedOpen.addEventListener('click', openExpectedModal);
+            if (expectedClose) expectedClose.addEventListener('click', closeExpectedModal);
+            if (expectedOverlay) expectedOverlay.addEventListener('click', closeExpectedModal);
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') closeExpectedModal();
+            });
+
             const input = document.getElementById('site-search');
             const resultsWrap = document.getElementById('site-search-results');
             const resultsList = document.getElementById('site-search-list');

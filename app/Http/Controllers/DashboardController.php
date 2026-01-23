@@ -6,6 +6,7 @@ use App\Models\Expense;
 use App\Models\MonthlyExpense;
 use App\Models\MonthlyExpenseStatus;
 use App\Models\Payment;
+use App\Models\Project;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -157,8 +158,12 @@ class DashboardController extends Controller
 
         $monthLabel = $start->locale('ru')->isoFormat('MMMM YYYY');
 
-        // Expected profit (sum of contract_amount for open projects and those closed this month)
-        $expectedProfit = \App\Models\Project::getExpectedProfitForMonth($start);
+        // Expected profit (sum of contract_amount for open projects and those closed after this month)
+        $expectedProfit = Project::getExpectedProfitForMonth($start);
+        $expectedProjects = Project::expectedProfitForMonth($start)
+            ->select(['id', 'title', 'contract_amount', 'closed_at', 'payment_type'])
+            ->orderBy('title')
+            ->get();
 
         // Top 5 projects by income for the selected month
         $topProjectsRows = Payment::selectRaw('projects.id, COALESCE(projects.title, CONCAT("Проект #", projects.id)) as title, SUM(payments.amount) as total')
@@ -372,7 +377,7 @@ class DashboardController extends Controller
             'activeData', 'activeStep',
             'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
             'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit',
-            'monthlyExpenses', 'monthlyExpensesMonth'
+            'monthlyExpenses', 'monthlyExpensesMonth', 'expectedProjects'
         ));
     }
 

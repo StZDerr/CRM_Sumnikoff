@@ -17,6 +17,12 @@ class Project extends Model
 
     public const PAYMENT_TYPE_OWN = 'own';
 
+    public const STATUS_IN_PROGRESS = 'in_progress'; // в работе
+
+    public const STATUS_PAUSED = 'paused';      // пауза
+
+    public const STATUS_STOPPED = 'stopped';     // стоп
+
     protected $fillable = [
         'title',
         'organization_id',
@@ -35,6 +41,7 @@ class Project extends Model
         'balance',
         'balance_calculated_at',
         'debt',
+        'status',
         'closed_at',
         'created_by',
         'updated_by',
@@ -73,6 +80,21 @@ class Project extends Model
             $q->whereNull('payment_type')
                 ->orWhereNotIn('payment_type', ['barter', 'own']);
         });
+    }
+
+    public function isInProgress(): bool
+    {
+        return $this->status === self::STATUS_IN_PROGRESS;
+    }
+
+    public function isPaused(): bool
+    {
+        return $this->status === self::STATUS_PAUSED;
+    }
+
+    public function isStopped(): bool
+    {
+        return $this->status === self::STATUS_STOPPED;
     }
 
     /**

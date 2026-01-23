@@ -90,31 +90,32 @@
                                                     $project->closed_at,
                                                 )->startOfDay();
                                                 $today = \Illuminate\Support\Carbon::today();
-                                                $daysLeft = $today->diffInDays($closedDate, false);
+                                                $tomorrow = $today->copy()->addDay();
+                                                $inSevenDays = $today->copy()->addDays(7);
                                             @endphp
 
-                                            @if ($daysLeft < 0)
+                                            @if ($closedDate->lt($today))
                                                 <button type="button"
                                                     class="inline-flex items-center px-2 py-1 bg-black text-white rounded text-sm mr-2"
                                                     data-tippy
                                                     data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
                                                     Закрыт
                                                 </button>
-                                            @elseif ($daysLeft === 0)
+                                            @elseif ($closedDate->isSameDay($today))
                                                 <button type="button"
                                                     class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
                                                     data-tippy
                                                     data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
                                                     Сегодня закрытия
                                                 </button>
-                                            @elseif ($daysLeft === 1)
+                                            @elseif ($closedDate->isSameDay($tomorrow))
                                                 <button type="button"
                                                     class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
                                                     data-tippy
                                                     data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
                                                     Остался 1 день до закрытия
                                                 </button>
-                                            @elseif ($daysLeft <= 7)
+                                            @elseif ($closedDate->lte($inSevenDays))
                                                 <button type="button"
                                                     class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
                                                     data-tippy
