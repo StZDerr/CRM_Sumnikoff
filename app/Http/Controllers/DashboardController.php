@@ -161,6 +161,7 @@ class DashboardController extends Controller
         // Expected profit (sum of contract_amount for open projects and those closed after this month)
         $expectedProfit = Project::getExpectedProfitForMonth($start);
         $expectedProjects = Project::expectedProfitForMonth($start)
+            ->where('contract_amount', '>', 0)
             ->select(['id', 'title', 'contract_amount', 'closed_at', 'payment_type'])
             ->orderBy('title')
             ->get();
