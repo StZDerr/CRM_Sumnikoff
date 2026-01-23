@@ -203,7 +203,7 @@ Route::middleware('auth')->group(function () {
 
     // Link cards
     Route::post('link-cards', [LinkCardController::class, 'store'])->name('link-cards.store');
-    Route::match(['put','patch'], 'link-cards/{linkCard}', [LinkCardController::class, 'update'])->name('link-cards.update');
+    Route::match(['put', 'patch'], 'link-cards/{linkCard}', [LinkCardController::class, 'update'])->name('link-cards.update');
     Route::post('link-cards/reorder', [LinkCardController::class, 'reorder'])->name('link-cards.reorder');
     Route::delete('link-cards/{linkCard}', [LinkCardController::class, 'destroy'])->name('link-cards.destroy');
 

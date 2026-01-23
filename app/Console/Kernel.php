@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         \App\Console\Commands\UpdateProjectDebts::class,
+        \App\Console\Commands\PauseProjectsOnCloseDate::class,
     ];
 
     /**
@@ -21,11 +22,17 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Выполняем команду пересчёта долгов ежедневно в 01:00 (использует временную зону приложения)
-        $schedule->command('projects:update-debts')
+        // Авто выставление счетов по активным проектам
+        // $schedule->command('projects:update-debts')
+        //     ->dailyAt('00:00')
+        //     ->timezone('Europe/Moscow')
+        //     ->appendOutputTo(storage_path('logs/update_project_debts.log'));
+
+        // Авто постановка на паузу проектов с датой закрытия сегодня
+        $schedule->command('projects:pause-on-close-date')
             ->dailyAt('00:00')
             ->timezone('Europe/Moscow')
-            ->appendOutputTo(storage_path('logs/update_project_debts.log'));
+            ->appendOutputTo(storage_path('logs/pause_projects_on_close_date.log'));
     }
 
     /**

@@ -95,7 +95,8 @@
                             draggable="true" data-id="{{ $card->id }}">
 
                             <!-- Кнопка редактирования (карандаш) -->
-                            <button type="button" data-id="{{ $card->id }}" data-title="{{ e($card->title) }}" data-url="{{ e($card->url) }}" data-icon="{{ e($card->icon) }}"
+                            <button type="button" data-id="{{ $card->id }}" data-title="{{ e($card->title) }}"
+                                data-url="{{ e($card->url) }}" data-icon="{{ e($card->icon) }}"
                                 class="edit-card-btn absolute top-2 left-2 z-10 text-gray-400 hover:text-indigo-600 bg-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow">
                                 ✎
                             </button>
