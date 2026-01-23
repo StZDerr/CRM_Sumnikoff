@@ -305,7 +305,7 @@
                         class="text-gray-500 hover:text-gray-700">✕</button>
                 </div>
 
-                <div class="p-5">
+                <div class="p-5 max-h-[70vh] overflow-y-auto">
                     @if (($expectedProjects ?? collect())->isEmpty())
                         <div class="text-sm text-gray-500">Нет проектов для расчёта.</div>
                     @else
