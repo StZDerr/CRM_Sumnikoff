@@ -44,6 +44,9 @@ Route::get('/welcome', [\App\Http\Controllers\DashboardController::class, 'welco
     ->name('welcome');
 
 Route::middleware('auth')->group(function () {
+    Route::get('projects/arrears', [ProjectController::class, 'arrears'])->name('projects.arrears');
+    Route::get('projects/debtors', [ProjectController::class, 'debtors'])->name('projects.debtors');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

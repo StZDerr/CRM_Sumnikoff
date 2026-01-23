@@ -8,6 +8,7 @@ use App\Models\PaymentMethod;
 use App\Models\Project;
 use App\Models\Stage;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 
@@ -34,6 +35,14 @@ class ProjectController extends Controller
         $balance_status = $request->query('balance_status');
 
         $query = Project::with(['organization', 'marketer', 'paymentMethod', 'stages', 'importance']);
+
+        // Показываем только проекты, которые ещё открыты или закрыты в этом месяце или позже.
+        // Проекты, закрытые до начала текущего месяца, исключаем из списка.
+        $currentMonthStart = \Carbon\Carbon::now()->startOfMonth();
+        $query->where(function ($q) use ($currentMonthStart) {
+            $q->whereNull('closed_at')
+                ->orWhereDate('closed_at', '>=', $currentMonthStart->toDateString());
+        });
 
         // Если пользователь — маркетолог, показываем только проекты, где он назначен
         if (auth()->user()?->isMarketer()) {
@@ -105,6 +114,65 @@ class ProjectController extends Controller
         return view('admin.projects.index', compact(
             'projects', 'q', 'organizations', 'marketers', 'org', 'marketer', 'importances', 'importance', 'contract_date', 'balance_status'
         ));
+    }
+
+    /**
+     * Проекты, закрытые ранее текущего месяца
+     */
+    public function arrears(Request $request)
+    {
+        $currentMonthStart = Carbon::now()->startOfMonth();
+
+        $query = Project::with(['organization', 'marketer', 'paymentMethod', 'stages', 'importance'])
+            ->whereNotNull('closed_at')
+            ->whereDate('closed_at', '<', $currentMonthStart->toDateString());
+
+        // Если пользователь — маркетолог, показываем только проекты, где он назначен
+        if (auth()->user()?->isMarketer()) {
+            $query->where('marketer_id', auth()->id());
+        }
+
+        $projects = $query->orderBy('closed_at', 'desc')
+            ->orderBy('title')
+            ->paginate(100)
+            ->withQueryString();
+
+        return view('admin.projects.arrears', compact('projects', 'currentMonthStart'));
+    }
+
+    /**
+     * Проекты, должники
+     */
+    public function debtors(Request $request)
+    {
+        $currentMonthStart = Carbon::now()->startOfMonth();
+
+        $query = Project::with(['organization', 'marketer', 'paymentMethod', 'stages', 'importance']);
+
+        // Если пользователь — маркетолог, показываем только проекты, где он назначен
+        if (auth()->user()?->isMarketer()) {
+            $query->where('marketer_id', auth()->id());
+        }
+
+        // Показываем только проекты с долгом (сумма счетов > сумма платежей) и где есть счета
+        $query->whereRaw('(
+                COALESCE((SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id), 0) -
+                COALESCE((SELECT SUM(amount) FROM payments WHERE payments.project_id = projects.id), 0)
+            ) > 0')
+            ->whereRaw('(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id) > 0');
+
+        // Сортируем должников по величине долга (самые большие долги сверху)
+        $balanceSubquery = '(
+            COALESCE((SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id), 0) -
+            COALESCE((SELECT SUM(amount) FROM payments WHERE payments.project_id = projects.id), 0)
+        )';
+
+        $projects = $query->orderByRaw("{$balanceSubquery} DESC")
+            ->orderBy('title')
+            ->paginate(100)
+            ->withQueryString();
+
+        return view('admin.projects.debtors', compact('projects', 'currentMonthStart'));
     }
 
     /**
