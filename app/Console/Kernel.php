@@ -30,7 +30,7 @@ class Kernel extends ConsoleKernel
 
         // Авто постановка на паузу проектов с датой закрытия сегодня
         $schedule->command('projects:pause-on-close-date')
-            ->dailyAt('00:00')
+            ->dailyAt('16:42')
             ->timezone('Europe/Moscow')
             ->appendOutputTo(storage_path('logs/pause_projects_on_close_date.log'));
     }
