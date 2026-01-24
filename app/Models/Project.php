@@ -73,13 +73,14 @@ class Project extends Model
         // Выбираем проекты, которые активны в этот месяц (т.е. не закрыты в этом месяце).
         // Включаем проекты без даты закрытия (еще открыты) и те, что закрыты ПОЗЖЕ than end of month.
         // Исключаем бартерные и "свои" проекты (payment_type = 'barter'|'own').
+        // Исключаем проекты со статусами paused и stopped
         return $query->where(function ($q) use ($end) {
             $q->whereNull('closed_at')
                 ->orWhere('closed_at', '>', $end);
         })->where(function ($q) {
             $q->whereNull('payment_type')
                 ->orWhereNotIn('payment_type', ['barter', 'own']);
-        });
+        })->whereNotIn('status', [self::STATUS_PAUSED, self::STATUS_STOPPED]);
     }
 
     public function isInProgress(): bool
