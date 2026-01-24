@@ -25,6 +25,22 @@
     <x-input-error :messages="$errors->get('sort_order')" class="mt-2" />
 </div>
 
+<div>
+    <label class="inline-flex items-center gap-2">
+        <input type="checkbox" name="includes_vat" value="1"
+            {{ old('includes_vat', $paymentMethod->includes_vat ?? false) ? 'checked' : '' }}>
+        Включает НДС
+    </label>
+</div>
+
+<div>
+    <label class="inline-flex items-center gap-2">
+        <input type="checkbox" name="includes_usn" value="1"
+            {{ old('includes_usn', $paymentMethod->includes_usn ?? false) ? 'checked' : '' }}>
+        По УСН
+    </label>
+</div>
+
 <!-- Actions -->
 <div class="flex items-center gap-3 mt-4">
     <x-primary-button>{{ $submit ?? 'Сохранить' }}</x-primary-button>

@@ -40,8 +40,11 @@ class PaymentMethodController extends Controller
             'title' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:payment_methods,slug',
             'sort_order' => 'nullable|integer|min:1',
+            'includes_vat' => 'sometimes|boolean',
+            'includes_usn' => 'sometimes|boolean',
         ]);
-
+        $data['includes_vat'] = $request->boolean('includes_vat');
+        $data['includes_usn'] = $request->boolean('includes_usn');
         if (empty($data['slug'])) {
             $base = Str::slug($data['title'] ?? '');
             $slug = $base ?: Str::random(6);
@@ -75,7 +78,12 @@ class PaymentMethodController extends Controller
             'title' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:payment_methods,slug,'.$paymentMethod->id,
             'sort_order' => 'nullable|integer|min:1',
+            'includes_vat' => 'sometimes|boolean',
+            'includes_usn' => 'sometimes|boolean',
         ]);
+
+        $data['includes_vat'] = $request->boolean('includes_vat');
+        $data['includes_usn'] = $request->boolean('includes_usn');
 
         if (empty($data['slug'])) {
             $base = Str::slug($data['title'] ?? $paymentMethod->title);

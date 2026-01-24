@@ -35,14 +35,20 @@
                     <div class="text-xs text-gray-500">Сумма</div>
                     <div class="font-medium">{{ number_format($payment->amount, 2) }} ₽</div>
                 </div>
-                <div>
-                    <div class="text-xs text-gray-500">НДС (5%)</div>
-                    <div class="font-medium">{{ number_format($payment->vat_amount ?? 0, 2) }} ₽</div>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-500">УСН (7%)</div>
-                    <div class="font-medium">{{ number_format($payment->usn_amount ?? 0, 2) }} ₽</div>
-                </div>
+
+                @if ((float) ($payment->vat_amount ?? 0) > 0)
+                    <div>
+                        <div class="text-xs text-gray-500">НДС (5%)</div>
+                        <div class="font-medium">{{ number_format($payment->vat_amount ?? 0, 2) }} ₽</div>
+                    </div>
+                @endif
+
+                @if ((float) ($payment->usn_amount ?? 0) > 0)
+                    <div>
+                        <div class="text-xs text-gray-500">УСН (7%)</div>
+                        <div class="font-medium">{{ number_format($payment->usn_amount ?? 0, 2) }} ₽</div>
+                    </div>
+                @endif
 
                 <div>
                     <div class="text-xs text-gray-500">Чистая сумма</div>

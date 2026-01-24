@@ -14,16 +14,22 @@ class PaymentMethod extends Model
         'title',
         'slug',
         'sort_order',
+        'includes_vat',
+        'includes_usn',
     ];
 
     /** Приведения типов */
     protected $casts = [
         'sort_order' => 'integer',
+        'includes_vat' => 'boolean',
+        'includes_usn' => 'boolean',
     ];
 
     /** Значения по умолчанию */
     protected $attributes = [
         'sort_order' => 0,
+        'includes_vat' => false,
+        'includes_usn' => false,
     ];
 
     /** При создании устанавливаем sort_order = max + 1 (если не указан) */
@@ -75,5 +81,15 @@ class PaymentMethod extends Model
     public function __toString()
     {
         return (string) $this->title;
+    }
+
+    public function isVatIncluded(): bool
+    {
+        return (bool) $this->includes_vat;
+    }
+
+    public function isUsnIncluded(): bool
+    {
+        return (bool) $this->includes_usn;
     }
 }

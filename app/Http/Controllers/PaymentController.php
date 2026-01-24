@@ -87,20 +87,54 @@ class PaymentController extends Controller
         // TAX calculation from gross amount: VAT 5%, USN 7%
         $amount = (float) ($data['amount'] ?? 0);
 
+        // Если выбран способ оплаты — учитываем его флаги includes_vat/includes_usn
+        $includesVat = null;
+        $includesUsn = null;
+        if (! empty($data['payment_method_id'])) {
+            $pm = PaymentMethod::find($data['payment_method_id']);
+            if ($pm) {
+                $includesVat = (bool) $pm->includes_vat;
+                $includesUsn = (bool) $pm->includes_usn;
+            }
+        }
+
         // НДС
-        if (! empty($data['vat_amount'])) {
-            $data['vat_amount'] = round((float) str_replace(',', '.', $data['vat_amount']), 2);
+        if ($includesVat === null) {
+            // способ оплаты не выбран — прежнее поведение
+            if (! empty($data['vat_amount'])) {
+                $data['vat_amount'] = round((float) str_replace(',', '.', $data['vat_amount']), 2);
+            } else {
+                $data['vat_amount'] = round($amount / 105 * 5, 2);
+            }
+        } elseif ($includesVat) {
+            if (! empty($data['vat_amount'])) {
+                $data['vat_amount'] = round((float) str_replace(',', '.', $data['vat_amount']), 2);
+            } else {
+                $data['vat_amount'] = round($amount / 105 * 5, 2);
+            }
         } else {
-            $data['vat_amount'] = round($amount / 105 * 5, 2);
+            // способ оплаты явно не включает НДС — принудительно 0
+            $data['vat_amount'] = 0;
         }
 
         // УСН
         $amountWithoutVat = $amount - $data['vat_amount'];
 
-        if (! empty($data['usn_amount'])) {
-            $data['usn_amount'] = round((float) str_replace(',', '.', $data['usn_amount']), 2);
+        if ($includesUsn === null) {
+            if (! empty($data['usn_amount'])) {
+                $data['usn_amount'] = round((float) str_replace(',', '.', $data['usn_amount']), 2);
+            } else {
+                $data['usn_amount'] = round($amountWithoutVat * 0.07, 2);
+            }
+        } elseif ($includesUsn) {
+            if (! empty($data['usn_amount'])) {
+                $data['usn_amount'] = round((float) str_replace(',', '.', $data['usn_amount']), 2);
+            } else {
+                $data['usn_amount'] = round($amountWithoutVat * 0.07, 2);
+            }
         } else {
-            $data['usn_amount'] = round($amountWithoutVat * 0.07, 2);
+            // способ оплаты явно не включает УСН — принудительно 0
+            $data['usn_amount'] = 0;
         }
 
         // Создадим платёж и обновим статус счёта в транзакции
@@ -192,20 +226,54 @@ class PaymentController extends Controller
         // TAX recalculation when updating amount
         $amount = (float) ($data['amount'] ?? 0);
 
+        // Если выбран способ оплаты — учитываем его флаги includes_vat/includes_usn
+        $includesVat = null;
+        $includesUsn = null;
+        if (! empty($data['payment_method_id'])) {
+            $pm = PaymentMethod::find($data['payment_method_id']);
+            if ($pm) {
+                $includesVat = (bool) $pm->includes_vat;
+                $includesUsn = (bool) $pm->includes_usn;
+            }
+        }
+
         // НДС
-        if (! empty($data['vat_amount'])) {
-            $data['vat_amount'] = round((float) str_replace(',', '.', $data['vat_amount']), 2);
+        if ($includesVat === null) {
+            // способ оплаты не выбран — прежнее поведение
+            if (! empty($data['vat_amount'])) {
+                $data['vat_amount'] = round((float) str_replace(',', '.', $data['vat_amount']), 2);
+            } else {
+                $data['vat_amount'] = round($amount / 105 * 5, 2);
+            }
+        } elseif ($includesVat) {
+            if (! empty($data['vat_amount'])) {
+                $data['vat_amount'] = round((float) str_replace(',', '.', $data['vat_amount']), 2);
+            } else {
+                $data['vat_amount'] = round($amount / 105 * 5, 2);
+            }
         } else {
-            $data['vat_amount'] = round($amount / 105 * 5, 2);
+            // способ оплаты явно не включает НДС — принудительно 0
+            $data['vat_amount'] = 0;
         }
 
         // УСН
         $amountWithoutVat = $amount - $data['vat_amount'];
 
-        if (! empty($data['usn_amount'])) {
-            $data['usn_amount'] = round((float) str_replace(',', '.', $data['usn_amount']), 2);
+        if ($includesUsn === null) {
+            if (! empty($data['usn_amount'])) {
+                $data['usn_amount'] = round((float) str_replace(',', '.', $data['usn_amount']), 2);
+            } else {
+                $data['usn_amount'] = round($amountWithoutVat * 0.07, 2);
+            }
+        } elseif ($includesUsn) {
+            if (! empty($data['usn_amount'])) {
+                $data['usn_amount'] = round((float) str_replace(',', '.', $data['usn_amount']), 2);
+            } else {
+                $data['usn_amount'] = round($amountWithoutVat * 0.07, 2);
+            }
         } else {
-            $data['usn_amount'] = round($amountWithoutVat * 0.07, 2);
+            // способ оплаты явно не включает УСН — принудительно 0
+            $data['usn_amount'] = 0;
         }
 
         $oldProjectId = $payment->getOriginal('project_id');

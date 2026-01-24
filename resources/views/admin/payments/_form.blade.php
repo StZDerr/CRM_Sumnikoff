@@ -27,12 +27,26 @@
     </div>
 
     <div>
+        <label class="text-xs text-gray-500">Способ оплаты</label>
+        <select name="payment_method_id" class="w-full border rounded p-2">
+            <option value="">— не указано —</option>
+            @foreach ($paymentMethods as $pm)
+                <option value="{{ $pm->id }}" data-includes-vat="{{ $pm->includes_vat ? '1' : '0' }}"
+                    data-includes-usn="{{ $pm->includes_usn ? '1' : '0' }}" @selected(old('payment_method_id', $payment->payment_method_id ?? '') == $pm->id)>
+                    {{ $pm->title }}{{ $pm->includes_vat ? ' 🧾' : '' }}{{ $pm->includes_usn ? ' 🧮' : '' }}</option>
+            @endforeach
+        </select>
+        <x-input-error :messages="$errors->get('payment_method_id')" />
+        <div class="text-xs text-gray-500 mt-1">🧾 — включает НДС; 🧮 — включает УСН</div>
+    </div>
+
+    <div id="vat-field" class="hidden">
         <label class="text-xs text-gray-500">НДС (5%)</label>
         <input id="vat_amount" name="vat_amount" type="number" step="0.01" class="w-full border rounded p-2"
             value="{{ old('vat_amount', isset($payment) ? number_format($payment->vat_amount ?? 0, 2, '.', '') : '0.00') }}" />
     </div>
 
-    <div>
+    <div id="usn-field" class="hidden">
         <label class="text-xs text-gray-500">УСН (7%)</label>
         <input id="usn_amount" name="usn_amount" type="number" step="0.01" class="w-full border rounded p-2"
             value="{{ old('usn_amount', isset($payment) ? number_format($payment->usn_amount ?? 0, 2, '.', '') : '0.00') }}" />
@@ -67,16 +81,7 @@
         <x-input-error :messages="$errors->get('payment_date')" />
     </div>
 
-    <div>
-        <label class="text-xs text-gray-500">Способ оплаты</label>
-        <select name="payment_method_id" class="w-full border rounded p-2">
-            <option value="">— не указано —</option>
-            @foreach ($paymentMethods as $pm)
-                <option value="{{ $pm->id }}" @selected(old('payment_method_id', $payment->payment_method_id ?? '') == $pm->id)>{{ $pm->title }}</option>
-            @endforeach
-        </select>
-        <x-input-error :messages="$errors->get('payment_method_id')" />
-    </div>
+    <!-- Способ оплаты перемещён выше (после поля Сумма) -->
 
     <div>
         <label class="text-xs text-gray-500">Оплаченный счёт (если выставляли)</label>
@@ -126,6 +131,7 @@
             const invoiceSelect = container.querySelector('#invoice-select');
             const txInput = container.querySelector('#transaction_id');
             const projectSelect = container.querySelector('select[name="project_id"]');
+            const paymentMethodSelect = container.querySelector('select[name="payment_method_id"]');
             // Флаг, указывающий, сделал ли пользователь ручной выбор статуса счёта
             let manualInvoiceStatus = false;
 
@@ -361,8 +367,8 @@
             function recalcTaxes() {
                 const amount = parseNumericInput(amountInput?.value || 0);
                 if (!amount) {
-                    if (vatInput && !vatManual) vatInput.value = '0.00';
-                    if (usnInput && !usnManual) usnInput.value = '0.00';
+                    if (vatInput && !vatManual && !vatInput.disabled) vatInput.value = '0.00';
+                    if (usnInput && !usnManual && !usnInput.disabled) usnInput.value = '0.00';
                     return;
                 }
 
@@ -375,8 +381,46 @@
                 // УСН 7% — от суммы без НДС
                 const usn = round2(amountWithoutVat * 0.07);
 
-                if (vatInput && !vatManual) vatInput.value = vat.toFixed(2);
-                if (usnInput && !usnManual) usnInput.value = usn.toFixed(2);
+                if (vatInput && !vatManual && !vatInput.disabled) vatInput.value = vat.toFixed(2);
+                if (usnInput && !usnManual && !usnInput.disabled) usnInput.value = usn.toFixed(2);
+            }
+
+            function updateTaxFieldsVisibility() {
+                const sel = paymentMethodSelect && paymentMethodSelect.selectedOptions[0];
+                const includesVat = sel ? sel.dataset.includesVat === '1' : false;
+                const includesUsn = sel ? sel.dataset.includesUsn === '1' : false;
+                const vatField = container.querySelector('#vat-field');
+                const usnField = container.querySelector('#usn-field');
+
+                if (includesVat) {
+                    if (vatField) vatField.classList.remove('hidden');
+                    if (vatInput) {
+                        vatInput.disabled = false;
+                        vatManual = false;
+                    }
+                } else {
+                    if (vatField) vatField.classList.add('hidden');
+                    if (vatInput) {
+                        vatInput.disabled = true;
+                        vatInput.value = '0.00';
+                    }
+                }
+
+                if (includesUsn) {
+                    if (usnField) usnField.classList.remove('hidden');
+                    if (usnInput) {
+                        usnInput.disabled = false;
+                        usnManual = false;
+                    }
+                } else {
+                    if (usnField) usnField.classList.add('hidden');
+                    if (usnInput) {
+                        usnInput.disabled = true;
+                        usnInput.value = '0.00';
+                    }
+                }
+
+                recalcTaxes();
             }
 
             // Флаги ручного ввода
@@ -403,6 +447,14 @@
 
                 // initial calculation
                 recalcTaxes();
+
+                // show/hide tax fields based on selected payment method
+                if (paymentMethodSelect) {
+                    paymentMethodSelect.addEventListener('change', function() {
+                        updateTaxFieldsVisibility();
+                    });
+                    updateTaxFieldsVisibility();
+                }
             }
         }
 
