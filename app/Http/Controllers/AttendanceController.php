@@ -103,13 +103,16 @@ class AttendanceController extends Controller
                 ]
             );
         } else {
-            // Если статус пустой, оставляем только комментарий или удаляем запись
+            // Если статус пустой — очищаем статус и обрабатываем комментарий:
+            // - если есть комментарий — сохраняем запись с пустым статусом (status_id = null)
+            // - если комментария нет — удаляем запись
             $attendance = AttendanceDay::where('user_id', $request->user_id)
                 ->where('date', $request->date)
                 ->first();
 
             if ($attendance) {
                 if ($request->comment) {
+                    $attendance->status_id = null;
                     $attendance->comment = $request->comment;
                     $attendance->save();
                 } else {
@@ -118,10 +121,11 @@ class AttendanceController extends Controller
                 }
             } else {
                 if ($request->comment) {
-                    // Создаём запись только с комментарием
+                    // Создаём запись только с комментарием и без статуса
                     AttendanceDay::create([
                         'user_id' => $request->user_id,
                         'date' => $request->date,
+                        'status_id' => null,
                         'comment' => $request->comment,
                     ]);
                 }

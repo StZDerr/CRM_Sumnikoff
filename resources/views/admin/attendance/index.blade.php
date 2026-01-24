@@ -204,7 +204,7 @@
                 const nextStatus = statuses[nextIndex];
 
                 if (!nextStatus) {
-                    // Удаляем запись
+                    // Переходим в пустой статус — сохраним/не потеряем комментарий
                     const res = await fetch('{{ route('attendance.store') }}', {
                         method: 'POST',
                         headers: {
@@ -214,7 +214,8 @@
                         body: JSON.stringify({
                             user_id: userId,
                             date: date,
-                            status: null
+                            status: null,
+                            comment: comment || null
                         })
                     });
 
@@ -224,13 +225,29 @@
                         return;
                     }
 
+                    const data = await res.json().catch(() => ({}));
+
                     td.dataset.status = '';
-                    td.dataset.comment = '';
+                    td.dataset.comment = data.comment ?? '';
                     td.style.backgroundColor = '';
                     td.textContent = '';
-                    td.title = '';
-                    const indicator = td.querySelector('span');
-                    if (indicator) indicator.remove();
+
+                    // Показываем в подсказке только комментарий, если он есть
+                    td.title = data.comment ? data.comment : '';
+
+                    // Плашка комментария
+                    let indicator = td.querySelector('span');
+                    if (data.comment) {
+                        if (!indicator) {
+                            indicator = document.createElement('span');
+                            indicator.className =
+                                'absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-sm';
+                            td.appendChild(indicator);
+                        }
+                    } else if (indicator) {
+                        indicator.remove();
+                    }
+
                     return;
                 }
 
