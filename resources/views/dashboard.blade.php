@@ -252,31 +252,53 @@
                     <div class="mb-4">
                         <div class="text-sm font-medium text-gray-800">Ежемесячные расходы</div>
                         <div class="text-xs text-gray-500">
-                            Статусы за
-                            {{ \Carbon\Carbon::createFromFormat('Y-m', $monthlyExpensesMonth)->locale('ru')->isoFormat('MMMM YYYY') }}
+                            @if (!empty($showWeeklyExpenses))
+                                За текущую неделю
+                            @else
+                                Статусы за
+                                {{ \Carbon\Carbon::createFromFormat('Y-m', $monthlyExpensesMonth)->locale('ru')->isoFormat('MMMM YYYY') }}
+                            @endif
                         </div>
                     </div>
 
                     @if ($monthlyExpenses->isEmpty())
                         <div class="text-sm text-gray-500">Нет активных ежемесячных расходов.</div>
                     @else
+                        <div>
+                            <div class="flex items-center gap-6 py-2 text-xs text-gray-500 font-medium border-b">
+                                <div class="w-4 shrink-0">Дата</div>
+                                <div class="min-w-0 flex-1">Название / примечание</div>
+                                <div class="flex items-center gap-3 shrink-0 justify-end">Сумма / Статус</div>
+                            </div>
+                        </div>
+
                         <div class="divide-y">
                             @foreach ($monthlyExpenses as $me)
-                                <div class="flex items-center justify-between py-3">
-                                    <div class="min-w-0">
-                                        <div class="font-medium text-gray-900">{{ $me->title }}</div>
-                                        <div class="text-xs text-gray-500">
-                                            Дата оплаты: {{ $me->due_date->format('d.m.Y') }}
-                                            @if (!empty($me->note))
-                                                • {{ $me->note }}
-                                            @endif
-                                        </div>
+                                <div class="flex items-center gap-6 py-3">
+                                    {{-- Дата оплаты --}}
+                                    <div class="w-4 shrink-0 text-sm text-gray-600">
+                                        {{ $me->due_date->format('d') }}
                                     </div>
 
-                                    <div class="flex items-center gap-3">
-                                        <div class="text-sm font-semibold text-gray-900">
+                                    {{-- Название + примечание --}}
+                                    <div class="min-w-0 flex-1">
+                                        <div class="font-medium text-gray-900 truncate">
+                                            {{ $me->title }}
+                                        </div>
+
+                                        @if (!empty($me->note))
+                                            <div class="text-xs text-gray-500">
+                                                {{ $me->note }}
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    {{-- Правая часть --}}
+                                    <div class="flex items-center gap-3 shrink-0">
+                                        <div class="text-sm font-semibold text-gray-900 whitespace-nowrap">
                                             {{ number_format($me->amount, 2, '.', ' ') }} ₽
                                         </div>
+
                                         <span
                                             class="inline-flex items-center px-2 py-1 rounded text-xs {{ $me->status_class }}">
                                             {{ $me->status_label }}
@@ -288,17 +310,27 @@
                                                 <input type="hidden" name="month"
                                                     value="{{ $monthlyExpensesMonth }}">
                                                 <button
-                                                    class="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700">
+                                                    class="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 whitespace-nowrap">
                                                     Оплатить
                                                 </button>
                                             </form>
                                         @elseif (!empty($me->status_expense_id))
-                                            <span class="text-xs text-gray-400">Expense
-                                                #{{ $me->status_expense_id }}</span>
+                                            <span class="text-xs text-gray-400 whitespace-nowrap">
+                                                Расход #{{ $me->status_expense_id }}
+                                            </span>
                                         @endif
                                     </div>
                                 </div>
                             @endforeach
+
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t flex items-center justify-between text-sm text-gray-700">
+                            <div>Всего расходов: <span class="font-semibold">{{ $monthlyExpenses->count() }}</span>
+                            </div>
+                            <div>Итоговая сумма: <span
+                                    class="font-semibold">{{ number_format($monthlyExpenses->sum('amount'), 2, '.', ' ') }}
+                                    ₽</span></div>
                         </div>
                     @endif
                 </div>

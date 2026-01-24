@@ -359,10 +359,14 @@ class DashboardController extends Controller
 
         $monthlyExpenses = collect();
         $monthlyExpensesMonth = null;
+        $showWeeklyExpenses = false;
 
         if (! $isAll) {
             $monthlyExpensesMonth = $start->format('Y-m');
             $today = Carbon::today();
+            $showWeeklyExpenses = empty($monthParam);
+            $weekStart = $today->copy()->startOfWeek();
+            $weekEnd = $today->copy()->endOfWeek();
 
             $monthlyExpenses = MonthlyExpense::query()
                 // ->where('user_id', $user->id)
@@ -405,6 +409,12 @@ class DashboardController extends Controller
 
                 return $expense;
             });
+
+            if ($showWeeklyExpenses) {
+                $monthlyExpenses = $monthlyExpenses
+                    ->filter(fn ($expense) => $expense->due_date->between($weekStart, $weekEnd))
+                    ->values();
+            }
         }
 
         return view('dashboard', compact(
@@ -416,7 +426,7 @@ class DashboardController extends Controller
             'activeData', 'activeStep',
             'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
             'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit',
-            'monthlyExpenses', 'monthlyExpensesMonth', 'expectedProjects',
+            'monthlyExpenses', 'monthlyExpensesMonth', 'expectedProjects', 'showWeeklyExpenses',
             'barterProjects', 'ownProjects', 'commercialProjects', 'linkCards'
         ));
     }
