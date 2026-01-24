@@ -315,6 +315,21 @@ class DashboardController extends Controller
             $barterCount = \App\Models\Project::where('payment_type', 'barter')->count();
             $ownCount = \App\Models\Project::where('payment_type', 'own')->count();
             $commercialCount = \App\Models\Project::where('payment_type', 'paid')->count();
+
+            $barterProjects = \App\Models\Project::where('payment_type', 'barter')
+                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
+                ->orderBy('title')
+                ->get();
+
+            $ownProjects = \App\Models\Project::where('payment_type', 'own')
+                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
+                ->orderBy('title')
+                ->get();
+
+            $commercialProjects = \App\Models\Project::where('payment_type', 'paid')
+                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
+                ->orderBy('title')
+                ->get();
         } else {
             $barterCount = \App\Models\Project::where('payment_type', 'barter')
                 ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
@@ -322,6 +337,24 @@ class DashboardController extends Controller
                 ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
             $commercialCount = \App\Models\Project::where('payment_type', 'paid')
                 ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
+
+            $barterProjects = \App\Models\Project::where('payment_type', 'barter')
+                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])
+                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
+                ->orderBy('title')
+                ->get();
+
+            $ownProjects = \App\Models\Project::where('payment_type', 'own')
+                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])
+                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
+                ->orderBy('title')
+                ->get();
+
+            $commercialProjects = \App\Models\Project::where('payment_type', 'paid')
+                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])
+                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
+                ->orderBy('title')
+                ->get();
         }
 
         $monthlyExpenses = collect();
@@ -384,7 +417,7 @@ class DashboardController extends Controller
             'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
             'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit',
             'monthlyExpenses', 'monthlyExpensesMonth', 'expectedProjects',
-            'linkCards'
+            'barterProjects', 'ownProjects', 'commercialProjects', 'linkCards'
         ));
     }
 

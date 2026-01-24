@@ -167,7 +167,7 @@
                 <div class="bg-white rounded-xl shadow p-4">
                     <div class="text-xs text-gray-500">Расход за месяц</div>
                     <div class="text-2xl font-bold mt-1 text-red-600">
-                        -{{ number_format($monthTotalExpense ?? 0, 2, '.', ' ') }} ₽
+                        {{ number_format($monthTotalExpense ?? 0, 2, '.', ' ') }} ₽
                     </div>
                 </div>
 
@@ -186,29 +186,26 @@
             @if (request('period') !== 'all' && ($monthParam ?? $currentMonth) === $currentMonth)
                 {{-- ===== BARTER AND OWN PROJECTS (count) ===== --}}
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                    <div class="bg-white rounded-xl shadow p-4">
+                    <button type="button" id="barter-open"
+                        class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
                         <div class="text-xs text-gray-500">Бартерные проекты (на
                             {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
-                        <div class="text-2xl font-bold mt-1 text-yellow-600">
-                            {{ $barterCount ?? 0 }}
-                        </div>
-                    </div>
+                        <div class="text-2xl font-bold mt-1 text-yellow-600">{{ $barterCount ?? 0 }}</div>
+                    </button>
 
-                    <div class="bg-white rounded-xl shadow p-4">
+                    <button type="button" id="own-open"
+                        class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
                         <div class="text-xs text-gray-500">Свои проекты (на
                             {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
-                        <div class="text-2xl font-bold mt-1 text-indigo-600">
-                            {{ $ownCount ?? 0 }}
-                        </div>
-                    </div>
+                        <div class="text-2xl font-bold mt-1 text-indigo-600">{{ $ownCount ?? 0 }}</div>
+                    </button>
 
-                    <div class="bg-white rounded-xl shadow p-4">
-                        <div class="text-xs text-gray-500">Коммерчиские проекты (на
+                    <button type="button" id="commercial-open"
+                        class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
+                        <div class="text-xs text-gray-500">Коммерческие проекты (на
                             {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
-                        <div class="text-2xl font-bold mt-1 text-indigo-600">
-                            {{ $commercialCount }}
-                        </div>
-                    </div>
+                        <div class="text-2xl font-bold mt-1 text-indigo-600">{{ $commercialCount }}</div>
+                    </button>
 
                     <button type="button" id="expected-profit-open"
                         class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
@@ -457,6 +454,159 @@
                                             </td>
                                             <td class="px-3 py-2">
                                                 {{ $proj->closed_at?->format('d.m.Y') ?? '—' }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== BARTER PROJECTS MODAL ===== --}}
+    <div id="barter-projects-modal" class="fixed inset-0 z-50 hidden">
+        <div id="barter-projects-overlay" class="absolute inset-0 bg-black/50"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b">
+                    <div>
+                        <div class="text-lg font-semibold text-gray-800">Бартерные проекты</div>
+                        <div class="text-xs text-gray-500">{{ now()->locale('ru')->isoFormat('MMMM YYYY') }}</div>
+                    </div>
+                    <button type="button" id="barter-projects-close"
+                        class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+
+                <div class="p-5 max-h-[70vh] overflow-y-auto">
+                    @if (($barterProjects ?? collect())->isEmpty())
+                        <div class="text-sm text-gray-500">Нет бартерных проектов.</div>
+                    @else
+                        <div class="overflow-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Проект</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Сумма контракта</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Дата создания</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @foreach ($barterProjects as $proj)
+                                        <tr>
+                                            <td class="px-3 py-2"><a href="{{ route('projects.show', $proj) }}"
+                                                    class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
+                                            <td class="px-3 py-2">{{ $proj->created_at?->format('d.m.Y') ?? '—' }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== OWN PROJECTS MODAL ===== --}}
+    <div id="own-projects-modal" class="fixed inset-0 z-50 hidden">
+        <div id="own-projects-overlay" class="absolute inset-0 bg-black/50"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b">
+                    <div>
+                        <div class="text-lg font-semibold text-gray-800">Свои проекты</div>
+                        <div class="text-xs text-gray-500">{{ now()->locale('ru')->isoFormat('MMMM YYYY') }}</div>
+                    </div>
+                    <button type="button" id="own-projects-close"
+                        class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+
+                <div class="p-5 max-h-[70vh] overflow-y-auto">
+                    @if (($ownProjects ?? collect())->isEmpty())
+                        <div class="text-sm text-gray-500">Нет своих проектов.</div>
+                    @else
+                        <div class="overflow-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Проект</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Сумма контракта</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Дата создания</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @foreach ($ownProjects as $proj)
+                                        <tr>
+                                            <td class="px-3 py-2"><a href="{{ route('projects.show', $proj) }}"
+                                                    class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
+                                            <td class="px-3 py-2">{{ $proj->created_at?->format('d.m.Y') ?? '—' }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== COMMERCIAL PROJECTS MODAL ===== --}}
+    <div id="commercial-projects-modal" class="fixed inset-0 z-50 hidden">
+        <div id="commercial-projects-overlay" class="absolute inset-0 bg-black/50"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b">
+                    <div>
+                        <div class="text-lg font-semibold text-gray-800">Коммерческие проекты</div>
+                        <div class="text-xs text-gray-500">{{ now()->locale('ru')->isoFormat('MMMM YYYY') }}</div>
+                    </div>
+                    <button type="button" id="commercial-projects-close"
+                        class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+
+                <div class="p-5 max-h-[70vh] overflow-y-auto">
+                    @if (($commercialProjects ?? collect())->isEmpty())
+                        <div class="text-sm text-gray-500">Нет коммерческих проектов.</div>
+                    @else
+                        <div class="overflow-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Проект</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Сумма контракта</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Дата создания</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @foreach ($commercialProjects as $proj)
+                                        <tr>
+                                            <td class="px-3 py-2"><a href="{{ route('projects.show', $proj) }}"
+                                                    class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
+                                            <td class="px-3 py-2">{{ $proj->created_at?->format('d.m.Y') ?? '—' }}
                                             </td>
                                         </tr>
                                     @endforeach
@@ -793,8 +943,72 @@
             if (expectedOpen) expectedOpen.addEventListener('click', openExpectedModal);
             if (expectedClose) expectedClose.addEventListener('click', closeExpectedModal);
             if (expectedOverlay) expectedOverlay.addEventListener('click', closeExpectedModal);
+
+            // Barter / Own / Commercial modals
+            const barterModal = document.getElementById('barter-projects-modal');
+            const barterOpen = document.getElementById('barter-open');
+            const barterClose = document.getElementById('barter-projects-close');
+            const barterOverlay = document.getElementById('barter-projects-overlay');
+
+            function openBarterModal() {
+                if (!barterModal) return;
+                barterModal.classList.remove('hidden');
+            }
+
+            function closeBarterModal() {
+                if (!barterModal) return;
+                barterModal.classList.add('hidden');
+            }
+
+            if (barterOpen) barterOpen.addEventListener('click', openBarterModal);
+            if (barterClose) barterClose.addEventListener('click', closeBarterModal);
+            if (barterOverlay) barterOverlay.addEventListener('click', closeBarterModal);
+
+            const ownModal = document.getElementById('own-projects-modal');
+            const ownOpen = document.getElementById('own-open');
+            const ownClose = document.getElementById('own-projects-close');
+            const ownOverlay = document.getElementById('own-projects-overlay');
+
+            function openOwnModal() {
+                if (!ownModal) return;
+                ownModal.classList.remove('hidden');
+            }
+
+            function closeOwnModal() {
+                if (!ownModal) return;
+                ownModal.classList.add('hidden');
+            }
+
+            if (ownOpen) ownOpen.addEventListener('click', openOwnModal);
+            if (ownClose) ownClose.addEventListener('click', closeOwnModal);
+            if (ownOverlay) ownOverlay.addEventListener('click', closeOwnModal);
+
+            const commercialModal = document.getElementById('commercial-projects-modal');
+            const commercialOpen = document.getElementById('commercial-open');
+            const commercialClose = document.getElementById('commercial-projects-close');
+            const commercialOverlay = document.getElementById('commercial-projects-overlay');
+
+            function openCommercialModal() {
+                if (!commercialModal) return;
+                commercialModal.classList.remove('hidden');
+            }
+
+            function closeCommercialModal() {
+                if (!commercialModal) return;
+                commercialModal.classList.add('hidden');
+            }
+
+            if (commercialOpen) commercialOpen.addEventListener('click', openCommercialModal);
+            if (commercialClose) commercialClose.addEventListener('click', closeCommercialModal);
+            if (commercialOverlay) commercialOverlay.addEventListener('click', closeCommercialModal);
+
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') closeExpectedModal();
+                if (e.key === 'Escape') {
+                    closeExpectedModal();
+                    closeBarterModal();
+                    closeOwnModal();
+                    closeCommercialModal();
+                }
             });
 
             const input = document.getElementById('site-search');
