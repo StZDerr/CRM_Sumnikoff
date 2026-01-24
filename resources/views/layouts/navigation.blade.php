@@ -146,7 +146,7 @@
             </x-buttons-dropdawn>
 
             <x-nav-link :href="route('domains.index')" :active="request()->routeIs('domains.*')">
-                Домены REG.RU
+                Домены
             </x-nav-link>
         @else
             {{-- НЕ admin: обычная кнопка --}}
