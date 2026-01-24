@@ -30,6 +30,7 @@ class Contact extends Model
         'passport_issued_by',
         'passport_department_code',
         'passport_birth_place',
+        'birth_date',
 
         'comment',
         'created_by',
@@ -40,8 +41,13 @@ class Contact extends Model
     protected $casts = [
         'organization_id' => 'integer',
         'passport_issued_at' => 'date',
+        'birth_date' => 'date',
     ];
 
+    public function getAgeAttribute(): ?int
+    {
+        return $this->birth_date ? $this->birth_date->age : null;
+    }
     /* -----------------------------------------------------------------
      |  Шифрование паспортных данных
      | -----------------------------------------------------------------

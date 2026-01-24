@@ -65,6 +65,7 @@ class ContactController extends Controller
 
             'phone' => 'required|string|max:50',
             'email' => 'nullable|email|max:255',
+            'birth_date' => 'nullable|date',
 
             'preferred_messenger' => 'nullable|in:telegram,whatsapp,viber,skype,call,other',
             'messenger_contact' => 'nullable|string|max:255',
@@ -125,6 +126,7 @@ class ContactController extends Controller
             'position' => 'nullable|string|max:255',
             'phone' => 'required|string|max:50',
             'email' => 'nullable|email|max:255',
+            'birth_date' => 'nullable|date',
             'preferred_messenger' => 'nullable|in:telegram,whatsapp,viber,skype,call,other',
             'messenger_contact' => 'nullable|string|max:255',
             'comment' => 'nullable|string',

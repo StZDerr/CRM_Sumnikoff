@@ -148,12 +148,12 @@
 
                     <button type="button" onclick="openAddContactModal()"
                         class="inline-flex items-center gap-2 rounded-xl
-           bg-blue-600 px-4 py-2.5
-           text-sm font-semibold text-white
-           shadow-sm transition
-           hover:bg-blue-700 hover:shadow-md
-           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-           active:scale-[0.98]">
+                            bg-blue-600 px-4 py-2.5
+                            text-sm font-semibold text-white
+                            shadow-sm transition
+                            hover:bg-blue-700 hover:shadow-md
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                            active:scale-[0.98]">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                             stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -167,8 +167,12 @@
                             <div class="flex items-center justify-between px-4 py-3">
                                 <div>
                                     <div class="font-medium">{{ $contact->full_name ?: '—' }}</div>
-                                    <div class="text-xs text-gray-500">{{ $contact->position ?? '-' }} •
-                                        {{ $contact->phone ?? '-' }}</div>
+                                    <div class="text-xs text-gray-500">
+                                        {{ $contact->position ?? '-' }} • {{ $contact->phone ?? '-' }}
+                                        @if ($contact->birth_date)
+                                            • {{ \Illuminate\Support\Carbon::make($contact->birth_date)->format('d.m.Y') }}
+                                        @endif
+                                    </div>
                                 </div>
                                 <div class="text-sm">
                                     <a href="{{ route('contacts.show', $contact) }}"
@@ -247,6 +251,13 @@
                             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full"
                                 :value="old('email')" />
                             <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="birth_date" :value="'Дата рождения'" />
+                            <x-text-input id="birth_date" name="birth_date" type="date" class="mt-1 block w-full"
+                                :value="old('birth_date')" />
+                            <x-input-error :messages="$errors->get('birth_date')" class="mt-2" />
                         </div>
                     </div>
 
