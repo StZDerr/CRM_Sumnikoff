@@ -365,7 +365,7 @@ class DashboardController extends Controller
             $today = Carbon::today();
 
             $monthlyExpenses = MonthlyExpense::query()
-                ->where('user_id', $user->id)
+                // ->where('user_id', $user->id)
                 ->where('is_active', true)
                 ->orderBy('day_of_month')
                 ->get();
