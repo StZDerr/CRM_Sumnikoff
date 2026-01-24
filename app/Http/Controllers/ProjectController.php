@@ -38,12 +38,12 @@ class ProjectController extends Controller
 
         $query = Project::with(['organization', 'marketer', 'paymentMethod', 'stages', 'importance']);
 
-        // Показываем только проекты, которые ещё открыты или закрыты в этом месяце или позже.
-        // Проекты, закрытые до начала текущего месяца, исключаем из списка.
-        $currentMonthStart = \Carbon\Carbon::now()->startOfMonth();
-        $query->where(function ($q) use ($currentMonthStart) {
+        // Показываем только проекты, которые ещё открыты или закрываются сегодня и позже.
+        // Проекты, закрытые ранее сегодняшнего дня, исключаем из списка.
+        $today = \Carbon\Carbon::today();
+        $query->where(function ($q) use ($today) {
             $q->whereNull('closed_at')
-                ->orWhereDate('closed_at', '>=', $currentMonthStart->toDateString());
+                ->orWhereDate('closed_at', '>=', $today->toDateString());
         });
 
         // Если пользователь — маркетолог, показываем только проекты, где он назначен
@@ -125,11 +125,11 @@ class ProjectController extends Controller
      */
     public function arrears(Request $request)
     {
-        $currentMonthStart = Carbon::now()->startOfMonth();
+        $today = Carbon::today();
 
         $query = Project::with(['organization', 'marketer', 'paymentMethod', 'stages', 'importance'])
             ->whereNotNull('closed_at')
-            ->whereDate('closed_at', '<', $currentMonthStart->toDateString());
+            ->whereDate('closed_at', '<', $today->toDateString());
 
         // Если пользователь — маркетолог, показываем только проекты, где он назначен
         if (auth()->user()?->isMarketer()) {
@@ -141,7 +141,7 @@ class ProjectController extends Controller
             ->paginate(100)
             ->withQueryString();
 
-        return view('admin.projects.arrears', compact('projects', 'currentMonthStart'));
+        return view('admin.projects.arrears', compact('projects', 'today'));
     }
 
     /**

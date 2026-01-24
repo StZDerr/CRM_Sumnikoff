@@ -4,8 +4,7 @@
     <div class="max-w-7xl mx-auto">
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-semibold">
-                Проекты, закрытые ранее
-                {{ $currentMonthStart->locale('ru')->isoFormat('MMMM YYYY') }}
+                Проекты, закрытые ранее {{ $today->format('d.m.Y') }}
             </h1>
             <a href="{{ route('projects.index') }}"
                 class="inline-flex items-center px-4 py-2 rounded-md border border-indigo-500 text-indigo-600 text-sm font-medium hover:bg-indigo-50 transition">
@@ -101,7 +100,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="p-4 text-gray-500">Нет проектов, закрытых ранее текущего месяца.</td>
+                            <td colspan="7" class="p-4 text-gray-500">Нет проектов, закрытых ранее сегодняшнего дня.</td>
                         </tr>
                     @endforelse
                 </tbody>
