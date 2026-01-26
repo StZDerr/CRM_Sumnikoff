@@ -748,8 +748,8 @@
                                             Сумма контракта</th>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Дата закрытия</th>
-                                        {{-- <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
-                                            Долг</th> --}}
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Долг</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y">
@@ -767,9 +767,9 @@
                                             <td class="px-3 py-2">
                                                 {{ $proj->closed_at?->format('d.m.Y') ?? '—' }}
                                             </td>
-                                            {{-- <td class="px-3 py-2">
+                                            <td class="px-3 py-2">
                                                 {{ number_format($proj->balance ?? 0, 2, '.', ' ') }} ₽
-                                            </td> --}}
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
