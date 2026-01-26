@@ -180,9 +180,13 @@
 
                         @forelse($oldSocials as $i => $social)
                             <div class="flex gap-2 items-center">
-                                <input type="text" name="socials[{{ $i }}][platform]"
-                                    placeholder="Название соцсети" value="{{ $social['platform'] ?? '' }}"
+                                <select name="socials[{{ $i }}][platform]"
                                     class="rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">—</option>
+                                    <option value="vk" @selected(($social['platform'] ?? '') === 'vk')>ВК</option>
+                                    <option value="telegram" @selected(($social['platform'] ?? '') === 'telegram')>ТГ</option>
+                                    <option value="maks" @selected(($social['platform'] ?? '') === 'maks')>МАКС</option>
+                                </select>
                                 <input type="text" name="socials[{{ $i }}][url]"
                                     placeholder="Ссылка или логин" value="{{ $social['url'] ?? '' }}"
                                     class="flex-1 rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
@@ -191,8 +195,13 @@
                             </div>
                         @empty
                             <div class="flex gap-2 items-center">
-                                <input type="text" name="socials[0][platform]" placeholder="Название соцсети"
+                                <select name="socials[0][platform]"
                                     class="rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">—</option>
+                                    <option value="vk">ВК</option>
+                                    <option value="telegram">ТГ</option>
+                                    <option value="maks">МАКС</option>
+                                </select>
                                 <input type="text" name="socials[0][url]" placeholder="Ссылка или логин"
                                     class="flex-1 rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                                 <button type="button"
@@ -281,10 +290,13 @@
                 const div = document.createElement('div');
                 div.className = 'flex gap-2 items-center';
                 div.innerHTML = `
-            <input type="text" name="socials[${index}][platform]" placeholder="Название соцсети"
-                class="rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-            <input type="text" name="socials[${index}][url]" placeholder="Ссылка или логин"
-                class="flex-1 rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+            <select name="socials[${index}][platform]" class="rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                <option value="">—</option>
+                <option value="vk">ВК</option>
+                <option value="telegram">ТГ</option>
+                <option value="maks">МАКС</option>
+            </select>
+            <input type="text" name="socials[${index}][url]" placeholder="Ссылка или логин" class="flex-1 rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
             <button type="button" class="removeSocial px-2 py-1 text-red-600 hover:bg-red-100 rounded">×</button>
         `;
                 container.appendChild(div);

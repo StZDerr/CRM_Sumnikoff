@@ -17,6 +17,7 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'login' => ['nullable', 'string', 'max:255', Rule::unique(User::class)->ignore($this->user()->id)],
             'email' => [
                 'required',
                 'string',
@@ -25,6 +26,10 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            'birth_date' => ['nullable', 'date'],
+            'socials' => ['nullable', 'array'],
+            'socials.*.platform' => ['nullable', Rule::in(['vk', 'telegram', 'maks'])],
+            'socials.*.url' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

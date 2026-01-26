@@ -93,9 +93,9 @@
                                     <td class="p-3">
                                         @if ($user->socials->isNotEmpty())
                                             <div class="flex flex-wrap items-center gap-2">
-                                                @foreach ($user->socials as $social)
+                                                @foreach ($user->socials->sortBy(fn($s) => ['vk' => 0, 'telegram' => 1, 'maks' => 2][$s->platform] ?? 99) as $social)
                                                     <a href="{{ $social->url }}" target="_blank"
-                                                        class="text-blue-600 underline flex items-center gap-1">{{ ucfirst($social->platform) }}</a>
+                                                        class="text-blue-600 underline flex items-center gap-1">{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}</a>
                                                 @endforeach
                                             </div>
                                         @else
@@ -156,9 +156,9 @@
                                 <td class="p-3">
                                     @if ($user->socials->isNotEmpty())
                                         <div class="flex flex-wrap items-center gap-2">
-                                            @foreach ($user->socials as $social)
+                                            @foreach ($user->socials->sortBy(fn($s) => ['vk' => 0, 'telegram' => 1, 'maks' => 2][$s->platform] ?? 99) as $social)
                                                 <a href="{{ $social->url }}" target="_blank"
-                                                    class="text-blue-600 underline flex items-center gap-1">{{ ucfirst($social->platform) }}</a>
+                                                    class="text-blue-600 underline flex items-center gap-1">{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}</a>
                                             @endforeach
                                         </div>
                                     @else

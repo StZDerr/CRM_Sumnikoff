@@ -72,6 +72,9 @@ class UserRequest extends FormRequest
                 },
             ],
             'individual_bonus_percent' => 'nullable|integer|min:0|max:100', // <-- добавляем
+            'socials' => ['nullable', 'array'],
+            'socials.*.platform' => ['nullable', Rule::in(['vk', 'telegram', 'maks'])],
+            'socials.*.url' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

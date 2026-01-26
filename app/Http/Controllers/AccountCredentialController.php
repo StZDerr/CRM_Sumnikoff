@@ -84,6 +84,7 @@ class AccountCredentialController extends Controller
 
         $credential = new AccountCredential($request->all());
         $credential->user_id = Auth::id();
+        $credential['type'] = 'other';
         $credential->save();
 
         return redirect()->route('account-credentials.index', ['project' => $credential->project_id])

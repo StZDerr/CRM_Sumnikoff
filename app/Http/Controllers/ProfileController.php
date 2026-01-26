@@ -26,7 +26,9 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $data = $request->validated();
+
+        $request->user()->fill($data);
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
@@ -34,27 +36,62 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
+        // ==== СОЦСЕТИ ====
+        // Удаляем старые соцсети и создаем новые
+        $request->user()->socials()->delete();
+
+        if ($request->has('socials')) {
+            foreach ($request->input('socials') as $social) {
+                if (! empty($social['platform']) && ! empty($social['url'])) {
+                    $url = $social['platform'] === 'telegram'
+                        ? 'https://t.me/'.ltrim($social['url'], '@')
+                        : $social['url'];
+
+                    $request->user()->socials()->create([
+                        'platform' => $social['platform'],
+                        'url' => $url,
+                    ]);
+                }
+            }
+        }
+
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
     /**
+     * Update the user's profile information.
+     */
+    // public function update(ProfileUpdateRequest $request): RedirectResponse
+    // {
+    //     $request->user()->fill($request->validated());
+
+    //     if ($request->user()->isDirty('email')) {
+    //         $request->user()->email_verified_at = null;
+    //     }
+
+    //     $request->user()->save();
+
+    //     return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    // }
+
+    /**
      * Delete the user's account.
      */
-    public function destroy(Request $request): RedirectResponse
-    {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
-        ]);
+    // public function destroy(Request $request): RedirectResponse
+    // {
+    //     $request->validateWithBag('userDeletion', [
+    //         'password' => ['required', 'current_password'],
+    //     ]);
 
-        $user = $request->user();
+    //     $user = $request->user();
 
-        Auth::logout();
+    //     Auth::logout();
 
-        $user->delete();
+    //     $user->delete();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+    //     $request->session()->invalidate();
+    //     $request->session()->regenerateToken();
 
-        return Redirect::to('/');
-    }
+    //     return Redirect::to('/');
+    // }
 }
