@@ -125,10 +125,15 @@
     <div>
         <x-input-label for="status" :value="'Статус проекта'" />
         <select id="status" name="status" class="mt-1 block w-full rounded border px-3 py-2">
-            <option value="">—</option>
-            <option value="in_progress" @selected(old('status', $project->status ?? '') === 'in_progress')>В работе</option>
-            <option value="paused" @selected(old('status', $project->status ?? '') === 'paused')>На паузе</option>
-            <option value="stopped" @selected(old('status', $project->status ?? '') === 'stopped')>Остановлен</option>
+            <option value="in_progress" @selected(old('status', $project->status ?? 'in_progress') === 'in_progress')>
+                В работе
+            </option>
+            <option value="paused" @selected(old('status', $project->status ?? '') === 'paused')>
+                На паузе
+            </option>
+            <option value="stopped" @selected(old('status', $project->status ?? '') === 'stopped')>
+                Остановлен
+            </option>
         </select>
         <x-input-error :messages="$errors->get('status')" class="mt-2" />
     </div>
