@@ -24,7 +24,7 @@
             <form
                 action="{{ isset($accountCredential)
                     ? route('account-credentials.update', [$project, $accountCredential])
-                    : route('account-credentials.store', $project) }}"
+                    : route('account-credentials.storeSite', $project) }}"
                 method="POST">
                 @csrf
                 @if (isset($accountCredential))
