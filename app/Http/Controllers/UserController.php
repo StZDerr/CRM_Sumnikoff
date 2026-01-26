@@ -79,10 +79,30 @@ class UserController extends Controller
             foreach ($request->input('socials') as $social) {
                 // Проверяем, что есть хотя бы платформа и ссылка
                 if (! empty($social['platform']) && ! empty($social['url'])) {
-                    // Для Telegram автоматически формируем ссылку, если введен ник
-                    $url = $social['platform'] === 'telegram'
-                        ? 'https://t.me/'.ltrim($social['url'], '@')
-                        : $social['url'];
+                    // Для Telegram автоматически формируем ссылку, поддерживаем ввод в формате @nick, nick, t.me/nick или полного URL
+                    $raw = trim($social['url']);
+                    if ($social['platform'] === 'telegram') {
+                        // если ввели ссылку вида t.me/..., добавим схему для корректного парсинга
+                        if (str_contains($raw, 't.me')) {
+                            if (! str_starts_with($raw, 'http')) {
+                                $raw = 'https://'.$raw;
+                            }
+                            $parts = parse_url($raw);
+                            $path = $parts['path'] ?? '';
+                            $username = trim($path, "/@ \t\n\r\0\x0B");
+                        } else {
+                            $username = trim($raw, "/@ \t\n\r\0\x0B");
+                        }
+
+                        if ($username === '') {
+                            // некорректный ввод — пропустим
+                            continue;
+                        }
+
+                        $url = 'https://t.me/'.$username;
+                    } else {
+                        $url = $raw;
+                    }
 
                     $user->socials()->create([
                         'platform' => $social['platform'],
@@ -139,10 +159,28 @@ class UserController extends Controller
         if ($request->has('socials')) {
             foreach ($request->input('socials') as $social) {
                 if (! empty($social['platform']) && ! empty($social['url'])) {
-                    // Автоматическая ссылка для Telegram
-                    $url = $social['platform'] === 'telegram'
-                        ? 'https://t.me/'.ltrim($social['url'], '@')
-                        : $social['url'];
+                    // Автоматическая ссылка для Telegram (с поддержкой полного URL / @nick / nick)
+                    $raw = trim($social['url']);
+                    if ($social['platform'] === 'telegram') {
+                        if (str_contains($raw, 't.me')) {
+                            if (! str_starts_with($raw, 'http')) {
+                                $raw = 'https://'.$raw;
+                            }
+                            $parts = parse_url($raw);
+                            $path = $parts['path'] ?? '';
+                            $username = trim($path, "/@ \t\n\r\0\x0B");
+                        } else {
+                            $username = trim($raw, "/@ \t\n\r\0\x0B");
+                        }
+
+                        if ($username === '') {
+                            continue;
+                        }
+
+                        $url = 'https://t.me/'.$username;
+                    } else {
+                        $url = $raw;
+                    }
 
                     $user->socials()->create([
                         'platform' => $social['platform'],

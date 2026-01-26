@@ -43,9 +43,25 @@ class ProfileController extends Controller
         if ($request->has('socials')) {
             foreach ($request->input('socials') as $social) {
                 if (! empty($social['platform']) && ! empty($social['url'])) {
-                    $url = $social['platform'] === 'telegram'
-                        ? 'https://t.me/'.ltrim($social['url'], '@')
-                        : $social['url'];
+                    $raw = trim($social['url']);
+                    if ($social['platform'] === 'telegram') {
+                        if (str_contains($raw, 't.me')) {
+                            if (! str_starts_with($raw, 'http')) {
+                                $raw = 'https://'.$raw;
+                            }
+                            $parts = parse_url($raw);
+                            $path = $parts['path'] ?? '';
+                            $username = trim($path, "/@ \t\n\r\0\x0B");
+                        } else {
+                            $username = trim($raw, "/@ \t\n\r\0\x0B");
+                        }
+
+                        if ($username === '') continue;
+
+                        $url = 'https://t.me/'.$username;
+                    } else {
+                        $url = $raw;
+                    }
 
                     $request->user()->socials()->create([
                         'platform' => $social['platform'],
