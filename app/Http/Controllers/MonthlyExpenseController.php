@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\MonthlyExpense;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Carbon\Carbon;
 
 class MonthlyExpenseController extends Controller
 {
@@ -83,7 +85,10 @@ class MonthlyExpenseController extends Controller
         return redirect()->route('monthly-expenses.index')->with('success', 'Ежемесячный расход удалён.');
     }
 
-    public function pay(Request $request, MonthlyExpense $monthlyExpense): RedirectResponse
+    /**
+     * Пометить как оплаченный без создания Expense.
+     */
+    public function markPaidOnly(Request $request, MonthlyExpense $monthlyExpense)
     {
         $user = auth()->user();
         if (! $user) {
@@ -99,9 +104,92 @@ class MonthlyExpenseController extends Controller
         ]);
 
         try {
-            $expense = $monthlyExpense->markAsPaid($data['month']);
+            $monthKey = Carbon::createFromFormat('Y-m', $data['month'])->format('Y-m');
+
+            DB::transaction(function () use ($monthlyExpense, $monthKey) {
+                $status = $monthlyExpense->statuses()
+                    ->where('month', $monthKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($status && $status->paid_at) {
+                    throw ValidationException::withMessages([
+                        'month' => 'Этот ежемесячный расход уже помечен как оплаченный за выбранный месяц.',
+                    ]);
+                }
+
+                if (! $status) {
+                    $status = $monthlyExpense->statuses()->create([
+                        'month' => $monthKey,
+                    ]);
+                }
+
+                $status->update([
+                    'paid_at' => now(),
+                    'expense_id' => null,
+                ]);
+            });
         } catch (ValidationException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['errors' => $e->errors()], 422);
+            }
+
             return redirect()->back()->withErrors($e->errors());
+        } catch (\Throwable $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['errors' => ['server' => ['Ошибка сервера. Попробуйте позже.']]], 500);
+            }
+
+            return redirect()->back()->withErrors(['server' => 'Ошибка сервера. Попробуйте позже.']);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->back()->with('success', 'Ежемесячный расход помечен как оплаченный.');
+    }
+
+    public function pay(Request $request, MonthlyExpense $monthlyExpense)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            abort(403);
+        }
+
+        if (! $user->isAdmin() && $monthlyExpense->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'month' => ['required', 'date_format:Y-m'],
+            'amount' => ['nullable', 'numeric', 'min:0.01'],
+            'expense_date' => ['nullable', 'date_format:Y-m-d'],
+            'expense_category_id' => ['nullable', 'integer', 'exists:expense_categories,id'],
+            'project_id' => ['nullable', 'integer', 'exists:projects,id'],
+            'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $overrides = [];
+        foreach (['amount', 'expense_date', 'expense_category_id', 'project_id', 'organization_id', 'description'] as $k) {
+            if ($request->has($k) && $data[$k] !== null) {
+                $overrides[$k] = $data[$k];
+            }
+        }
+
+        try {
+            $expense = $monthlyExpense->createExpenseForMonth($data['month'], $overrides);
+        } catch (ValidationException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['errors' => $e->errors()], 422);
+            }
+
+            return redirect()->back()->withErrors($e->errors());
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'expense_id' => $expense->id]);
         }
 
         return redirect()->back()->with('success', "Расход оплачен и создан Expense #{$expense->id}.");

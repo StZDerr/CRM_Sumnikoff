@@ -56,7 +56,9 @@ class ProfileController extends Controller
                             $username = trim($raw, "/@ \t\n\r\0\x0B");
                         }
 
-                        if ($username === '') continue;
+                        if ($username === '') {
+                            continue;
+                        }
 
                         $url = 'https://t.me/'.$username;
                     } else {

@@ -417,6 +417,8 @@ class DashboardController extends Controller
             }
         }
 
+        $officeExpenseCategories = \App\Models\ExpenseCategory::office()->where('is_salary', false)->ordered()->get();
+
         return view('dashboard', compact(
             'labels', 'incomeData', 'expenseData', 'netData',
             'monthTotalIncome', 'monthTotalExpense', 'monthTotalNet',
@@ -427,7 +429,7 @@ class DashboardController extends Controller
             'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
             'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit',
             'monthlyExpenses', 'monthlyExpensesMonth', 'expectedProjects', 'showWeeklyExpenses',
-            'barterProjects', 'ownProjects', 'commercialProjects', 'linkCards'
+            'barterProjects', 'ownProjects', 'commercialProjects', 'linkCards', 'officeExpenseCategories'
         ));
     }
 

@@ -305,15 +305,15 @@
                                         </span>
 
                                         @if ($me->status_state !== 'paid')
-                                            <form method="POST" action="{{ route('monthly-expenses.pay', $me) }}">
-                                                @csrf
-                                                <input type="hidden" name="month"
-                                                    value="{{ $monthlyExpensesMonth }}">
-                                                <button
-                                                    class="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 whitespace-nowrap">
-                                                    Оплатить
-                                                </button>
-                                            </form>
+                                            <button type="button"
+                                                class="monthly-expense-pay-btn px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 whitespace-nowrap"
+                                                data-id="{{ $me->id }}"
+                                                data-month="{{ $monthlyExpensesMonth }}"
+                                                data-amount="{{ $me->amount }}"
+                                                data-due="{{ $me->due_date->format('Y-m-d') }}"
+                                                data-title="{{ e($me->title) }}" data-note="{{ e($me->note) }}">
+                                                Оплатить
+                                            </button>
                                         @elseif (!empty($me->status_expense_id))
                                             <span class="text-xs text-gray-400 whitespace-nowrap">
                                                 Расход #{{ $me->status_expense_id }}
@@ -328,13 +328,76 @@
                         <div class="mt-4 pt-4 border-t flex items-center justify-between text-sm text-gray-700">
                             <div>Всего расходов: <span class="font-semibold">{{ $monthlyExpenses->count() }}</span>
                             </div>
-                            <div>Итоговая сумма: <span
-                                    class="font-semibold">{{ number_format($monthlyExpenses->sum('amount'), 2, '.', ' ') }}
-                                    ₽</span></div>
+                            <div>Итоговая сумма:
+                                <span class="font-semibold">
+                                    {{ number_format($monthlyExpenses->sum('amount'), 2, '.', ' ') }}
+                                    ₽</span>
+                            </div>
                         </div>
                     @endif
                 </div>
             @endif
+
+            {{-- ===== MONTHLY EXPENSE PAY MODAL ===== --}}
+            <div id="monthly-expense-pay-modal" class="fixed inset-0 z-50 hidden">
+                <div id="monthly-expense-pay-overlay" class="absolute inset-0 bg-black/50"></div>
+                <div class="absolute inset-0 flex items-center justify-center p-4">
+                    <div class="w-full max-w-lg bg-white rounded-xl shadow-lg overflow-hidden">
+                        <div class="flex items-center justify-between px-5 py-4 border-b">
+                            <div class="text-lg font-semibold text-gray-800">Оплата ежемесячного расхода</div>
+                            <button type="button" id="monthly-expense-pay-close"
+                                class="text-gray-500 hover:text-gray-700">✕</button>
+                        </div>
+
+                        <form id="monthly-expense-pay-form" method="POST" action="" class="p-5 space-y-4">
+                            @csrf
+                            <input type="hidden" name="month" id="mepf-month" value="" />
+                            <input type="hidden" name="_monthly_expense_id" id="mepf-id" value="" />
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Сумма</label>
+                                <input type="text" name="amount" id="mepf-amount" required
+                                    class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 text-sm px-3 py-2" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Дата расхода</label>
+                                <input type="date" name="expense_date" id="mepf-date"
+                                    class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 text-sm px-3 py-2" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Категория расхода</label>
+                                <select name="expense_category_id" id="mepf-category"
+                                    class="w-full rounded-lg border-gray-300 text-sm px-3 py-2">
+                                    @foreach ($officeExpenseCategories ?? collect() as $cat)
+                                        <option value="{{ $cat->id }}">{{ $cat->title }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Комментарий</label>
+                                <textarea name="description" id="mepf-description" rows="3"
+                                    class="w-full rounded-lg border-gray-300 text-sm px-3 py-2"></textarea>
+                            </div>
+
+                            <div id="mepf-errors" class="text-sm text-red-500 hidden"></div>
+
+                            <div class="flex items-center justify-end gap-3 pt-2">
+                                <button type="button" id="mepf-cancel"
+                                    class="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50">Отмена</button>
+                                <button type="button" id="mepf-mark-paid-only"
+                                    class="px-4 py-2 bg-gray-100 text-sm rounded-lg hover:bg-gray-200">Пометить как
+                                    оплаченный без создания расхода</button>
+                                <button type="submit" id="mepf-submit"
+                                    class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">Сохранить
+                                    и отметить как оплачено</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
 
 
             {{-- ===== CHART ===== --}}
@@ -1280,6 +1343,141 @@
                     card.addEventListener('dragover', handleDragOver);
                     card.addEventListener('drop', handleDrop);
                     card.addEventListener('dragend', handleDragEnd);
+                });
+            }
+
+            // --- Monthly expense pay modal handling ---
+            const meModal = document.getElementById('monthly-expense-pay-modal');
+            const meOverlay = document.getElementById('monthly-expense-pay-overlay');
+            const meClose = document.getElementById('monthly-expense-pay-close');
+            const meCancel = document.getElementById('mepf-cancel');
+            const meForm = document.getElementById('monthly-expense-pay-form');
+            const meErrors = document.getElementById('mepf-errors');
+            const meBase = '{{ url('monthly-expenses') }}';
+
+            function openMeModal() {
+                if (!meModal) return;
+                meErrors.classList.add('hidden');
+                meErrors.innerHTML = '';
+                meModal.classList.remove('hidden');
+            }
+
+            function closeMeModal() {
+                if (!meModal) return;
+                meModal.classList.add('hidden');
+            }
+
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.monthly-expense-pay-btn');
+                if (!btn) return;
+                const id = btn.dataset.id;
+                const month = btn.dataset.month;
+                const amount = btn.dataset.amount;
+                const due = btn.dataset.due;
+                const title = btn.dataset.title || '';
+                const note = btn.dataset.note || '';
+
+                // populate form
+                document.getElementById('mepf-id').value = id;
+                document.getElementById('mepf-month').value = month;
+                document.getElementById('mepf-amount').value = Number(amount).toFixed(2);
+                document.getElementById('mepf-date').value = due;
+                document.getElementById('mepf-description').value = title + (note ? ' — ' + note : '');
+
+                // set form action
+                meForm.action = meBase + '/' + id + '/pay';
+
+                openMeModal();
+            });
+
+            if (meClose) meClose.addEventListener('click', closeMeModal);
+            if (meCancel) meCancel.addEventListener('click', closeMeModal);
+            if (meOverlay) meOverlay.addEventListener('click', closeMeModal);
+
+            meForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                meErrors.classList.add('hidden');
+                meErrors.innerHTML = '';
+
+                const action = meForm.action;
+                const formData = new FormData(meForm);
+
+                fetch(action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+                    },
+                    body: formData
+                }).then(async (res) => {
+                    if (res.ok) {
+                        // success — reload to reflect status
+                        closeMeModal();
+                        location.reload();
+                    } else if (res.status === 422) {
+                        const j = await res.json();
+                        const errs = j.errors || {};
+                        const html = Object.values(errs).flat().map(s => `<div>${s}</div>`)
+                            .join('');
+                        meErrors.innerHTML = html;
+                        meErrors.classList.remove('hidden');
+                    } else {
+                        console.error('Payment error', res);
+                        meErrors.innerHTML = 'Ошибка при оплате. Попробуйте позже.';
+                        meErrors.classList.remove('hidden');
+                    }
+                }).catch(err => {
+                    console.error('Payment request failed', err);
+                    meErrors.innerHTML = 'Ошибка при оплате. Попробуйте позже.';
+                    meErrors.classList.remove('hidden');
+                });
+            });
+
+            // --- Mark paid without creating expense ---
+            const meMarkOnlyBtn = document.getElementById('mepf-mark-paid-only');
+            if (meMarkOnlyBtn) {
+                meMarkOnlyBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    meErrors.classList.add('hidden');
+                    meErrors.innerHTML = '';
+
+                    const id = document.getElementById('mepf-id').value;
+                    const month = document.getElementById('mepf-month').value;
+                    const url = meBase + '/' + id + '/mark-paid';
+
+                    const payload = new FormData();
+                    payload.append('month', month);
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+                        },
+                        body: payload
+                    }).then(async (res) => {
+                        if (res.ok) {
+                            closeMeModal();
+                            location.reload();
+                        } else if (res.status === 422) {
+                            const j = await res.json();
+                            const errs = j.errors || {};
+                            const html = Object.values(errs).flat().map(s => `<div>${s}</div>`)
+                                .join('');
+                            meErrors.innerHTML = html;
+                            meErrors.classList.remove('hidden');
+                        } else {
+                            console.error('Mark paid only error', res);
+                            meErrors.innerHTML = 'Ошибка. Попробуйте позже.';
+                            meErrors.classList.remove('hidden');
+                        }
+                    }).catch(err => {
+                        console.error('Mark paid only request failed', err);
+                        meErrors.innerHTML = 'Ошибка. Попробуйте позже.';
+                        meErrors.classList.remove('hidden');
+                    });
                 });
             }
 

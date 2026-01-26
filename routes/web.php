@@ -199,6 +199,10 @@ Route::middleware('auth')->group(function () {
     Route::post('monthly-expenses/{monthlyExpense}/pay', [MonthlyExpenseController::class, 'pay'])
         ->name('monthly-expenses.pay');
 
+    // Пометить как оплаченный без создания расхода
+    Route::post('monthly-expenses/{monthlyExpense}/mark-paid', [MonthlyExpenseController::class, 'markPaidOnly'])
+        ->name('monthly-expenses.mark-paid');
+
     Route::resource('monthly-expenses', MonthlyExpenseController::class)->except(['show']);
 
     // Link cards
