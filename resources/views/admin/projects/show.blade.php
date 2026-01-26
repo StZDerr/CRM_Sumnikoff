@@ -251,14 +251,16 @@
             </div>
         </div>
     </div>
-    <form method="POST" action="{{ route('projects.destroy', $project) }}" class="inline-block"
-        onsubmit="return confirm('Удалить проект? Это действие необратимо.');">
-        @csrf
-        @method('DELETE')
-        <button type="submit"
-            class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-red-300 text-sm text-red-600 hover:bg-red-50">
-            Удалить проект
-        </button>
-    </form>
+    @if (auth()->user()->isAdmin())
+        <form method="POST" action="{{ route('projects.destroy', $project) }}" class="inline-block"
+            onsubmit="return confirm('Удалить проект? Это действие необратимо.');">
+            @csrf
+            @method('DELETE')
+            <button type="submit"
+                class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-red-300 text-sm text-red-600 hover:bg-red-50">
+                Удалить проект
+            </button>
+        </form>
+    @endif
     <!-- Comments JS moved to resources/js/projects/comments.js and is loaded via Vite (through resources/js/app.js) -->
 @endsection

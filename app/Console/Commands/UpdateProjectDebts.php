@@ -68,7 +68,7 @@ class UpdateProjectDebts extends Command
                     continue;
                 }
 
-                // Пропускаем бартерные проекты
+                // Пропускаем свои проекты
                 if ($project->payment_type === 'own') {
                     $this->line("Project #{$project->id} ({$project->title}): пропущен — свой проект");
                     $skipped++;
