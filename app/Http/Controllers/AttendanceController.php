@@ -425,7 +425,12 @@ class AttendanceController extends Controller
         $absentDays = $attendanceDays->where('status.code', 'absent')->count();
 
         // Базовые данные для зарплаты
-        $projects = $user->projects()->get();
+        $projects = $user->projects()
+            ->where(function ($q) use ($monthStart) {
+                $q->whereNull('closed_at')
+                    ->orWhere('closed_at', '>=', $monthStart);
+            })
+            ->get();
         $totalContractAmount = $projects->sum('contract_amount');
         $projectsCount = $projects->count();
         $auditsCount = 0;

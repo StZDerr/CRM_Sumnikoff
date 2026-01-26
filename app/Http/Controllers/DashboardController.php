@@ -479,7 +479,13 @@ class DashboardController extends Controller
             ->first();
 
         // Ожидаемая зарплата за текущий месяц (фиксированные значения: 22 рабочих дня, 0 удалённых, 0 аудитов, произвольные премии = 0)
-        $projects = $user->projects()->get();
+        $currentMonthStart = Carbon::now()->startOfMonth();
+        $projects = $user->projects()
+            ->where(function ($q) use ($currentMonthStart) {
+                $q->whereNull('closed_at')
+                    ->orWhere('closed_at', '>=', $currentMonthStart);
+            })
+            ->get();
         $individualBonusPercent = $user->individual_bonus_percent ?? 5;
         $expectedProjectBonuses = [];
         $calculatedTotalBonus = 0;
