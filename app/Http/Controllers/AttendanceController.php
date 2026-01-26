@@ -430,6 +430,7 @@ class AttendanceController extends Controller
                 $q->whereNull('closed_at')
                     ->orWhere('closed_at', '>=', $monthStart);
             })
+            ->whereNotIn('status', [\App\Models\Project::STATUS_PAUSED, \App\Models\Project::STATUS_STOPPED])
             ->get();
         $totalContractAmount = $projects->sum('contract_amount');
         $projectsCount = $projects->count();
