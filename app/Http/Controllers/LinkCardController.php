@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LinkCard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\FaviconFetcher;
 
 class LinkCardController extends Controller
 {
@@ -42,6 +43,20 @@ class LinkCardController extends Controller
             'user_id' => auth()->id(),
         ]);
 
+        // If icon not provided, try to fetch site favicon and store it
+        if (empty($card->icon)) {
+            try {
+                $fetcher = new FaviconFetcher();
+                $f = $fetcher->fetchAndStore($card->url);
+                if ($f) {
+                    $card->icon = $f;
+                    $card->save();
+                }
+            } catch (\Throwable $e) {
+                // don't block creation on fetch errors
+            }
+        }
+
         if ($request->expectsJson()) {
             return response()->json($card, 201);
         }
@@ -70,7 +85,23 @@ class LinkCardController extends Controller
             'position' => 'nullable|integer',
         ]);
 
+        $oldUrl = $linkCard->url;
         $linkCard->update($request->only('title', 'url', 'icon', 'position'));
+
+        // If icon was not provided or URL changed and icon is empty, try to fetch
+        $shouldFetch = empty($linkCard->icon) && ($request->filled('url') && $request->input('url') !== $oldUrl || empty($linkCard->icon));
+        if ($shouldFetch) {
+            try {
+                $fetcher = new FaviconFetcher();
+                $f = $fetcher->fetchAndStore($linkCard->url);
+                if ($f) {
+                    $linkCard->icon = $f;
+                    $linkCard->save();
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
 
         return redirect()->back()->with('success', 'Карточка обновлена');
     }

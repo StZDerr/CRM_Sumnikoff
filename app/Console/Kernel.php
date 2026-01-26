@@ -15,6 +15,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         \App\Console\Commands\UpdateProjectDebts::class,
         \App\Console\Commands\PauseProjectsOnCloseDate::class,
+        \App\Console\Commands\FetchLinkCardIcons::class,
     ];
 
     /**

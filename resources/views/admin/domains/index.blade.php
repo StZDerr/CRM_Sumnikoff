@@ -138,7 +138,7 @@
                         @method('PUT')
                         <div>
                             <label class="block text-sm text-gray-500 mb-1">Проект</label>
-                            <select name="project_id" class="w-full border rounded px-3 py-2">
+                            <select name="project_id" class="w-full border rounded px-3 py-2 js-project-select">
                                 <option value="">— Не выбран —</option>
                                 @foreach ($projects as $project)
                                     <option value="{{ $project->id }}" @selected($domain->project_id === $project->id)>

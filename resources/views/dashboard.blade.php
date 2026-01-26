@@ -112,15 +112,35 @@
                                 </button>
                             </form>
 
+                            @php
+                                $cardHost = parse_url($card->url ?? '', PHP_URL_HOST);
+                                $cardHostAscii = $cardHost
+                                    ? idn_to_ascii($cardHost, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46)
+                                    : null;
+                                $cardFavicon = $cardHostAscii
+                                    ? 'https://www.google.com/s2/favicons?sz=64&domain=' . urlencode($cardHostAscii)
+                                    : null;
+                                $cardFaviconFallbacks = array_values(array_filter([
+                                    $cardHostAscii ? 'https://faviconkit.com/' . $cardHostAscii . '/64' : null,
+                                    $cardHostAscii ? 'https://icons.duckduckgo.com/ip3/' . $cardHostAscii . '.ico' : null,
+                                ]));
+                            @endphp
                             <a href="{{ $card->url }}" target="_blank" rel="noopener noreferrer" draggable="false"
                                 class="flex flex-col items-center text-center gap-2">
                                 <div
-                                    class="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
+                                    class="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center overflow-hidden">
                                     @if (!empty($card->icon))
-                                        <img src="{{ $card->icon }}" alt="" class="w-8 h-8 object-contain"
+                                        <img src="{{ $card->icon }}" alt="{{ e($card->title) }}" class="w-8 h-8 rounded-full object-cover shadow-sm"
                                             draggable="false" />
+                                    @elseif ($cardFavicon)
+                                        <img src="{{ $cardFavicon }}" alt="{{ e($card->title) }}" class="w-8 h-8 rounded-full object-cover bg-white p-0.5 shadow-sm"
+                                            draggable="false"
+                                            @if (!empty($cardFaviconFallbacks))
+                                                onerror='(function(img){const f=@json($cardFaviconFallbacks);const i=Number(img.dataset.fidx||0);if(i < f.length){img.dataset.fidx=i+1;img.src=f[i];}else{img.onerror=null;img.remove();}})(this)'
+                                            @endif
+                                        />
                                     @else
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400"
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-400"
                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                                 d="M12 4.5a7.5 7.5 0 00-7.5 7.5v4.125A2.625 2.625 0 007.125 18h9.75A2.625 2.625 0 0019.5 16.125V12A7.5 7.5 0 0012 4.5z" />
