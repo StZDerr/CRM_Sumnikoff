@@ -157,19 +157,21 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-xl shadow p-4">
+                <button type="button" id="income-ops-open"
+                    class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
                     <div class="text-xs text-gray-500">Доход за месяц</div>
                     <div class="text-2xl font-bold mt-1 text-indigo-600">
                         {{ number_format($monthTotal, 2, '.', ' ') }} ₽
                     </div>
-                </div>
+                </button>
 
-                <div class="bg-white rounded-xl shadow p-4">
+                <button type="button" id="expense-ops-open"
+                    class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
                     <div class="text-xs text-gray-500">Расход за месяц</div>
                     <div class="text-2xl font-bold mt-1 text-red-600">
                         {{ number_format($monthTotalExpense ?? 0, 2, '.', ' ') }} ₽
                     </div>
-                </div>
+                </button>
 
                 <div class="bg-white rounded-xl shadow p-4">
                     <div class="text-xs text-gray-500">Баланс (Доход − Расход)</div>
@@ -179,6 +181,16 @@
                     </div>
                 </div>
             </div>
+
+            {{-- ===== SALARY FUND ===== --}}
+            <button type="button" id="salary-fund-open"
+                class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
+                <div class="text-xs text-gray-500">Фонд ЗП (категория ЗП)</div>
+                <div class="text-2xl font-bold mt-1 text-indigo-600">
+                    {{ number_format($totalAmount ?? 0, 2, '.', ' ') }} ₽
+                </div>
+                <div class="text-xs text-gray-500 mt-1">Операции за выбранный месяц</div>
+            </button>
 
             @php
                 $currentMonth = \Carbon\Carbon::now()->format('Y-m');
@@ -218,6 +230,183 @@
                     </button>
                 </div>
             @endif
+
+            {{-- ===== SALARY FUND MODAL ===== --}}
+            <div id="salary-fund-modal" class="fixed inset-0 z-50 hidden">
+                <div id="salary-fund-overlay" class="absolute inset-0 bg-black/50"></div>
+                <div class="absolute inset-0 flex items-center justify-center p-4">
+                    <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
+                        <div class="flex items-center justify-between px-5 py-4 border-b">
+                            <div>
+                                <div class="text-lg font-semibold text-gray-800">Операции по фонду ЗП</div>
+                                <div class="text-xs text-gray-500">{{ $monthLabel }}</div>
+                            </div>
+                            <button type="button" id="salary-fund-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                        </div>
+
+                        <div class="p-5 max-h-[70vh] overflow-y-auto">
+                            @if (($salaryFundExpenses ?? collect())->isEmpty())
+                                <div class="text-sm text-gray-500">Нет операций по ЗП за выбранный месяц.</div>
+                            @else
+                                <div class="overflow-auto">
+                                    <table class="min-w-full text-sm">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Дата</th>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Категория</th>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Описание</th>
+                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
+                                                    Сумма</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y">
+                                            @foreach ($salaryFundExpenses as $exp)
+                                                <tr>
+                                                    <td class="px-3 py-2 whitespace-nowrap">
+                                                        {{ ($exp->expense_date ?? $exp->created_at)?->format('d.m.Y') ?? '—' }}
+                                                    </td>
+                                                    <td class="px-3 py-2">
+                                                        {{ $exp->category?->title ?? '—' }}
+                                                    </td>
+                                                    <td class="px-3 py-2 text-gray-600">
+                                                        {{ $exp->description ?? '—' }}
+                                                    </td>
+                                                    <td class="px-3 py-2 text-right font-semibold">
+                                                        {{ number_format($exp->amount, 2, '.', ' ') }} ₽
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ===== INCOME OPERATIONS MODAL ===== --}}
+            <div id="income-ops-modal" class="fixed inset-0 z-50 hidden">
+                <div id="income-ops-overlay" class="absolute inset-0 bg-black/50"></div>
+                <div class="absolute inset-0 flex items-center justify-center p-4">
+                    <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
+                        <div class="flex items-center justify-between px-5 py-4 border-b">
+                            <div>
+                                <div class="text-lg font-semibold text-gray-800">Операции по доходам</div>
+                                <div class="text-xs text-gray-500">{{ $monthLabel }}</div>
+                            </div>
+                            <button type="button" id="income-ops-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                        </div>
+
+                        <div class="p-5 max-h-[70vh] overflow-y-auto">
+                            @if (($incomeOperations ?? collect())->isEmpty())
+                                <div class="text-sm text-gray-500">Нет операций по доходам за выбранный период.</div>
+                            @else
+                                <div class="overflow-auto">
+                                    <table class="min-w-full text-sm">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Дата</th>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Проект</th>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Примечание</th>
+                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
+                                                    Сумма</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y">
+                                            @foreach ($incomeOperations as $op)
+                                                @php
+                                                    $opDate = $op->payment_date ?? $op->created_at;
+                                                @endphp
+                                                <tr>
+                                                    <td class="px-3 py-2 whitespace-nowrap">
+                                                        {{ $opDate ? \Carbon\Carbon::parse($opDate)->format('d.m.Y') : '—' }}
+                                                    </td>
+                                                    <td class="px-3 py-2">
+                                                        {{ $op->project_title ?? ($op->project_id ? 'Проект #' . $op->project_id : '—') }}
+                                                    </td>
+                                                    <td class="px-3 py-2 text-gray-600">
+                                                        {{ $op->note ?? '—' }}
+                                                    </td>
+                                                    <td class="px-3 py-2 text-right font-semibold">
+                                                        {{ number_format($op->amount, 2, '.', ' ') }} ₽
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ===== EXPENSE OPERATIONS MODAL ===== --}}
+            <div id="expense-ops-modal" class="fixed inset-0 z-50 hidden">
+                <div id="expense-ops-overlay" class="absolute inset-0 bg-black/50"></div>
+                <div class="absolute inset-0 flex items-center justify-center p-4">
+                    <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
+                        <div class="flex items-center justify-between px-5 py-4 border-b">
+                            <div>
+                                <div class="text-lg font-semibold text-gray-800">Операции по расходам</div>
+                                <div class="text-xs text-gray-500">{{ $monthLabel }}</div>
+                            </div>
+                            <button type="button" id="expense-ops-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                        </div>
+
+                        <div class="p-5 max-h-[70vh] overflow-y-auto">
+                            @if (($expenseOperations ?? collect())->isEmpty())
+                                <div class="text-sm text-gray-500">Нет операций по расходам за выбранный период.</div>
+                            @else
+                                <div class="overflow-auto">
+                                    <table class="min-w-full text-sm">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Дата</th>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Проект</th>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Описание</th>
+                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
+                                                    Сумма</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y">
+                                            @foreach ($expenseOperations as $op)
+                                                @php
+                                                    $opDate = $op->expense_date ?? $op->created_at;
+                                                @endphp
+                                                <tr>
+                                                    <td class="px-3 py-2 whitespace-nowrap">
+                                                        {{ $opDate ? \Carbon\Carbon::parse($opDate)->format('d.m.Y') : '—' }}
+                                                    </td>
+                                                    <td class="px-3 py-2">
+                                                        {{ $op->project_title ?? ($op->project_id ? 'Проект #' . $op->project_id : '—') }}
+                                                    </td>
+                                                    <td class="px-3 py-2 text-gray-600">
+                                                        {{ $op->description ?? '—' }}
+                                                    </td>
+                                                    <td class="px-3 py-2 text-right font-semibold">
+                                                        {{ number_format($op->amount, 2, '.', ' ') }} ₽
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
             {{-- ===== TAXES SUMMARY (VAT + USN) ===== --}}
             <div class="bg-white rounded-xl shadow p-4 mt-4">
                 <div class="text-sm text-gray-500 mb-2">Налоги за выбранный месяц</div>
@@ -507,7 +696,7 @@
     <div id="expected-profit-modal" class="fixed inset-0 z-50 hidden">
         <div id="expected-profit-overlay" class="absolute inset-0 bg-black/50"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="flex items-center justify-between px-5 py-4 border-b">
                     <div>
                         <div class="text-lg font-semibold text-gray-800">Ожидаемая прибыль — детали</div>
@@ -565,7 +754,7 @@
     <div id="barter-projects-modal" class="fixed inset-0 z-50 hidden">
         <div id="barter-projects-overlay" class="absolute inset-0 bg-black/50"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="flex items-center justify-between px-5 py-4 border-b">
                     <div>
                         <div class="text-lg font-semibold text-gray-800">Бартерные проекты</div>
@@ -616,7 +805,7 @@
     <div id="own-projects-modal" class="fixed inset-0 z-50 hidden">
         <div id="own-projects-overlay" class="absolute inset-0 bg-black/50"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="flex items-center justify-between px-5 py-4 border-b">
                     <div>
                         <div class="text-lg font-semibold text-gray-800">Свои проекты</div>
@@ -667,7 +856,7 @@
     <div id="commercial-projects-modal" class="fixed inset-0 z-50 hidden">
         <div id="commercial-projects-overlay" class="absolute inset-0 bg-black/50"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="flex items-center justify-between px-5 py-4 border-b">
                     <div>
                         <div class="text-lg font-semibold text-gray-800">Коммерческие проекты</div>
@@ -1097,12 +1286,74 @@
             if (commercialClose) commercialClose.addEventListener('click', closeCommercialModal);
             if (commercialOverlay) commercialOverlay.addEventListener('click', closeCommercialModal);
 
+            // Salary fund modal
+            const salaryFundModal = document.getElementById('salary-fund-modal');
+            const salaryFundOpen = document.getElementById('salary-fund-open');
+            const salaryFundClose = document.getElementById('salary-fund-close');
+            const salaryFundOverlay = document.getElementById('salary-fund-overlay');
+
+            function openSalaryFundModal() {
+                if (!salaryFundModal) return;
+                salaryFundModal.classList.remove('hidden');
+            }
+
+            function closeSalaryFundModal() {
+                if (!salaryFundModal) return;
+                salaryFundModal.classList.add('hidden');
+            }
+
+            if (salaryFundOpen) salaryFundOpen.addEventListener('click', openSalaryFundModal);
+            if (salaryFundClose) salaryFundClose.addEventListener('click', closeSalaryFundModal);
+            if (salaryFundOverlay) salaryFundOverlay.addEventListener('click', closeSalaryFundModal);
+
+            // Income / Expense modals
+            const incomeModal = document.getElementById('income-ops-modal');
+            const incomeOpen = document.getElementById('income-ops-open');
+            const incomeClose = document.getElementById('income-ops-close');
+            const incomeOverlay = document.getElementById('income-ops-overlay');
+
+            function openIncomeModal() {
+                if (!incomeModal) return;
+                incomeModal.classList.remove('hidden');
+            }
+
+            function closeIncomeModal() {
+                if (!incomeModal) return;
+                incomeModal.classList.add('hidden');
+            }
+
+            if (incomeOpen) incomeOpen.addEventListener('click', openIncomeModal);
+            if (incomeClose) incomeClose.addEventListener('click', closeIncomeModal);
+            if (incomeOverlay) incomeOverlay.addEventListener('click', closeIncomeModal);
+
+            const expenseModal = document.getElementById('expense-ops-modal');
+            const expenseOpen = document.getElementById('expense-ops-open');
+            const expenseClose = document.getElementById('expense-ops-close');
+            const expenseOverlay = document.getElementById('expense-ops-overlay');
+
+            function openExpenseModal() {
+                if (!expenseModal) return;
+                expenseModal.classList.remove('hidden');
+            }
+
+            function closeExpenseModal() {
+                if (!expenseModal) return;
+                expenseModal.classList.add('hidden');
+            }
+
+            if (expenseOpen) expenseOpen.addEventListener('click', openExpenseModal);
+            if (expenseClose) expenseClose.addEventListener('click', closeExpenseModal);
+            if (expenseOverlay) expenseOverlay.addEventListener('click', closeExpenseModal);
+
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     closeExpectedModal();
                     closeBarterModal();
                     closeOwnModal();
                     closeCommercialModal();
+                    closeSalaryFundModal();
+                    closeIncomeModal();
+                    closeExpenseModal();
                 }
             });
 

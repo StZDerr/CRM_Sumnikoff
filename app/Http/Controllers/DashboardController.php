@@ -419,6 +419,50 @@ class DashboardController extends Controller
 
         $officeExpenseCategories = \App\Models\ExpenseCategory::office()->where('is_salary', false)->ordered()->get();
 
+        $salaryFundExpenses = Expense::salary()
+            ->with('category')
+            ->whereRaw('DATE(COALESCE(expense_date, expenses.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
+            ->orderByDesc('expense_date')
+            ->get();
+        $totalAmount = $salaryFundExpenses->sum('amount');
+        // dd($totalAmount);
+
+        $incomeOperations = Payment::leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+            ->select(
+                'payments.id',
+                'payments.amount',
+                'payments.payment_date',
+                'payments.created_at',
+                'payments.note',
+                'projects.title as project_title',
+                'payments.project_id'
+            )
+            ->where(function ($q) {
+                $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+            })
+            ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
+            ->orderByDesc('payments.payment_date')
+            ->orderByDesc('payments.created_at')
+            ->get();
+
+        $expenseOperations = Expense::leftJoin('projects', 'projects.id', '=', 'expenses.project_id')
+            ->select(
+                'expenses.id',
+                'expenses.amount',
+                'expenses.expense_date',
+                'expenses.created_at',
+                'expenses.description',
+                'projects.title as project_title',
+                'expenses.project_id'
+            )
+            ->where(function ($q) {
+                $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+            })
+            ->whereRaw('DATE(COALESCE(expense_date, expenses.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
+            ->orderByDesc('expenses.expense_date')
+            ->orderByDesc('expenses.created_at')
+            ->get();
+
         return view('dashboard', compact(
             'labels', 'incomeData', 'expenseData', 'netData',
             'monthTotalIncome', 'monthTotalExpense', 'monthTotalNet',
@@ -429,7 +473,8 @@ class DashboardController extends Controller
             'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
             'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit',
             'monthlyExpenses', 'monthlyExpensesMonth', 'expectedProjects', 'showWeeklyExpenses',
-            'barterProjects', 'ownProjects', 'commercialProjects', 'linkCards', 'officeExpenseCategories'
+            'barterProjects', 'ownProjects', 'commercialProjects', 'linkCards', 'officeExpenseCategories', 'totalAmount', 'salaryFundExpenses',
+            'incomeOperations', 'expenseOperations'
         ));
     }
 

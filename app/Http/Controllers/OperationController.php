@@ -15,7 +15,7 @@ class OperationController extends Controller
 {
     public function index(Request $request)
     {
-        $perPage = 20;
+        $perPage = 100;
         $page = (int) $request->query('page', 1);
 
         $currentUser = auth()->user();

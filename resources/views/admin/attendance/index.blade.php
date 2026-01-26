@@ -87,17 +87,14 @@
                                 $isToday = $day->isToday();
                                 $cellBg = $isToday ? '#fef3c7' : ($isWeekend ? '#e5e7eb' : $color);
 
-                                // Tooltip content: status title + escaped comment (HTML line break)
-                                $tippyContent = $att?->status?->title ?? '';
-                                if ($comment) {
-                                    $tippyContent .= '<br>' . e($comment);
-                                }
+                                // Tooltip content: только комментарий (HTML line break)
+                                $tippyContent = $comment ? nl2br(e($comment)) : '';
                             @endphp
                             <td class="relative cursor-pointer text-center border w-8 h-6" data-user="{{ $user->id }}"
                                 data-date="{{ $day->toDateString() }}" data-status="{{ $statusCode }}"
                                 data-comment="{{ $comment }}" style="background-color: {{ $cellBg }};"
                                 @if (!empty($tippyContent)) data-tippy data-tippy-content="{!! $tippyContent !!}" @endif
-                                title="{{ $att?->status?->title ?? '' }}{{ $comment ? ' | ' . $comment : '' }}">
+                                title="{{ $comment }}">
 
                                 {{-- Первая буква статуса --}}
                                 {{ $att?->status?->title ? mb_strtoupper(mb_substr($att->status->title, 0, 1)) : '' }}
@@ -193,7 +190,7 @@
                             indicator.remove();
                         }
 
-                        td.title = (td.title.split('|')[0]) + (newComment ? ' | ' + newComment : '');
+                        td.title = newComment || '';
                     }
                     return; // не меняем статус
                 }
@@ -277,7 +274,7 @@
                 td.dataset.comment = comment;
                 td.style.backgroundColor = data.color;
                 td.textContent = data.title ? data.title[0].toUpperCase() : '';
-                td.title = data.title + (comment ? ' | ' + comment : '');
+                td.title = comment || '';
 
                 // Плашка комментария остаётся
                 let indicator = td.querySelector('span');

@@ -126,13 +126,19 @@
                     <div><strong>Обычные дни:</strong> {{ $expected['ordinary_days'] ?? 22 }}</div>
                     <div class="text-gray-500">Премии по проектам:</div>
                     @php
-                        $expectedProjectBonusesFiltered = collect($expected['projectBonuses'] ?? [])->filter(function ($pb) {
+                        $expectedProjectBonusesFiltered = collect($expected['projectBonuses'] ?? [])->filter(function (
+                            $pb,
+                        ) {
                             $project = $pb['project'] ?? null;
-                            if (! $project) {
+                            if (!$project) {
                                 return true;
                             }
 
-                            return ! in_array($project->status, [\App\Models\Project::STATUS_PAUSED, \App\Models\Project::STATUS_STOPPED], true);
+                            return !in_array(
+                                $project->status,
+                                [\App\Models\Project::STATUS_PAUSED, \App\Models\Project::STATUS_STOPPED],
+                                true,
+                            );
                         });
                     @endphp
                     <ul class="list-disc list-inside text-sm">

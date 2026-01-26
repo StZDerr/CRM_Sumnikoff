@@ -106,6 +106,12 @@ class Project extends Model
         return self::expectedProfitForMonth($month)->sum('contract_amount'); // или 'profit', если есть поле
     }
 
+    // Domains
+    public function domains()
+    {
+        return $this->hasMany(Domain::class);
+    }
+
     // Organization
     public function organization()
     {

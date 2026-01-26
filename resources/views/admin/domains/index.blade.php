@@ -63,15 +63,7 @@
                                         {{ $domain->expires_at ? $domain->expires_at->format('d.m.Y') : '—' }}
                                     </td>
                                     <td class="py-2 pr-4">
-                                        @php
-                                            $stateMap = [
-                                                'N' => 'Неактивна',
-                                                'A' => 'Активна',
-                                                'S' => 'Приостановлена',
-                                            ];
-                                            $stateCode = $domain->status ?? null;
-                                        @endphp
-                                        {{ $stateCode ? $stateMap[$stateCode] ?? $stateCode : '—' }}
+                                        {{ $domain->status_label }}
                                     </td>
                                     <td class="py-2 pr-4">
                                         @php

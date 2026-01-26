@@ -217,38 +217,117 @@
             @endauth
 
             {{-- Comments list --}}
-            <div id="comments-list" data-comments-url="{{ route('projects.comments.index', $project) }}"
-                data-store-url="{{ route('projects.comments.store', $project) }}">
-                @if ($project->comments->count())
-                    <div class="space-y-3">
-                        @foreach ($project->comments as $comment)
-                            <div class="border rounded-md p-4 bg-white comment-item" data-id="{{ $comment->id }}">
-                                <div class="flex items-start justify-between">
-                                    <div>
-                                        <div class="font-medium text-gray-900">{{ $comment->user->name }}</div>
-                                        <div class="text-xs text-gray-500">{{ $comment->created_at->diffForHumans() }}
+            {{-- ===================== Комментарии ===================== --}}
+            <section class="bg-white rounded-2xl border p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    Комментарии
+                    <span class="text-sm text-gray-400 font-normal">
+                        ({{ $project->comments->count() }})
+                    </span>
+                </h3>
+
+                <div id="comments-list" data-comments-url="{{ route('projects.comments.index', $project) }}"
+                    data-store-url="{{ route('projects.comments.store', $project) }}">
+
+                    @if ($project->comments->count())
+                        <div class="space-y-3">
+                            @foreach ($project->comments as $comment)
+                                <div class="rounded-xl border bg-gray-50 p-4 comment-item" data-id="{{ $comment->id }}">
+                                    <div class="flex gap-3">
+                                        {{-- Avatar --}}
+                                        <div
+                                            class="h-9 w-9 flex items-center justify-center rounded-full
+                                       bg-blue-100 text-blue-700 text-sm font-semibold">
+                                            {{ mb_strtoupper(mb_substr($comment->user->name, 0, 1)) }}
+                                        </div>
+
+                                        <div class="flex-1">
+                                            <div class="flex items-start justify-between">
+                                                <div>
+                                                    <div class="font-medium text-gray-900">
+                                                        {{ $comment->user->name }}
+                                                    </div>
+                                                    <div class="text-xs text-gray-500">
+                                                        {{ $comment->created_at->diffForHumans() }}
+                                                    </div>
+                                                </div>
+
+                                                @if (auth()->user() && (auth()->user()->isAdmin() || auth()->id() === $comment->user_id))
+                                                    <form class="delete-comment-form"
+                                                        action="{{ route('projects.comments.destroy', [$project, $comment]) }}"
+                                                        method="POST" onsubmit="return false;">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button class="text-gray-400 hover:text-red-600 transition text-sm"
+                                                            title="Удалить комментарий">
+                                                            ✕
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </div>
+
+                                            <div class="mt-2 text-gray-800 whitespace-pre-line leading-relaxed">
+                                                {{ $comment->body }}
+                                            </div>
                                         </div>
                                     </div>
-
-                                    @if (auth()->user() && (auth()->user()->isAdmin() || auth()->id() === $comment->user_id))
-                                        <form class="delete-comment-form"
-                                            action="{{ route('projects.comments.destroy', [$project, $comment]) }}"
-                                            method="POST" onsubmit="return false;">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="text-sm text-red-600 hover:underline">Удалить</button>
-                                        </form>
-                                    @endif
                                 </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-sm text-gray-500">
+                            Пока нет комментариев.
+                        </div>
+                    @endif
+                </div>
+            </section>
 
-                                <div class="mt-3 text-gray-800 whitespace-pre-line">{{ $comment->body }}</div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="text-sm text-gray-500">Пока нет комментариев.</div>
-                @endif
-            </div>
+            {{-- ===================== Домены ===================== --}}
+            <section class="mt-8 bg-gray-50 rounded-2xl border p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    Домены проекта
+                    <span class="text-sm text-gray-400 font-normal">
+                        ({{ $project->domains->count() }})
+                    </span>
+                </h3>
+
+                <div id="domains-list">
+                    @if ($project->domains->count())
+                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            @foreach ($project->domains as $domain)
+                                <div class="border rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                {{-- <span class="text-lg">🌐</span> --}}
+                                                <a href="https://{{ $domain->name }}" target="_blank"
+                                                    class="text-blue-600 font-semibold hover:underline break-all">
+                                                    {{ $domain->name }}
+                                                </a>
+                                            </div>
+
+                                            <div class="mt-1 text-xs text-gray-500">
+                                                Добавлен {{ $domain->created_at->diffForHumans() }}
+                                            </div>
+                                        </div>
+
+                                        <span
+                                            class="text-xs px-2 py-1 rounded-full font-medium {{ $domain->status_color }}">
+                                            {{ $domain->status_label }}
+                                        </span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-sm text-gray-500">
+                            Домены не заданы.
+                        </div>
+                    @endif
+                </div>
+            </section>
+
+
         </div>
     </div>
     @if (auth()->user()->isAdmin())

@@ -58,6 +58,16 @@ class Expense extends Model
         return $this->belongsTo(\App\Models\ExpenseCategory::class, 'expense_category_id');
     }
 
+    /**
+     * Scope: только расходы с категорией ЗП
+     */
+    public function scopeSalary($query)
+    {
+        return $query->whereHas('category', function ($q) {
+            $q->where('is_salary', true);
+        });
+    }
+
     public function organization(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Organization::class);

@@ -27,6 +27,26 @@ class Domain extends Model
         'renew_price' => 'decimal:2',
     ];
 
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            'A' => 'Активна',
+            'N' => 'Неактивна',
+            'S' => 'Приостановлена',
+            default => '—',
+        };
+    }
+
+    public function getStatusColorAttribute(): string
+    {
+        return match ($this->status) {
+            'A' => 'bg-green-100 text-green-700',
+            'N' => 'bg-gray-100 text-gray-600',
+            'S' => 'bg-yellow-100 text-yellow-700',
+            default => 'bg-gray-50 text-gray-400',
+        };
+    }
+
     public function project()
     {
         return $this->belongsTo(Project::class);
