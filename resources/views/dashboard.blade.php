@@ -246,6 +246,12 @@
                         <div class="text-2xl font-bold mt-1 text-indigo-600">
                             {{ number_format($expectedProfit ?? 0, 2, '.', ' ') }} ₽
                         </div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            Получено в этом месяце: {{ number_format($expectedReceivedMonth ?? 0, 2, '.', ' ') }} ₽
+                        </div>
+                        <div class="text-sm font-semibold mt-1 text-indigo-600">
+                            Осталось получить: {{ number_format($expectedRemaining ?? 0, 2, '.', ' ') }} ₽
+                        </div>
                         <div class="text-xs text-gray-500 mt-1">Не учитываются бартерные и свои проекты</div>
                     </button>
                 </div>
@@ -742,6 +748,8 @@
                                             Сумма контракта</th>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Дата закрытия</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Долг</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y">
@@ -758,6 +766,9 @@
                                             </td>
                                             <td class="px-3 py-2">
                                                 {{ $proj->closed_at?->format('d.m.Y') ?? '—' }}
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ number_format($proj->balance ?? 0, 2, '.', ' ') }} ₽
                                             </td>
                                         </tr>
                                     @endforeach

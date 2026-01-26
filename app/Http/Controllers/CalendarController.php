@@ -553,7 +553,9 @@ class CalendarController extends Controller
         $periodEnd = $periodStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
         $guard = 0;
 
-        while ($periodEnd->lte($hardEnd) && $guard < 240) {
+        // Включаем периоды, которые уже начались (periodStart <= hardEnd).
+        // Раньше использовалась проверка по periodEnd, что пропускало текущий открытый период.
+        while ($periodStart->lte($hardEnd) && $guard < 240) {
             $ym = $periodStart->format('Y-m');
             $schedule[$ym] = ($schedule[$ym] ?? 0) + $contractAmount;
 

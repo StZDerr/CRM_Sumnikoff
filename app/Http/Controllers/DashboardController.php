@@ -163,13 +163,24 @@ class DashboardController extends Controller
 
         $monthLabel = $start->locale('ru')->isoFormat('MMMM YYYY');
 
-        // Expected profit (sum of contract_amount for open projects and those closed after this month)
-        $expectedProfit = Project::getExpectedProfitForMonth($start);
-        $expectedProjects = Project::expectedProfitForMonth($start)
+        // Expected profit (sum of contract_amount for in-progress projects with non-negative balance)
+        $expectedBaseQuery = Project::expectedProfitForMonth($start)
+            ->where('status', Project::STATUS_IN_PROGRESS)
+            ->where('balance', '>=', 0);
+
+        $expectedProfit = (float) $expectedBaseQuery->sum('contract_amount');
+        $expectedProjects = (clone $expectedBaseQuery)
             ->where('contract_amount', '>', 0)
-            ->select(['id', 'title', 'contract_amount', 'closed_at', 'payment_type'])
+            ->select(['id', 'title', 'contract_amount', 'closed_at', 'payment_type', 'balance', 'status'])
             ->orderBy('title')
             ->get();
+
+        $expectedProjectIdsQuery = (clone $expectedBaseQuery)->select('id');
+        $expectedReceivedMonth = (float) Payment::whereIn('project_id', $expectedProjectIdsQuery)
+            ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
+            ->sum('payments.amount');
+
+        $expectedRemaining = (float) ($expectedProfit - $expectedReceivedMonth);
 
         // Top 5 projects by income for the selected month
         $topProjectsRows = Payment::selectRaw('projects.id, COALESCE(projects.title, CONCAT("Проект #", projects.id)) as title, SUM(payments.amount) as total')
@@ -471,7 +482,7 @@ class DashboardController extends Controller
             'topProjectsLabels', 'topProjectsData', 'topMaxChart', 'topStep',
             'activeData', 'activeStep',
             'debtorLabels', 'debtorData', 'debtorRaw', 'debtorMaxChart', 'debtorStep',
-            'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit',
+            'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit', 'expectedReceivedMonth', 'expectedRemaining',
             'monthlyExpenses', 'monthlyExpensesMonth', 'expectedProjects', 'showWeeklyExpenses',
             'barterProjects', 'ownProjects', 'commercialProjects', 'linkCards', 'officeExpenseCategories', 'totalAmount', 'salaryFundExpenses',
             'incomeOperations', 'expenseOperations'

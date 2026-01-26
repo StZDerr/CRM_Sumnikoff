@@ -16,21 +16,24 @@
                 Нет проектов с датой договора — нечего отображать.
             </div>
         @else
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto overflow-y-auto max-h-[70vh]">
                 <table class="min-w-full border-collapse border border-gray-200">
-                    <thead class="bg-gray-100">
+                    <thead class="bg-gray-100 sticky top-0 z-40">
                         <tr>
-                            <th class="border border-gray-200 p-2 text-left sticky left-0 bg-gray-100 z-10">Объект</th>
+                            <th class="border border-gray-200 p-2 text-left sticky top-0 left-0 bg-gray-100 z-30">Объект</th>
                             @foreach ($months as $m)
-                                <th class="border border-gray-200 p-2 text-center min-w-[120px]">{{ $m['label'] }}</th>
+                                <th
+                                    class="border border-gray-200 p-2 text-center min-w-[120px] sticky top-0 bg-gray-100 z-40">
+                                    {{ $m['label'] }}</th>
                             @endforeach
                             <th
-                                class="border border-gray-200 p-2 text-center sticky right-[180px] bg-gray-100 z-10 min-w-[100px]">
+                                class="border border-gray-200 p-2 text-center sticky top-0 right-[180px] bg-gray-100 z-30 min-w-[100px]">
                                 Ожидаемо</th>
                             <th
-                                class="border border-gray-200 p-2 text-center sticky right-[90px] bg-gray-100 z-10 min-w-[100px]">
+                                class="border border-gray-200 p-2 text-center sticky top-0 right-[90px] bg-gray-100 z-30 min-w-[100px]">
                                 Оплачено</th>
-                            <th class="border border-gray-200 p-2 text-center sticky right-0 bg-gray-100 z-10 min-w-[90px]">
+                            <th
+                                class="border border-gray-200 p-2 text-center sticky top-0 right-0 bg-gray-100 z-30 min-w-[90px]">
                                 Баланс</th>
                         </tr>
                     </thead>
