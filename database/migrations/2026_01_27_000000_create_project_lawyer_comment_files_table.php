@@ -10,7 +10,9 @@ return new class extends Migration
     {
         Schema::create('project_lawyer_comment_files', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_lawyer_comment_id')->constrained('project_lawyer_comments')->onDelete('cascade');
+            // Используем unsignedBigInteger + индекс вместо foreign key, т.к. таблица project_lawyer_comments
+            // может быть создана в другой миграции с более поздним timestamp.
+            $table->unsignedBigInteger('project_lawyer_comment_id')->index();
             $table->string('path');
             $table->string('original_name')->nullable();
             $table->timestamps();
