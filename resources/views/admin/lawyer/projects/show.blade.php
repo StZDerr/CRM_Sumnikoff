@@ -15,14 +15,23 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('lawyer.projects.update', $projectLawyer) }}">
-                @csrf
-                @method('PATCH')
-                <input type="hidden" name="status" value="processed">
-                <button class="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700">
-                    ✔ Отметить как обработано
-                </button>
-            </form>
+            @if ($projectLawyer->status !== 'closed')
+                <form method="POST" action="{{ route('lawyer.projects.update', $projectLawyer) }}">
+                    @csrf
+                    @method('PATCH')
+                    @if ($projectLawyer->status === 'processed')
+                        <input type="hidden" name="status" value="closed">
+                        <button class="px-4 py-2 bg-gray-700 text-white rounded-md text-sm hover:bg-gray-800">
+                            ✖ Закрыть проект
+                        </button>
+                    @else
+                        <input type="hidden" name="status" value="processed">
+                        <button class="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700">
+                            ✔ Взято в работу
+                        </button>
+                    @endif
+                </form>
+            @endif
         </div>
 
         {{-- Project info --}}
@@ -66,6 +75,10 @@
                             'processed' => [
                                 'label' => 'Обработано',
                                 'class' => 'bg-green-100 text-green-700 border-green-200',
+                            ],
+                            'closed' => [
+                                'label' => 'Закрыт',
+                                'class' => 'bg-gray-200 text-gray-800 border-gray-300',
                             ],
                             'reopened' => [
                                 'label' => 'Переоткрыто',
@@ -154,21 +167,81 @@
                 enctype="multipart/form-data" class="space-y-4">
                 @csrf
 
-                <textarea name="comment" rows="4" class="w-full border rounded px-3 py-2"
-                    placeholder="Опишите ситуацию или оставьте комментарий..." required>{{ old('comment') }}</textarea>
+                <div>
+                    <label for="comment" class="sr-only">Комментарий</label>
+                    <textarea id="comment" name="comment" rows="5"
+                        class="w-full border rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                        placeholder="Опишите ситуацию или оставьте комментарий..." required>{{ old('comment') }}</textarea>
+                    @error('comment')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
 
-                <input type="file" name="files[]" multiple class="block text-sm text-gray-600">
+                <div>
+                    <label class="inline-flex items-center gap-3">
+                        <span
+                            class="inline-flex items-center px-3 py-2 bg-white border rounded-md text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                            <svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L6.343 10.172a6 6 0 108.486 8.486L20 13.657"></path>
+                            </svg>
+                            <span class="ml-2">Прикрепить файл</span>
+                        </span>
+
+                        <input id="lawyer-files" type="file" name="files[]" multiple class="hidden"
+                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.webp" />
+                    </label>
+
+                    <div id="selected-files" class="mt-2 text-sm text-gray-600"></div>
+
+                    @error('files.*')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
 
                 <div class="flex justify-between items-center">
                     <a href="{{ route('lawyer.projects.index') }}" class="text-sm text-gray-600 hover:underline">
                         ← Назад к списку
                     </a>
 
-                    <button class="px-4 py-2 bg-indigo-600 text-white rounded-md">
-                        Отправить комментарий
+                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="ml-2">Отправить комментарий</span>
                     </button>
                 </div>
             </form>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const fileInput = document.getElementById('lawyer-files');
+                    const list = document.getElementById('selected-files');
+
+                    if (!fileInput || !list) return;
+
+                    fileInput.addEventListener('change', function () {
+                        const files = Array.from(this.files);
+                        if (files.length === 0) {
+                            list.textContent = '';
+                            return;
+                        }
+
+                        list.innerHTML = files.map(f => {
+                            const name = f.name.length > 40 ? f.name.slice(0, 37) + '...' : f.name;
+                            return `<div class="flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10v10H7z"></path>
+                                        </svg>
+                                        <span class="truncate">${name}</span>
+                                    </div>`;
+                        }).join('');
+                    });
+                });
+            </script>
         </div>
 
     </div>

@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up()
     {
+        if (Schema::hasTable('project_lawyer_comment_files')) {
+            return;
+        }
+
         Schema::create('project_lawyer_comment_files', function (Blueprint $table) {
             $table->id();
             // Используем unsignedBigInteger + индекс вместо foreign key, т.к. таблица project_lawyer_comments

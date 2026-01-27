@@ -6,6 +6,20 @@
             <h1 class="text-xl font-semibold">Проекты для юриста</h1>
         </div>
 
+        @php
+            $colspan = auth()->user()->isAdmin() ? 7 : 6;
+            $statusMap = [
+                'pending' => [
+                    'label' => 'На рассмотрении',
+                    'class' => 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                ],
+                'processed' => ['label' => 'Обработано', 'class' => 'bg-green-100 text-green-700 border-green-200'],
+                'closed' => ['label' => 'Закрыт', 'class' => 'bg-gray-200 text-gray-800 border-gray-300'],
+                'reopened' => ['label' => 'Переоткрыто', 'class' => 'bg-blue-100 text-blue-700 border-blue-200'],
+                'cancelled' => ['label' => 'Отменено', 'class' => 'bg-red-100 text-red-700 border-red-200'],
+            ];
+        @endphp
+
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <table class="w-full text-sm text-left">
                 <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
@@ -18,6 +32,7 @@
 
                         <th class="p-3">Организация</th>
                         <th class="p-3">Отправлено</th>
+                        <th class="p-3">Статус</th>
                         <th class="p-3">Заметка</th>
                         <th class="p-3 text-right">Действия</th>
                     </tr>
@@ -61,6 +76,19 @@
                                 </div>
                             </td>
 
+                            {{-- Статус --}}
+                            @php
+                                $status = $statusMap[$assignment->status] ?? [
+                                    'label' => ucfirst($assignment->status ?? 'Неизвестно'),
+                                    'class' => 'bg-gray-100 text-gray-700 border-gray-200',
+                                ];
+                            @endphp
+                            <td class="p-3">
+                                <span class="inline-flex px-2 py-1 text-xs rounded border {{ $status['class'] }}">
+                                    {{ $status['label'] }}
+                                </span>
+                            </td>
+
                             {{-- Заметка --}}
                             <td class="p-3 text-gray-700">
                                 {{ $assignment->note ?: '—' }}
@@ -77,7 +105,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="p-6 text-center text-gray-500">
+                            <td colspan="{{ $colspan }}" class="p-6 text-center text-gray-500">
                                 Назначенных проектов нет
                             </td>
                         </tr>

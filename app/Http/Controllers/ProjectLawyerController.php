@@ -12,7 +12,9 @@ class ProjectLawyerController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('role:admin,project_manager')->only(['store', 'update']);
+        // Отправка проекта — только admin / project_manager
+        $this->middleware('role:admin,project_manager')->only(['store']);
+        // Список — admin и lawyer
         $this->middleware('role:admin,lawyer')->only(['index']);
     }
 
@@ -25,9 +27,11 @@ class ProjectLawyerController extends Controller
                 ->orderByDesc('sent_at')
                 ->get();
         } else {
+            // Показываем ВСЕ назначения текущего юриста — закрытые проекты будут в конце
             $projects = ProjectLawyer::with('project', 'sender')
                 ->where('user_id', auth()->id())
-                ->where('status', 'pending')
+                ->orderByRaw("CASE WHEN status = 'closed' THEN 1 ELSE 0 END ASC")
+                ->orderByDesc('sent_at')
                 ->get();
         }
 
@@ -134,10 +138,14 @@ class ProjectLawyerController extends Controller
     // Обновление статуса проекта для юриста (mark processed)
     public function update(Request $request, ProjectLawyer $projectLawyer)
     {
-        $this->authorize('update', $projectLawyer); // можно через политику
+        // Разрешаем обновлять назначение: назначенному юристу, админу или проектному менеджеру
+        $user = auth()->user();
+        if (! ($user->isAdmin() || $user->isProjectManager() || $projectLawyer->user_id === $user->id)) {
+            abort(403);
+        }
 
         $request->validate([
-            'status' => 'required|in:pending,processed',
+            'status' => 'required|in:pending,processed,closed',
         ]);
 
         $projectLawyer->update([

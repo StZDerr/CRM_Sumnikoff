@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users');                // юрист — не удаляем
             $table->foreignId('sent_by')->constrained('users');                // кто отправил — не удаляем
             $table->dateTime('sent_at');
-            $table->enum('status', ['pending', 'processed'])->default('pending');
+            $table->enum('status', ['pending', 'processed', 'closed'])->default('pending');
             $table->text('note')->nullable();
             $table->timestamps();
 
