@@ -193,6 +193,28 @@
 
     </nav>
 
+    <div class="border-t border-white/20 mx-4 my-3"></div>
+
+    <div class="px-4 py-2">
+        <div class="text-xs text-white/70 mb-2">Полезные ссылки</div>
+        <div class="flex flex-col space-y-1">
+            <a href="https://itsgpro.ru/" target="_blank" rel="noopener noreferrer"
+                class="flex items-center gap-2 text-sm text-white/90 hover:bg-white/10 rounded px-2 py-1">
+                IT Sumnikoff
+            </a>
+
+            <a href="https://курсы-веб.рф/" target="_blank" rel="noopener noreferrer"
+                class="flex items-center gap-2 text-sm text-white/90 hover:bg-white/10 rounded px-2 py-1">
+                Курсы Веб
+            </a>
+
+            <a href="https://disk.360.yandex.ru/client/disk" target="_blank" rel="noopener noreferrer"
+                class="flex items-center gap-2 text-sm text-white/90 hover:bg-white/10 rounded px-2 py-1">
+                Диск 360
+            </a>
+        </div>
+    </div>
+
 
     <!-- Account / actions at bottom -->
     <div class="px-4 py-3 border-t border-white/10">
