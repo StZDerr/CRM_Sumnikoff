@@ -152,7 +152,7 @@ class ProjectController extends Controller
     {
         $currentMonthStart = Carbon::now()->startOfMonth();
 
-        $query = Project::with(['organization', 'marketer', 'paymentMethod', 'stages', 'importance']);
+        $query = Project::with(['organization', 'marketer', 'paymentMethod', 'stages', 'importance', 'lawyerAssignments']);
 
         // Если пользователь — маркетолог, показываем только проекты, где он назначен
         if (auth()->user()?->isMarketer()) {
@@ -177,7 +177,9 @@ class ProjectController extends Controller
             ->paginate(100)
             ->withQueryString();
 
-        return view('admin.projects.debtors', compact('projects', 'currentMonthStart'));
+        $lawyers = \App\Models\User::where('role', 'lawyer')->orderBy('name')->get();
+
+        return view('admin.projects.debtors', compact('projects', 'currentMonthStart', 'lawyers'));
     }
 
     /**

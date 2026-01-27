@@ -164,6 +164,11 @@
                     <input type="file" name="photos[]" multiple accept="image/*" class="w-full" />
                 </div>
 
+                <div class="mb-3">
+                    <label class="block text-sm text-gray-600">Файлы (опционально)</label>
+                    <input type="file" name="documents[]" multiple accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,text/plain" class="w-full" />
+                </div>
+
                 <div class="flex justify-end gap-2">
                     <button type="button" id="offcanvas-cancel" class="px-3 py-2 border rounded">Отмена</button>
                     <button type="submit" class="px-3 py-2 bg-indigo-600 text-white rounded">Добавить</button>

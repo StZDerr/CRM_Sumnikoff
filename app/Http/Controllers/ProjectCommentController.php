@@ -52,9 +52,11 @@ class ProjectCommentController extends Controller
     public function store(Request $request, Project $project)
     {
         $data = $request->validate([
-            'body' => 'required|string|max:2000',
-            'photos' => 'nullable|array|max:5', // макс 5 файлов
-            'photos.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB
+            'body' => 'required|string',
+            'photos' => 'nullable|array|max:5', // макс 5 изображений
+            'photos.*' => 'file|mimes:jpeg,png,jpg,gif,webp|max:10240', // 10MB
+            'documents' => 'nullable|array|max:10', // макс 10 документов
+            'documents.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,zip,txt,rtf|max:10240', // 10MB
             'month' => ['nullable', 'regex:/^\d{4}-\d{2}$/'],
         ]);
 
@@ -64,31 +66,93 @@ class ProjectCommentController extends Controller
             'month' => $data['month'] ?? null,
         ]);
 
+        $fileErrors = [];
+        $savedCount = 0;
+        $order = 0;
+
+        // Images
         if ($request->hasFile('photos')) {
-            foreach ($request->file('photos') as $index => $file) {
-                $path = $file->store("project_comments/{$comment->id}", 'public');
-                $comment->photos()->create([
-                    'path' => $path,
-                    'original_name' => $file->getClientOriginalName(),
-                    'order' => $index,
-                ]);
+            foreach ($request->file('photos') as $file) {
+                try {
+                    if (! $file->isValid()) {
+                        $fileErrors[] = "Файл {$file->getClientOriginalName()} невалиден";
+                        continue;
+                    }
+
+                    $path = $file->store("project_comments/{$comment->id}", 'public');
+                    $comment->photos()->create([
+                        'path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'order' => $order++,
+                    ]);
+
+                    $savedCount++;
+                } catch (\Exception $e) {
+                    \Log::error('Error saving project comment file', [
+                        'project_id' => $project->id,
+                        'comment_id' => $comment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $fileErrors[] = "Ошибка при сохранении файла {$file->getClientOriginalName()}";
+                }
+            }
+        }
+
+        // Documents
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $file) {
+                try {
+                    if (! $file->isValid()) {
+                        $fileErrors[] = "Файл {$file->getClientOriginalName()} невалиден";
+                        continue;
+                    }
+
+                    $path = $file->store("project_comments/{$comment->id}", 'public');
+                    $comment->photos()->create([
+                        'path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'order' => $order++,
+                    ]);
+
+                    $savedCount++;
+                } catch (\Exception $e) {
+                    \Log::error('Error saving project comment file', [
+                        'project_id' => $project->id,
+                        'comment_id' => $comment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $fileErrors[] = "Ошибка при сохранении файла {$file->getClientOriginalName()}";
+                }
             }
         }
 
         $comment->load('user', 'photos');
 
         $redirect = $request->input('redirect');
+
         if ($request->ajax() || $request->wantsJson()) {
+            if (! empty($fileErrors)) {
+                return response()->json(['errors' => $fileErrors], 422);
+            }
+
             return response()->json([
                 'html' => view('admin.projects._comment', compact('comment', 'project'))->render(),
             ]);
         }
 
-        if ($redirect) {
-            return redirect()->to($redirect)->with('success', 'Комментарий добавлен.');
+        if (! empty($fileErrors)) {
+            $message = 'Комментарий добавлен, но были ошибки с файлами: '.implode('; ', $fileErrors);
+
+            return redirect()->to($redirect ?: route('projects.show', $project))->with('error', $message)->with('success', 'Комментарий добавлен.');
         }
 
-        return redirect()->route('projects.show', $project)->with('success', 'Комментарий добавлен.');
+        $successMessage = 'Комментарий добавлен.'.($savedCount ? " Файлов сохранено: {$savedCount}" : '');
+
+        if ($redirect) {
+            return redirect()->to($redirect)->with('success', $successMessage);
+        }
+
+        return redirect()->route('projects.show', $project)->with('success', $successMessage);
     }
 
     /**

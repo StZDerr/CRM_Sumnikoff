@@ -23,7 +23,7 @@
         <div class="bg-white shadow-md rounded-lg border border-gray-200 p-6">
             <form
                 action="{{ isset($accountCredential)
-                    ? route('account-credentials.update', [$project, $accountCredential])
+                    ? route('account-credentials.update', $accountCredential)
                     : route('account-credentials.storeSite', $project) }}"
                 method="POST">
                 @csrf

@@ -24,10 +24,16 @@
 
     </div>
 
-    <!-- Фотографии комментария -->
-    @if ($comment->photos->count())
+    @php
+        [$images, $docs] = $comment->photos->partition(function($p) {
+            $ext = strtolower(pathinfo($p->path, PATHINFO_EXTENSION));
+            return in_array($ext, ['jpg','jpeg','png','gif','webp']);
+        });
+    @endphp
+
+    @if ($images->count())
         <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            @foreach ($comment->photos as $photo)
+            @foreach ($images as $photo)
                 <a href="{{ Storage::url($photo->path) }}"
                     class="glightbox block group overflow-hidden rounded-lg shadow-sm hover:shadow-md transition"
                     data-gallery="project-{{ $project->id }}" data-title="{{ e($photo->original_name) }}">
@@ -35,6 +41,27 @@
                         class="w-full h-28 object-contain rounded-lg bg-gray-100">
                 </a>
             @endforeach
+        </div>
+    @endif
+
+    @if ($docs->count())
+        <div class="mt-3">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Файлы</h4>
+            <ul class="space-y-2">
+                @foreach ($docs as $doc)
+                    <li>
+                        <a href="{{ Storage::url($doc->path) }}" target="_blank" rel="noopener"
+                           class="inline-flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition">
+                            <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M7 7h6l4 4v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/>
+                            </svg>
+                            <div class="text-sm text-gray-700">{{ $doc->original_name }}</div>
+                            <div class="ml-auto text-xs text-gray-400">{{ strtoupper(pathinfo($doc->path, PATHINFO_EXTENSION)) }}</div>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
         </div>
     @endif
 

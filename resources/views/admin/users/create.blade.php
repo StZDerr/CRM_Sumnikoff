@@ -90,6 +90,10 @@
                                                 Дизайнер
                                             @break
 
+                                            @case('lawyer')
+                                                Юрист
+                                            @break
+
                                             @default
                                                 {{ ucfirst($role) }}
                                         @endswitch

@@ -48,6 +48,18 @@ Route::middleware('auth')->group(function () {
     Route::get('projects/arrears', [ProjectController::class, 'arrears'])->name('projects.arrears');
     Route::get('projects/debtors', [ProjectController::class, 'debtors'])->name('projects.debtors');
 
+    // Отправка проекта юристу (admin / pm)
+    Route::post('projects/{project}/send-to-lawyer', [\App\Http\Controllers\ProjectLawyerController::class, 'store'])->name('projects.send-to-lawyer');
+
+    // Сторона юриста: список и подробности
+    Route::get('lawyer/projects', [\App\Http\Controllers\ProjectLawyerController::class, 'index'])->name('lawyer.projects.index');
+    Route::get('lawyer/projects/{projectLawyer}', [\App\Http\Controllers\ProjectLawyerController::class, 'show'])->name('lawyer.projects.show');
+    Route::patch('lawyer/projects/{projectLawyer}', [\App\Http\Controllers\ProjectLawyerController::class, 'update'])->name('lawyer.projects.update');
+
+    // Просмотр проекта/организации конкретно для юриста (доступ только к отправленным ему)
+    Route::get('lawyer/projects/{projectLawyer}/project', [\App\Http\Controllers\ProjectLawyerController::class, 'project'])->name('lawyer.projects.project');
+    Route::get('lawyer/projects/{projectLawyer}/organization', [\App\Http\Controllers\ProjectLawyerController::class, 'organization'])->name('lawyer.projects.organization');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -186,6 +198,10 @@ Route::middleware('auth')->group(function () {
 
     Route::post('projects/{project}/comments', [ProjectCommentController::class, 'store'])
         ->name('projects.comments.store');
+
+    // Comments for lawyer (stored separately)
+    Route::post('projects/{project}/lawyer-comments', [\App\Http\Controllers\ProjectLawyerCommentController::class, 'store'])
+        ->name('projects.lawyer-comments.store');
 
     Route::delete('projects/{project}/comments/{comment}', [ProjectCommentController::class, 'destroy'])
         ->name('projects.comments.destroy');

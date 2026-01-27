@@ -59,8 +59,21 @@
                                     <span class="text-sm text-gray-400">—</span>
                                 @endif
                             </td>
-                            <td class="p-3"><a href="{{ route('projects.show', $project) }}"
-                                    class="text-indigo-600 hover:text-indigo-800 text-sm">Просмотр</a></td>
+                            <td class="p-3">
+                                <a href="{{ route('projects.show', $project) }}"
+                                    class="text-indigo-600 hover:text-indigo-800 text-sm mr-3">Просмотр</a>
+
+                                @if ($project->lawyerAssignments->isNotEmpty())
+                                    <span class="text-sm text-gray-600 ml-3">Уже отправленно</span>
+                                @else
+                                    <button type="button"
+                                        class="text-sm inline-flex items-center px-2 py-1 bg-indigo-600 text-white rounded"
+                                        data-send-to-lawyer data-project-id="{{ $project->id }}"
+                                        data-project-title="{{ $project->title }}">
+                                        Отправить юристу
+                                    </button>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
@@ -73,4 +86,59 @@
 
         <div class="mt-4">{{ $projects->links() }}</div>
     </div>
+
+    <!-- Modal: Send to lawyer -->
+    <div id="sendToLawyerModal" class="fixed inset-0 z-50 items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black opacity-40" data-modal-close></div>
+        <div class="relative bg-white rounded shadow max-w-lg mx-auto my-10 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold modal-title">Отправить проект</h3>
+                <button type="button" class="text-gray-500" data-modal-close>✕</button>
+            </div>
+
+            <form id="sendToLawyerForm" method="POST" enctype="multipart/form-data">
+                @csrf
+
+                <div class="mb-3">
+                    <label class="block text-sm text-gray-700">Юрист</label>
+                    <select name="user_id" class="w-full border rounded px-2 py-1" required>
+                        <option value="">— Выберите юриста —</option>
+                        @foreach ($lawyers as $lawyer)
+                            <option value="{{ $lawyer->id }}">{{ $lawyer->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-sm text-gray-700">Заметка (опционально)</label>
+                    <textarea name="note" class="w-full border rounded px-2 py-1" rows="3"></textarea>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2">
+                    <button type="button" class="px-3 py-1 rounded border" data-modal-close>Отмена</button>
+                    <button type="submit" class="px-3 py-1 rounded bg-indigo-600 text-white">Отправить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('[data-send-to-lawyer]');
+            if (btn) {
+                const projectId = btn.dataset.projectId;
+                const title = btn.dataset.projectTitle;
+                const modal = document.getElementById('sendToLawyerModal');
+                modal.querySelector('.modal-title').textContent = 'Отправить: ' + title;
+                const form = document.getElementById('sendToLawyerForm');
+                form.action = '/projects/' + projectId + '/send-to-lawyer';
+                modal.classList.remove('hidden');
+            }
+
+            if (e.target.closest('[data-modal-close]')) {
+                const modal = e.target.closest('#sendToLawyerModal');
+                if (modal) modal.classList.add('hidden');
+            }
+        });
+    </script>
 @endsection

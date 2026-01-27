@@ -167,6 +167,19 @@ class Project extends Model
     }
 
     /**
+     * Связи для юристов: назначения и комментарии
+     */
+    public function lawyerAssignments()
+    {
+        return $this->hasMany(\App\Models\ProjectLawyer::class);
+    }
+
+    public function lawyerComments()
+    {
+        return $this->hasMany(\App\Models\ProjectLawyerComment::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
      * Рассчитать баланс: платежи - счета
      * > 0 = переплата, < 0 = долг, = 0 = оплачено
      */

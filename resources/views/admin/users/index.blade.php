@@ -15,6 +15,7 @@
                     'marketer' => 'Маркетолог',
                     'frontend' => 'Верстальщик',
                     'designer' => 'Дизайнер',
+                    'lawyer' => 'Юрист',
                 ];
                 $showExtra = auth()->user()->isAdmin() || auth()->user()->isProjectManager();
                 $isMarketerViewer = auth()->user()->isMarketer();

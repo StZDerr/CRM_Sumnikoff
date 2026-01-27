@@ -18,6 +18,8 @@ class User extends Authenticatable
 
     public const ROLE_MARKETER = 'marketer';
 
+    public const ROLE_LAWYER = 'lawyer';
+
     public const ROLE_FRONTEND = 'frontend';
 
     public const ROLE_DESIGNER = 'designer';
@@ -28,6 +30,7 @@ class User extends Authenticatable
         self::ROLE_MARKETER,
         self::ROLE_FRONTEND,
         self::ROLE_DESIGNER,
+        self::ROLE_LAWYER,
     ];
 
     protected $fillable = [
@@ -62,6 +65,15 @@ class User extends Authenticatable
         ];
     }
 
+    public function isLawyer(): bool
+    {
+        return $this->hasRole(self::ROLE_LAWYER);
+    }
+
+    public function scopeLawyers($query)
+    {
+        return $query->where('role', self::ROLE_LAWYER);
+    }
     // ===== Роли =====
 
     public function hasRole(string $role): bool

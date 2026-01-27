@@ -128,6 +128,10 @@
                     Проекты должники
                 </x-dropdown-link>
 
+                <x-dropdown-link :href="route('lawyer.projects.index')" :active="request()->routeIs('lawyer.projects.index')">
+                    Проекты отправленные юристу
+                </x-dropdown-link>
+
                 <x-dropdown-link :href="route('calendar.all-projects')" :active="request()->routeIs('calendar.all-projects')">
                     Календарь выплат
                 </x-dropdown-link>
