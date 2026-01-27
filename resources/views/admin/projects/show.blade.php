@@ -191,8 +191,8 @@
 
             {{-- Add comment form --}}
             @auth
-                <form id="comment-form" action="{{ route('projects.comments.store', $project) }}" method="POST" enctype="multipart/form-data"
-                    class="mb-4">
+                <form id="comment-form" action="{{ route('projects.comments.store', $project) }}" method="POST"
+                    enctype="multipart/form-data" class="mb-4">
                     @csrf
                     <textarea name="body" rows="3"
                         class="w-full border border-gray-200 rounded p-3 focus:ring-2 focus:ring-indigo-200"
@@ -208,14 +208,16 @@
                     <x-input-error :messages="$errors->get('photos')" class="mt-2" />
                     <x-input-error :messages="$errors->get('photos.*')" class="mt-2" />
 
-                    <input type="file" name="documents[]" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,text/plain" multiple
+                    <input type="file" name="documents[]"
+                        accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,text/plain"
+                        multiple
                         class="mt-2 block w-full text-sm text-gray-500
-               file:mr-4 file:py-2 file:px-4
-               file:rounded file:border-0
-               file:text-sm file:font-semibold
-               file:bg-gray-100 file:text-gray-800
-               hover:file:bg-gray-200
-               focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" />
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-gray-100 file:text-gray-800
+                        hover:file:bg-gray-200
+                        focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" />
                     <x-input-error :messages="$errors->get('documents')" class="mt-2" />
                     <x-input-error :messages="$errors->get('documents.*')" class="mt-2" />
 

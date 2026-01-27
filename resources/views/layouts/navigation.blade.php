@@ -17,10 +17,13 @@
             Dashboard
         </x-nav-link>
 
-        {{-- Пользователи: admin + project manager --}}
-        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-            Сотрудники
-        </x-nav-link>
+        @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager() || auth()->user()->isMarketer())
+            {{-- Пользователи: admin + project manager + marketer --}}
+            <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                Сотрудники
+            </x-nav-link>
+        @endif
+
 
         {{-- Специальности: только admin --}}
         @if (auth()->user()->isAdmin())
@@ -57,7 +60,7 @@
                     Табели отклоненные
                 </x-dropdown-link>
             </x-buttons-dropdawn>
-        @else
+        @elseif (auth()->user()->isProjectManager() || auth()->user()->isMarketer())
             <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.index')">
                 Табель посещаемости
             </x-nav-link>
@@ -144,20 +147,28 @@
                     Уровень важности
                 </x-dropdown-link>
             </x-buttons-dropdawn>
-        @else
+        @elseif (auth()->user()->isProjectManager() || auth()->user()->isMarketer())
             {{-- НЕ admin: обычная кнопка --}}
 
+
+
+            <x-nav-link :href="route('account-credentials.itSumnikoff')" :active="request()->routeIs('account-credentials.itSumnikoff')">
+                Доступы Наши
+            </x-nav-link>
+
+            <x-nav-link :href="route('domains.index')" :active="request()->routeIs('domains.*')">
+                Домены
+            </x-nav-link>
             <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
                 Проекты
             </x-nav-link>
+        @else
+            <x-nav-link :href="route('lawyer.projects.index')" :active="request()->routeIs('lawyer.projects.index')">
+                Проекты отправленные юристу
+            </x-nav-link>
         @endif
-        <x-nav-link :href="route('account-credentials.itSumnikoff')" :active="request()->routeIs('account-credentials.itSumnikoff')">
-            Доступы Наши
-        </x-nav-link>
 
-        <x-nav-link :href="route('domains.index')" :active="request()->routeIs('domains.*')">
-            Домены
-        </x-nav-link>
+
 
         {{-- Организации: только admin --}}
         @if (auth()->user()->isAdmin())
@@ -192,11 +203,12 @@
             </x-nav-link>
         @endif
 
-        {{-- Операции: только admin --}}
-        <x-nav-link :href="route('operation.index')" :active="request()->routeIs('operation.index')">
-            Операции
-        </x-nav-link>
-
+        @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager() || auth()->user()->isMarketer())
+            {{-- Операции: только admin --}}
+            <x-nav-link :href="route('operation.index')" :active="request()->routeIs('operation.index')">
+                Операции
+            </x-nav-link>
+        @endif
     </nav>
 
     <div class="border-t border-white/20 mx-4 my-3"></div>

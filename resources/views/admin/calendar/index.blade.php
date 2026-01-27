@@ -215,7 +215,9 @@
 
                 <div class="mb-3">
                     <label class="block text-sm text-gray-600">Файлы (опционально)</label>
-                    <input type="file" name="documents[]" multiple accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,text/plain" class="w-full" />
+                    <input type="file" name="documents[]" multiple
+                        accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,text/plain"
+                        class="w-full" />
                 </div>
 
                 <div class="flex justify-end gap-2">

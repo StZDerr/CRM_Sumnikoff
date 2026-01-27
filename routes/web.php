@@ -206,6 +206,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('projects/{project}/comments/{comment}', [ProjectCommentController::class, 'destroy'])
         ->name('projects.comments.destroy');
 
+    // Удаление отдельного файла (фото/документ) из комментария
+    Route::delete('projects/{project}/comments/{comment}/files/{photo}', [ProjectCommentController::class, 'destroyFile'])
+        ->name('projects.comments.files.destroy');
+
     Route::patch('projects/{project}/comments/{comment}', [ProjectCommentController::class, 'update'])
         ->name('projects.comments.update');
 

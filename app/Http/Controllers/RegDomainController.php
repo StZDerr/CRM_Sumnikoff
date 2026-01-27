@@ -18,6 +18,15 @@ class RegDomainController extends Controller
     {
         $this->middleware('auth');
         // $this->middleware('admin');
+
+        // Блокируем доступ ко всем методам контроллера для роли "lawyer"
+        $this->middleware(function ($request, $next) {
+            if (auth()->check() && auth()->user()->isLawyer()) {
+                abort(403, 'Доступ запрещён');
+            }
+
+            return $next($request);
+        });
     }
 
     public function index(): View

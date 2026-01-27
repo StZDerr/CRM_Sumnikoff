@@ -13,6 +13,19 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class OperationController extends Controller
 {
+    public function __construct()
+    {
+        // Только авторизованные пользователи и запрет для роли "lawyer"
+        $this->middleware('auth');
+        $this->middleware(function ($request, $next) {
+            if (auth()->check() && auth()->user()->isLawyer()) {
+                abort(403, 'Доступ запрещён');
+            }
+
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         $perPage = 100;

@@ -23,7 +23,7 @@
     function isLightboxOpen() {
         // Detect if GLightbox modal is currently visible in the DOM
         const el = document.querySelector(
-            ".glightbox-overlay, .glightbox-container, .gslide"
+            ".glightbox-overlay, .glightbox-container, .gslide",
         );
         if (!el) return false;
         try {
@@ -85,7 +85,7 @@
                                 .getAttribute("content"),
                         },
                         body: formData,
-                    }
+                    },
                 );
 
                 if (res.ok) {
@@ -93,7 +93,7 @@
                     if (json.html) {
                         commentsList.insertAdjacentHTML(
                             "afterbegin",
-                            json.html
+                            json.html,
                         );
                         // initialize lightbox for newly added content only if lightbox is not currently open
                         if (!isLightboxOpen()) {
@@ -118,6 +118,37 @@
 
     // Delegate delete (AJAX)
     commentsList.addEventListener("click", async (e) => {
+        // Delete single file (image/document)
+        const fileBtn = e.target.closest(".delete-file-form button");
+        if (fileBtn) {
+            e.preventDefault();
+            const form = fileBtn.closest("form");
+            const action = form.getAttribute("action");
+
+            if (!confirm("Удалить файл?")) return;
+
+            try {
+                const res = await fetch(action, {
+                    method: "DELETE",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-CSRF-TOKEN": document
+                            .querySelector('meta[name="csrf-token"]')
+                            .getAttribute("content"),
+                    },
+                });
+                if (res.ok) {
+                    form.closest(".file-item")?.remove();
+                } else {
+                    fetchComments();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            return;
+        }
+
         const btn = e.target.closest(".delete-comment-form button");
         if (!btn) return;
         e.preventDefault();

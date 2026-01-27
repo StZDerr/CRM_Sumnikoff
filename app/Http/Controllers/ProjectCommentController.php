@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\ProjectComment;
+use App\Models\Photo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -218,5 +219,31 @@ class ProjectCommentController extends Controller
         }
 
         return redirect()->route('projects.show', $project)->with('success', 'Комментарий удалён.');
+    }
+
+    /**
+     * Удаление отдельного файла (фото/документ) из комментария
+     */
+    public function destroyFile(Request $request, Project $project, ProjectComment $comment, Photo $photo)
+    {
+        $user = auth()->user();
+        if (! ($user->isAdmin() || $user->id === $comment->user_id)) {
+            abort(403);
+        }
+
+        // Защита: убедимся, что файл принадлежит комментарию
+        if ($photo->project_comment_id !== $comment->id) {
+            abort(404);
+        }
+
+        // Удаляем файл с диска и запись в БД
+        Storage::disk('public')->delete($photo->path);
+        $photo->delete();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['deleted' => true]);
+        }
+
+        return redirect()->route('projects.show', $project)->with('success', 'Файл удалён.');
     }
 }

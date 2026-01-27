@@ -1,163 +1,175 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="max-w-4xl mx-auto">
-        <div class="flex items-center justify-between mb-4">
-            <h1 class="text-xl font-semibold"><a href="{{ route('lawyer.projects.project', $projectLawyer) }}"
-                    class="text-indigo-600 hover:underline">{{ $project->title }}</a></h1>
-            <div class="text-sm text-gray-500">Отправлено: {{ $projectLawyer->sent_at?->format('d.m.Y H:i') ?? '-' }}</div>
+    <div class="max-w-5xl mx-auto space-y-6">
+
+        {{-- Header --}}
+        <div class="flex items-start justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-900">
+                    {{ $project->title }}
+                </h1>
+                <div class="text-sm text-gray-500 mt-1">
+                    Отправлено {{ $projectLawyer->sent_at?->format('d.m.Y H:i') ?? '—' }}
+                    · {{ $projectLawyer->sender?->name ?? '—' }}
+                </div>
+            </div>
+
+            <form method="POST" action="{{ route('lawyer.projects.update', $projectLawyer) }}">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="status" value="processed">
+                <button class="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700">
+                    ✔ Отметить как обработано
+                </button>
+            </form>
         </div>
 
-        <div class="bg-white rounded shadow p-4 mb-4">
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <div class="text-sm text-gray-500">Организация</div>
-                    <div class="font-medium">
-                        @if ($project->organization)
-                            <a href="{{ route('lawyer.projects.organization', $projectLawyer) }}"
-                                class="text-indigo-600 hover:underline">{{ $project->organization->name_short ?? $project->organization->name_full }}</a>
-                        @else
-                            -
-                        @endif
-                    </div>
+        {{-- Project info --}}
+        <div class="bg-white rounded-lg shadow p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <div class="text-xs uppercase text-gray-500">Организация</div>
+                <div class="font-medium mt-1">
+                    <a href="{{ route('lawyer.projects.organization', $projectLawyer) }}"
+                        class="text-indigo-600 hover:text-indigo-800 hover:underline transition">
+                        {{ $project->organization->name_short ?? '—' }}
+                    </a>
                 </div>
-                <div>
-                    <div class="text-sm text-gray-500">Дата закрытия</div>
-                    <div class="font-medium">{{ $project->closed_at?->format('d.m.Y') ?? '—' }}</div>
+            </div>
+
+            <div>
+                <div class="text-xs uppercase text-gray-500">Проект</div>
+                <div class="font-medium mt-1">
+                    <a href="{{ route('lawyer.projects.project', $projectLawyer) }}"
+                        class="text-indigo-600 hover:text-indigo-800 hover:underline transition">
+                        {{ $project->title ?? '—' }}
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <div class="text-xs uppercase text-gray-500">Дата закрытия проекта</div>
+                <div class="font-medium mt-1">
+                    {{ $project->closed_at?->format('d.m.Y') ?? '—' }}
+                </div>
+            </div>
+
+            <div>
+                <div class="text-xs uppercase text-gray-500">Статус</div>
+                <div class="mt-1">
+                    @php
+                        $statusMap = [
+                            'pending' => [
+                                'label' => 'На рассмотрении',
+                                'class' => 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                            ],
+                            'processed' => [
+                                'label' => 'Обработано',
+                                'class' => 'bg-green-100 text-green-700 border-green-200',
+                            ],
+                            'reopened' => [
+                                'label' => 'Переоткрыто',
+                                'class' => 'bg-blue-100 text-blue-700 border-blue-200',
+                            ],
+                            'cancelled' => ['label' => 'Отменено', 'class' => 'bg-red-100 text-red-700 border-red-200'],
+                        ];
+
+                        $status = $statusMap[$projectLawyer->status] ?? [
+                            'label' => ucfirst($projectLawyer->status ?? 'Неизвестно'),
+                            'class' => 'bg-gray-100 text-gray-700 border-gray-200',
+                        ];
+                    @endphp
+
+                    <span class="inline-flex px-2 py-1 text-xs rounded border {{ $status['class'] }}">
+                        {{ $status['label'] }}
+                    </span>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded shadow p-4 mb-4">
-            <h3 class="font-semibold mb-2">Комментарии по делу</h3>
+        {{-- Comments --}}
+        <div class="bg-white rounded-lg shadow p-5">
+            <h2 class="text-lg font-semibold mb-4">Комментарии по делу</h2>
 
-            @forelse($comments as $comment)
-                <div class="border rounded p-3 mb-3">
-                    <div class="text-sm text-gray-600">{{ $comment->user?->name ?? 'Удалённый пользователь' }} · <span
-                            class="text-xs text-gray-400">{{ $comment->role ?? '—' }}</span> ·
-                        {{ $comment->created_at->format('d.m.Y H:i') }}</div>
+            <div class="space-y-4">
+                @forelse($comments as $comment)
+                    <div
+                        class="border-l-4 pl-4
+                    {{ $comment->user?->role === 'lawyer' ? 'border-indigo-500' : 'border-gray-300' }}">
 
-                    <div class="mt-2">{!! nl2br(e($comment->body)) !!}</div>
-
-                    {{-- legacy single file (backwards compatibility) --}}
-                    @if ($comment->file_path)
-                        <div class="mt-2"><a href="{{ asset('storage/' . $comment->file_path) }}" target="_blank"
-                                class="text-indigo-600 hover:underline text-sm">Скачать файл</a></div>
-                    @endif
-
-                    {{-- new: files attached to lawyer comment (multiple) --}}
-                    @if (!empty($comment->files) && count($comment->files))
-                        <div class="mt-2 flex flex-col gap-2">
-                            @foreach ($comment->files as $f)
-                                @php
-                                    $url = asset('storage/' . $f->path);
-                                    $ext = strtolower(pathinfo($f->path, PATHINFO_EXTENSION));
-                                    $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg']);
-                                @endphp
-
-                                <div class="flex items-center gap-3">
-                                    @if ($isImage)
-                                        <a href="{{ $url }}" download class="inline-block">
-                                            <img src="{{ $url }}" alt="{{ $f->original_name }}"
-                                                class="h-16 rounded">
-                                        </a>
-                                    @else
-                                        <div
-                                            class="w-16 h-16 flex items-center justify-center bg-gray-50 rounded text-xs text-gray-500">
-                                            Файл</div>
-                                    @endif
-
-                                    <div>
-                                        <div class="text-sm"><a href="{{ $url }}" download
-                                                class="text-indigo-600 hover:underline">Скачать
-                                                {{ $f->original_name ?? basename($f->path) }}</a></div>
-                                        <div class="text-xs text-gray-500">.{{ $ext }}</div>
-                                    </div>
-                                </div>
-                            @endforeach
+                        <div class="flex items-center gap-2 text-sm text-gray-600">
+                            <span class="font-medium text-gray-800">
+                                {{ $comment->user?->name ?? 'Удалённый пользователь' }}
+                            </span>
+                            <span class="text-xs text-gray-400">
+                                {{ $comment->created_at->format('d.m.Y H:i') }}
+                            </span>
                         </div>
-                    @endif
-                </div>
-            @empty
-                <div class="text-gray-500">Пока нет комментариев.</div>
-            @endforelse
 
-            <hr class="my-4">
+                        <div class="mt-2 text-gray-800 whitespace-pre-line">
+                            {{ $comment->body }}
+                        </div>
 
-            {{-- Flash / Errors --}}
-            @if ($errors->any())
-                <div class="mb-3 p-3 rounded bg-red-50 text-red-700">
-                    <strong>Ошибка:</strong>
-                    <div class="text-sm">{{ $errors->first() }}</div>
-                </div>
-            @endif
+                        {{-- Files --}}
+                        @if (!empty($comment->files))
+                            <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                @foreach ($comment->files as $f)
+                                    @php
+                                        $url = asset('storage/' . $f->path);
+                                        $ext = strtolower(pathinfo($f->path, PATHINFO_EXTENSION));
+                                        $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                                    @endphp
 
-            @if (session('error'))
-                <div class="mb-3 p-3 rounded bg-red-50 text-red-700">{{ session('error') }}</div>
-            @endif
-
-            @if (session('success'))
-                <div class="mb-3 p-3 rounded bg-green-50 text-green-700">{{ session('success') }}</div>
-            @endif
-
-            {{-- Форма: комментарий юриста (сохраняется в project_lawyer_comments) --}}
-            <form method="POST" action="{{ route('projects.lawyer-comments.store', $project) }}"
-                enctype="multipart/form-data">
-                @csrf
-                <input type="hidden" name="redirect" value="{{ url()->current() }}">
-
-                <div class="mb-3">
-                    <label class="block text-sm text-gray-700">Комментарий (юрист/админ)</label>
-                    <textarea name="comment" rows="4" class="w-full border rounded px-2 py-1" required>{{ old('comment') }}</textarea>
-                </div>
-
-                <div class="mb-3">
-                    <label class="block text-sm text-gray-700">Файлы (опционально; можно несколько)</label>
-
-                    <div class="flex items-center gap-3">
-                        <label for="lawyer_files"
-                            class="inline-flex items-center px-3 py-2 bg-gray-100 border rounded cursor-pointer hover:bg-gray-200 text-sm">Выбрать
-                            файлы</label>
-                        <span id="lawyerFilesSelected" class="text-sm text-gray-600">Нет файлов</span>
+                                    <a href="{{ $url }}" target="_blank"
+                                        class="flex items-center gap-3 border rounded p-2 hover:bg-gray-50">
+                                        @if ($isImage)
+                                            <img src="{{ $url }}" class="h-14 w-14 rounded object-cover">
+                                        @else
+                                            <div
+                                                class="h-14 w-14 flex items-center justify-center bg-gray-100 rounded text-xs">
+                                                .{{ $ext }}
+                                            </div>
+                                        @endif
+                                        <div class="text-sm text-gray-700 truncate">
+                                            {{ $f->original_name ?? basename($f->path) }}
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
+                @empty
+                    <div class="text-gray-500 text-sm">
+                        Комментариев пока нет
+                    </div>
+                @endforelse
+            </div>
+        </div>
 
-                    <input id="lawyer_files" type="file" name="files[]" class="hidden" multiple
-                        accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt,.rtf">
+        {{-- Comment form --}}
+        <div class="bg-white rounded-lg shadow p-5">
+            <h3 class="font-semibold mb-3">Добавить комментарий</h3>
 
-                    <div class="text-sm text-gray-500 mt-1">Разрешены: jpg, png, gif, webp, pdf, doc, docx, xls, xlsx, zip,
-                        txt, rtf (макс 10 МБ/файл)</div>
+            <form method="POST" action="{{ route('projects.lawyer-comments.store', $project) }}"
+                enctype="multipart/form-data" class="space-y-4">
+                @csrf
 
-                    @if ($errors->has('files') || $errors->has('files.*'))
-                        <div class="text-sm text-red-600 mt-1">{{ $errors->first('files.*') ?? $errors->first('files') }}
-                        </div>
-                    @endif
-                </div>
+                <textarea name="comment" rows="4" class="w-full border rounded px-3 py-2"
+                    placeholder="Опишите ситуацию или оставьте комментарий..." required>{{ old('comment') }}</textarea>
 
-                <div class="flex justify-end space-x-2">
-                    <a href="{{ route('lawyer.projects.index') }}" class="px-3 py-1 border rounded">← Назад</a>
-                    <button class="px-3 py-1 bg-indigo-600 text-white rounded">Отправить комментарий</button>
+                <input type="file" name="files[]" multiple class="block text-sm text-gray-600">
+
+                <div class="flex justify-between items-center">
+                    <a href="{{ route('lawyer.projects.index') }}" class="text-sm text-gray-600 hover:underline">
+                        ← Назад к списку
+                    </a>
+
+                    <button class="px-4 py-2 bg-indigo-600 text-white rounded-md">
+                        Отправить комментарий
+                    </button>
                 </div>
             </form>
         </div>
-
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                        const lf = document.getElementById('lawyer_files');
-                        const lfl = document.getElementById('lawyerFilesSelected');
-
-                        if (lf) {
-                            lf.addEventListener('change', function() {
-                                const names = Array.from(this.files).map(f => f.name).join(', ');
-                                lfl.textContent = names || 'Нет файлов';
-                            });
-        </script>
-
-        <form method="POST" action="{{ route('lawyer.projects.update', $projectLawyer) }}" class="mt-2">
-            @csrf
-            @method('PATCH')
-            <input type="hidden" name="status" value="processed">
-            <button class="px-3 py-1 bg-green-600 text-white rounded">Отметить как обработано</button>
-        </form>
 
     </div>
 @endsection

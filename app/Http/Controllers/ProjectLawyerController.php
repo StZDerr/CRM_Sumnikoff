@@ -97,7 +97,10 @@ class ProjectLawyerController extends Controller
 
         $organization = $projectLawyer->project->organization;
 
-        return view('admin.lawyer.organizations.show', compact('organization', 'projectLawyer'));
+        // Подготовим контакты для страницы организации (как в admin view)
+        $contacts = $organization->contacts()->orderBy('last_name')->paginate(10);
+
+        return view('admin.lawyer.organizations.show', compact('organization', 'projectLawyer', 'contacts'));
     }
 
     // Отправка проекта юристу

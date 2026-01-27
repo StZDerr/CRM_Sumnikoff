@@ -154,55 +154,9 @@
         <div class="mt-6 bg-white shadow rounded-lg p-6">
             <h2 class="text-lg font-semibold mb-4">Комментарии</h2>
 
-            {{-- Add comment form --}}
-            @auth
-                <form id="comment-form" action="{{ route('projects.lawyer-comments.store', $project) }}" method="POST"
-                    class="mb-4" enctype="multipart/form-data">
-                    @csrf
-                    <textarea name="comment" rows="3"
-                        class="w-full border border-gray-200 rounded p-3 focus:ring-2 focus:ring-indigo-200"
-                        placeholder="Оставьте комментарий...">{{ old('comment') }}</textarea>
-
-                    <div class="mt-2">
-                        <label class="block text-sm text-gray-700">Файл (опционально)</label>
-
-                        <div class="flex items-center gap-3">
-                            <label for="lawyer_file"
-                                class="inline-flex items-center px-3 py-2 bg-gray-100 border rounded cursor-pointer hover:bg-gray-200 text-sm">Выбрать
-                                файл</label>
-                            <span id="lawyerFileSelected" class="text-sm text-gray-600">Нет файла</span>
-                        </div>
-
-                        <input id="lawyer_file" type="file" name="file" class="hidden"
-                            accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt,.rtf">
-
-                        <div class="text-sm text-gray-500 mt-1">Разрешены: jpg, png, gif, webp, pdf, doc, docx, xls, xlsx, zip,
-                            txt, rtf (макс 10 МБ)</div>
-
-                        @if ($errors->has('file'))
-                            <div class="text-sm text-red-600 mt-1">{{ $errors->first('file') }}</div>
-                        @endif
-                    </div>
-
-                    <div class="mt-3 flex justify-end">
-                        <button class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Добавить</button>
-                    </div>
-                </form>
-
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const lf = document.getElementById('lawyer_file');
-                        const lfl = document.getElementById('lawyerFileSelected');
-
-                        if (lf) {
-                            lf.addEventListener('change', function() {
-                                lfl.textContent = this.files.length ? this.files[0].name : 'Нет файла';
-                            });
-                        }
-                    });
-                </script>
-                <div class="text-sm text-gray-500 mb-4">Только авторизованные пользователи могут оставлять комментарии.</div>
-            @endauth
+            {{-- Комментирование отключено на этой странице — только просмотр комментариев проекта --}}
+            <div class="mb-4 text-sm text-gray-500">Добавлять комментарии можно через страницу назначения проекта
+                (отправленные юристу) — там доступна форма.</div>
 
             {{-- Comments list --}}
             <section class="bg-white rounded-2xl border p-6">
@@ -276,8 +230,7 @@
                                                             @endif
 
                                                             <div>
-                                                                <div class="text-sm"><a href="{{ $url }}"
-                                                                        download
+                                                                <div class="text-sm"><a href="{{ $url }}" download
                                                                         class="text-indigo-600 hover:underline">Скачать
                                                                         {{ $photo->original_name ?? basename($photo->path) }}</a>
                                                                 </div>

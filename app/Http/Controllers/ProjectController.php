@@ -20,6 +20,16 @@ class ProjectController extends Controller
     {
         // Разрешаем просмотр всем авторизованным пользователям. Создание/редактирование/удаление только для admin и project_manager
         $this->middleware(['auth']);
+
+        // Блокируем доступ ко всем методам контроллера для роли "lawyer"
+        $this->middleware(function ($request, $next) {
+            if (auth()->check() && auth()->user()->isLawyer()) {
+                abort(403, 'Доступ запрещён');
+            }
+
+            return $next($request);
+        });
+
         $this->middleware(['role:admin,project_manager'])->only(['create', 'store', 'edit', 'update', 'destroy']);
     }
 
