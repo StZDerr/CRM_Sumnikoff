@@ -22,8 +22,11 @@ class UserController extends Controller
         // только admin
         $this->middleware('admin')->except(['index', 'show']);
 
-        // index + show: admin + PM
-        $this->middleware('role:admin,project_manager')->only(['index', 'show']);
+        // show: admin + PM
+        $this->middleware('role:admin,project_manager')->only(['show']);
+
+        // index: admin + PM + marketer
+        $this->middleware('role:admin,project_manager,marketer')->only(['index']);
     }
 
     public function index(Request $request): View

@@ -18,11 +18,9 @@
         </x-nav-link>
 
         {{-- Пользователи: admin + project manager --}}
-        @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
-            <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                Сотрудники
-            </x-nav-link>
-        @endif
+        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+            Сотрудники
+        </x-nav-link>
 
         {{-- Специальности: только admin --}}
         @if (auth()->user()->isAdmin())
