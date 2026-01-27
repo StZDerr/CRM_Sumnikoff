@@ -116,10 +116,30 @@ Route::middleware('auth')->group(function () {
 
         Route::post('account-credentials/storeOther', [AccountCredentialController::class, 'storeOther'])
             ->name('account-credentials.storeOther');
+
     });
 
+    Route::get('account-credentials/itSumnikoff', [AccountCredentialController::class, 'itSumnikoff'])
+        ->name('account-credentials.itSumnikoff');
+
+    // IT Sumnikoff (shared credentials)
+    Route::get('account-credentials/createItSumnikoff', [AccountCredentialController::class, 'createItSumnikoff'])
+        ->name('account-credentials.createItSumnikoff');
+    Route::post('account-credentials/storeItSumnikoff', [AccountCredentialController::class, 'storeItSumnikoff'])
+        ->name('account-credentials.storeItSumnikoff');
+
+    // Show / Edit for IT Sumnikoff items (restricted to admin / project_manager)
+    Route::get('account-credentials/itSumnikoff/{accountCredential}', [AccountCredentialController::class, 'showItSumnikoff'])
+        ->name('account-credentials.showItSumnikoff');
+    Route::get('account-credentials/itSumnikoff/{accountCredential}/edit', [AccountCredentialController::class, 'editItSumnikoff'])
+        ->name('account-credentials.editItSumnikoff');
+    Route::get('account-credentials/itSumnikoff/edit/{accountCredential}', [AccountCredentialController::class, 'editItSumnikoff'])
+        ->name('account-credentials.editItSumnikoff');
+    Route::put('account-credentials/itSumnikoff/{accountCredential}', [AccountCredentialController::class, 'updateItSumnikoff'])
+        ->name('account-credentials.updateItSumnikoff');
     Route::get('account-credentials/{accountCredential}', [AccountCredentialController::class, 'show'])
         ->name('account-credentials.show');
+
     Route::get('account-credentials/{accountCredential}/edit', [AccountCredentialController::class, 'edit'])
         ->name('account-credentials.edit');
     Route::put('account-credentials/{accountCredential}', [AccountCredentialController::class, 'update'])
@@ -131,29 +151,21 @@ Route::middleware('auth')->group(function () {
 
     Route::get('users/{user}/dashboard', [UserController::class, 'userDashboard'])->name('user.dashboard');
     Route::get('reg/domains', [RegDomainController::class, 'index'])
-        ->name('domains.index')
-        ->middleware('admin');
+        ->name('domains.index');
     Route::get('reg/domains/create', [RegDomainController::class, 'create'])
-        ->name('domains.create')
-        ->middleware('admin');
+        ->name('domains.create');
     Route::post('reg/domains', [RegDomainController::class, 'store'])
-        ->name('domains.store')
-        ->middleware('admin');
+        ->name('domains.store');
     Route::post('reg/domains/sync', [RegDomainController::class, 'sync'])
-        ->name('domains.sync')
-        ->middleware('admin');
+        ->name('domains.sync');
     Route::post('reg/domains/{domain}/renew', [RegDomainController::class, 'renew'])
-        ->name('domains.renew')
-        ->middleware('admin');
+        ->name('domains.renew');
     Route::get('reg/domains/{domain}/edit', [RegDomainController::class, 'edit'])
-        ->name('domains.edit')
-        ->middleware('admin');
+        ->name('domains.edit');
     Route::put('reg/domains/{domain}', [RegDomainController::class, 'update'])
-        ->name('domains.update')
-        ->middleware('admin');
+        ->name('domains.update');
     Route::delete('reg/domains/{domain}', [RegDomainController::class, 'destroy'])
-        ->name('domains.destroy')
-        ->middleware('admin');
+        ->name('domains.destroy');
     // Получить отпуска пользователя (HTML partial для offcanvas)
     Route::get('users/{user}/vacations', [VacationController::class, 'userVacations'])->name('users.vacations');
     // endpoint для сохранения порядка (название: importances.reorder)

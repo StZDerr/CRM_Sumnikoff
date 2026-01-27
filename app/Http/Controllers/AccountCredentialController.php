@@ -236,8 +236,82 @@ class AccountCredentialController extends Controller
 
     public function destroy(AccountCredential $accountCredential)
     {
+        if (! auth()->user()?->isAdmin() && ! auth()->user()?->isProjectManager()) {
+            abort(403);
+        }
         $accountCredential->delete(); // soft delete
 
         return back()->with('success', 'Доступ удалён!');
+    }
+
+    public function itSumnikoff()
+    {
+        $accountCredential = AccountCredential::whereNull('project_id')
+            ->where('type', 'it_sumnikoff')
+            ->get();
+
+        return view('admin.account_credentials.it_sumnikoff', compact('accountCredential'));
+    }
+
+    public function createItSumnikoff()
+    {
+        return view('admin.account_credentials.createItSumnikoff');
+    }
+
+    public function showItSumnikoff(AccountCredential $accountCredential)
+    {
+
+        return view('admin.account_credentials.showItSumnikoff', compact('accountCredential'));
+    }
+
+    public function editItSumnikoff(AccountCredential $accountCredential)
+    {
+        if (! auth()->user()?->isAdmin() && ! auth()->user()?->isProjectManager()) {
+            abort(403);
+        }
+
+        return view('admin.account_credentials.editItSumnikoff', compact('accountCredential'));
+    }
+
+    public function storeItSumnikoff(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'login' => 'nullable|string|max:255',
+            'password' => 'required|string',
+            'notes' => 'nullable|string',
+            'status' => 'required|in:active,stop_list',
+        ]);
+
+        $credential = new AccountCredential($request->all());
+        $credential->user_id = Auth::id();
+        $credential->project_id = null;
+        $credential['type'] = 'it_sumnikoff';
+        $credential->save();
+
+        return redirect()->route('account-credentials.itSumnikoff')
+            ->with('success', 'Доступ создан успешно!');
+    }
+
+    public function updateItSumnikoff(Request $request, AccountCredential $accountCredential)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'login' => 'nullable|string|max:255',
+            'password' => 'required|string',
+            'notes' => 'nullable|string',
+            'status' => 'required|in:active,stop_list',
+        ]);
+
+        $credential = $accountCredential;
+        $credential->fill($request->all());
+        $credential->user_id = Auth::id();
+        $credential->updated_by = Auth::id();
+        $credential->project_id = null;
+        $credential['type'] = 'it_sumnikoff';
+        $credential->save();
+
+        return redirect()->route('account-credentials.itSumnikoff')
+            ->with('success', 'Доступ создан успешно!');
     }
 }
