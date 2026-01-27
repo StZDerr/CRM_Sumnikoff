@@ -35,25 +35,113 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (!empty($groupedUsers) && $groupedUsers->isNotEmpty())
-                        @foreach ($groupedUsers as $role => $users)
-                            @if ($isMarketerViewer && $role === 'admin')
-                                @continue
-                            @endif
-                            @php $counter = $counter ?? 0; @endphp
-                            <tr class="bg-gray-100">
-                                <td colspan="{{ $colspan }}" class="p-3 font-medium text-sm">
-                                    {{ $roles[$role] ?? ucfirst($role) }} — {{ $users->count() }}
+                    @if ($isMarketerViewer)
+                        @foreach ($users as $user)
+                            <tr class="border-t">
+                                <td class="p-3">{{ ($users->firstItem() ?? 0) + $loop->iteration - 1 }}</td>
+
+                                <td class="p-3">
+                                    <span class="text-gray-900">{{ $user->name }}</span>
+                                </td>
+
+                                <td class="p-3">
+                                    @if ($user->socials->isNotEmpty())
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            @foreach ($user->socials->sortBy(fn($s) => ['vk' => 0, 'telegram' => 1, 'maks' => 2][$s->platform] ?? 99) as $social)
+                                                <a href="{{ $social->url }}" target="_blank"
+                                                    class="text-blue-600 underline flex items-center gap-1">{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}</a>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="text-gray-500 text-sm">Социальные сети не указаны</div>
+                                    @endif
                                 </td>
                             </tr>
+                        @endforeach
+                    @else
+                        @if (!empty($groupedUsers) && $groupedUsers->isNotEmpty())
+                            @foreach ($groupedUsers as $role => $users)
+                                @php $counter = $counter ?? 0; @endphp
+                                <tr class="bg-gray-100">
+                                    <td colspan="{{ $colspan }}" class="p-3 font-medium text-sm">
+                                        {{ $roles[$role] ?? ucfirst($role) }} — {{ $users->count() }}
+                                    </td>
+                                </tr>
 
+                                @foreach ($users as $user)
+                                    @php $counter++; @endphp
+                                    <tr class="border-t">
+                                        <td class="p-3">{{ $counter }}</td>
+
+                                        <td class="p-3">
+                                            @if ($isMarketerViewer)
+                                                <span class="text-gray-900">{{ $user->name }}</span>
+                                            @else
+                                                <a href="{{ route('user.dashboard', $user) }}">{{ $user->name }}</a>
+                                            @endif
+                                        </td>
+
+                                        @if ($showExtra)
+                                            <td class="p-3">
+                                                @if ($user->activeVacation)
+                                                    <span
+                                                        class="inline-flex items-center px-2 py-1 rounded text-yellow-800 bg-yellow-100 text-sm font-medium">В
+                                                        отпуске с {{ $user->activeVacation->start_date->format('d.m.Y') }}
+                                                        по
+                                                        {{ $user->activeVacation->end_date->format('d.m.Y') }}</span>
+                                                @else
+                                                    <span
+                                                        class="inline-flex items-center px-2 py-1 rounded text-green-800 bg-green-100 text-sm font-medium">В
+                                                        работе</span>
+                                                @endif
+                                            </td>
+
+                                            <td class="p-3">{{ $roles[$user->role] ?? $user->role }}</td>
+
+                                            <td class="p-3 flex gap-2">
+                                                @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
+                                                    <a href="{{ route('users.edit', $user) }}"
+                                                        class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition">Редактировать</a>
+
+                                                    <button type="button"
+                                                        class="px-3 py-1 rounded-md bg-yellow-400 text-yellow-900 text-sm font-medium hover:bg-yellow-500 transition open-vacation"
+                                                        data-user-id="{{ $user->id }}"
+                                                        data-user-name="{{ e($user->name) }}">Отпуск</button>
+
+                                                    <a href="{{ route('attendance.userShow', $user) }}"
+                                                        class="px-3 py-1 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition">Табель</a>
+
+                                                    <form action="{{ route('users.destroy', $user) }}" method="POST"
+                                                        class="inline-block"
+                                                        onsubmit="return confirm('Удалить пользователя? Проекты пользователя будут перераспределены.')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit"
+                                                            class="px-3 py-1 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition">Удалить</button>
+                                                    </form>
+                                                @endif
+                                            </td>
+                                        @endif
+
+                                        <td class="p-3">
+                                            @if ($user->socials->isNotEmpty())
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    @foreach ($user->socials->sortBy(fn($s) => ['vk' => 0, 'telegram' => 1, 'maks' => 2][$s->platform] ?? 99) as $social)
+                                                        <a href="{{ $social->url }}" target="_blank"
+                                                            class="text-blue-600 underline flex items-center gap-1">{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}</a>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <div class="text-gray-500 text-sm">Социальные сети не указаны</div>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @endforeach
+                        @else
                             @foreach ($users as $user)
-                                @if ($isMarketerViewer && $user->role === 'admin')
-                                    @continue
-                                @endif
-                                @php $counter++; @endphp
                                 <tr class="border-t">
-                                    <td class="p-3">{{ $counter }}</td>
+                                    <td class="p-3">{{ ($users->firstItem() ?? 0) + $loop->iteration - 1 }}</td>
 
                                     <td class="p-3">
                                         @if ($isMarketerViewer)
@@ -118,75 +206,7 @@
                                     </td>
                                 </tr>
                             @endforeach
-                        @endforeach
-                    @else
-                        @foreach ($users as $user)
-                            <tr class="border-t">
-                                <td class="p-3">{{ ($users->firstItem() ?? 0) + $loop->iteration - 1 }}</td>
-
-                                <td class="p-3">
-                                    @if ($isMarketerViewer)
-                                        <span class="text-gray-900">{{ $user->name }}</span>
-                                    @else
-                                        <a href="{{ route('user.dashboard', $user) }}">{{ $user->name }}</a>
-                                    @endif
-                                </td>
-
-                                @if ($showExtra)
-                                    <td class="p-3">
-                                        @if ($user->activeVacation)
-                                            <span
-                                                class="inline-flex items-center px-2 py-1 rounded text-yellow-800 bg-yellow-100 text-sm font-medium">В
-                                                отпуске с {{ $user->activeVacation->start_date->format('d.m.Y') }} по
-                                                {{ $user->activeVacation->end_date->format('d.m.Y') }}</span>
-                                        @else
-                                            <span
-                                                class="inline-flex items-center px-2 py-1 rounded text-green-800 bg-green-100 text-sm font-medium">В
-                                                работе</span>
-                                        @endif
-                                    </td>
-
-                                    <td class="p-3">{{ $roles[$user->role] ?? $user->role }}</td>
-
-                                    <td class="p-3 flex gap-2">
-                                        @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
-                                            <a href="{{ route('users.edit', $user) }}"
-                                                class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition">Редактировать</a>
-
-                                            <button type="button"
-                                                class="px-3 py-1 rounded-md bg-yellow-400 text-yellow-900 text-sm font-medium hover:bg-yellow-500 transition open-vacation"
-                                                data-user-id="{{ $user->id }}"
-                                                data-user-name="{{ e($user->name) }}">Отпуск</button>
-
-                                            <a href="{{ route('attendance.userShow', $user) }}"
-                                                class="px-3 py-1 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition">Табель</a>
-
-                                            <form action="{{ route('users.destroy', $user) }}" method="POST"
-                                                class="inline-block"
-                                                onsubmit="return confirm('Удалить пользователя? Проекты пользователя будут перераспределены.')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                    class="px-3 py-1 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition">Удалить</button>
-                                            </form>
-                                        @endif
-                                    </td>
-                                @endif
-
-                                <td class="p-3">
-                                    @if ($user->socials->isNotEmpty())
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            @foreach ($user->socials->sortBy(fn($s) => ['vk' => 0, 'telegram' => 1, 'maks' => 2][$s->platform] ?? 99) as $social)
-                                                <a href="{{ $social->url }}" target="_blank"
-                                                    class="text-blue-600 underline flex items-center gap-1">{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}</a>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <div class="text-gray-500 text-sm">Социальные сети не указаны</div>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
+                        @endif
                     @endif
                 </tbody>
             </table>
