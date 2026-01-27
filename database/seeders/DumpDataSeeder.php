@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class DumpDataSeeder extends Seeder
 {
@@ -165,6 +166,24 @@ class DumpDataSeeder extends Seeder
             ['id' => 3, 'name' => 'Александра Воронина', 'login' => 'avoronina', 'email' => null, 'email_verified_at' => null, 'password' => '$2y$12$JAHxGJY/zuNd9TORMydGSO3HGmHBCZpXa92XHIfHc7zCN.zb51Ja2', 'role' => 'admin', 'created_at' => '2026-01-14 05:39:51', 'updated_at' => '2026-01-14 05:39:51', 'specialty_id' => null, 'salary_override' => 100000, 'is_department_head' => 1, 'individual_bonus_percent' => 10],
             ['id' => 4, 'name' => 'Владислав Эдуардович Гречишкин', 'login' => 'vgrechishkin', 'email' => null, 'email_verified_at' => null, 'password' => '$2y$12$KvEAzD8Qd5gv8fUAaP9sUOlAhwwCrlRWXpE8EbC2PGlYGidDhinFm', 'role' => 'admin', 'created_at' => '2026-01-14 05:40:25', 'updated_at' => '2026-01-14 05:40:25', 'specialty_id' => null, 'salary_override' => 100000, 'is_department_head' => 1, 'individual_bonus_percent' => 0],
             ['id' => 5, 'name' => 'Гофман Александра Евгеньевна', 'login' => 'gofman', 'email' => 'gofmanyusha@yandex.ru', 'email_verified_at' => null, 'password' => '$2y$12$3ScC3gGIQLYB8QIMfvW/A.XAdstgXkpZhQHxoxWX7Pw5/8QHfpZFe', 'role' => 'manager', 'created_at' => '2026-01-14 05:42:20', 'updated_at' => '2026-01-14 05:42:20', 'specialty_id' => null, 'salary_override' => 70000, 'is_department_head' => 1, 'individual_bonus_percent' => 7],
+        ]);
+
+        // add test lawyer user
+        DB::table('users')->insertOrIgnore([
+            [
+                'name' => 'Тестовый Юрист',
+                'login' => 'lawyer',
+                'email' => null,
+                'email_verified_at' => null,
+                'password' => Hash::make('12345678'),
+                'role' => 'lawyer',
+                'created_at' => now(),
+                'updated_at' => now(),
+                'specialty_id' => null,
+                'salary_override' => null,
+                'is_department_head' => 0,
+                'individual_bonus_percent' => null,
+            ],
         ]);
 
         // expenses (sample)
