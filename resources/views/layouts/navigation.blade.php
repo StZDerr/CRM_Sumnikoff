@@ -13,11 +13,9 @@
     <nav class="flex-1 px-2 py-4 overflow-y-auto space-y-1">
 
         {{-- Dashboard --}}
-        @if (auth()->user()->isAdmin())
-            <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                Dashboard
-            </x-nav-link>
-        @endif
+        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+            Dashboard
+        </x-nav-link>
 
         {{-- Пользователи: admin + project manager --}}
         @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())

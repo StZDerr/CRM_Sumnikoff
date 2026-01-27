@@ -9,6 +9,8 @@
             </p>
         </div>
 
+        @include('partials.link-cards')
+
         <!-- Quick Access Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Projects -->
@@ -156,6 +158,49 @@
         </div>
     </div>
 
+    {{-- ===== LINK CARD MODAL (Create & Edit) ===== --}}
+    <div id="link-card-modal" class="fixed inset-0 z-50 hidden">
+        <div id="link-card-overlay" class="absolute inset-0 bg-black/50"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="w-full max-w-xl bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b">
+                    <div id="link-card-modal-title" class="text-lg font-semibold text-gray-800">Новая карточка</div>
+                    <button type="button" id="link-card-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+
+                <form id="link-card-form" method="POST" action="{{ route('link-cards.store') }}" class="p-5 space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Название</label>
+                        <input type="text" name="title" required placeholder="Название"
+                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 text-sm px-3 py-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ссылка</label>
+                        <input type="url" name="url" required placeholder="https://..."
+                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 text-sm px-3 py-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Иконка</label>
+                        <input type="text" name="icon" placeholder="Ссылка на иконку (опционально)"
+                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 text-sm px-3 py-2" />
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 pt-2">
+                        <button type="button" id="link-card-cancel"
+                            class="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50">
+                            Отмена
+                        </button>
+                        <button type="submit" id="link-card-submit"
+                            class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">
+                            Добавить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
@@ -163,7 +208,8 @@
                 try {
                     const labels = {!! json_encode($salaryLabels ?? []) !!};
                     const data = {!! json_encode($salaryData ?? []) !!};
-
+                    const linkModal = document.getElementById('link-card-modal');
+                    const linkModalTitle = document.getElementById('link-card-modal-title');
                     const canvas = document.getElementById('salaryChart');
                     if (!canvas) return;
                     const ctx = canvas.getContext('2d');
@@ -203,6 +249,9 @@
                 } catch (e) {
                     console.error('Salary chart error', e);
                 }
+
+                // link cards scripts (shared)
+                @include('partials.link-cards-scripts')
             });
         </script>
     @endpush

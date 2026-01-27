@@ -114,9 +114,10 @@ class ProjectController extends Controller
             ->orderBy('name')
             ->pluck('name', 'id');
         $importances = Importance::ordered()->pluck('name', 'id');
+        $importancesList = Importance::ordered()->get(['id', 'name', 'color']);
 
         return view('admin.projects.index', compact(
-            'projects', 'q', 'organizations', 'marketers', 'org', 'marketer', 'importances', 'importance', 'contract_date', 'balance_status'
+            'projects', 'q', 'organizations', 'marketers', 'org', 'marketer', 'importances', 'importancesList', 'importance', 'contract_date', 'balance_status'
         ));
     }
 

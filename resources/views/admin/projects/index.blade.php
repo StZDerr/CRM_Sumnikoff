@@ -12,50 +12,76 @@
         </div>
 
         <div class="bg-white shadow rounded">
-            <div class="p-4 border-b flex items-center gap-4">
-                <form method="GET" action="{{ route('projects.index') }}" class="flex flex-wrap items-center gap-2">
-                    <input type="search" name="q" value="{{ $q ?? '' }}" placeholder="Поиск по названию..."
-                        class="border rounded px-3 py-2 w-72 text-sm" />
-                    @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
-                        <select name="organization" class="border rounded px-3 py-2 text-sm w-36">
-                            <option value="">Организации</option>
-                            @foreach ($organizations as $id => $name)
-                                <option value="{{ $id }}" @selected((string) ($org ?? '') === (string) $id)>{{ $name }}
+            <div class="p-4 border-b">
+                <div class="flex flex-wrap items-center gap-2 mb-3">
+                    <div class="text-xs text-gray-500 mr-2">Быстрый выбор:</div>
+                    @php
+                        $baseParams = request()->except(['page', 'importance']);
+                    @endphp
+                    <a href="{{ route('projects.index', $baseParams) }}"
+                        class="px-3 py-1 rounded-full text-xs border {{ empty($importance) ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400' }}">
+                        Все
+                    </a>
+                    @foreach ($importancesList ?? [] as $imp)
+                        @php
+                            $isActive = (string) ($importance ?? '') === (string) $imp->id;
+                            $bg = $imp->color ?: '#E5E7EB';
+                            $text = $imp->color ? '#FFFFFF' : '#374151';
+                        @endphp
+                        <a href="{{ route('projects.index', array_merge($baseParams, ['importance' => $imp->id])) }}"
+                            class="px-3 py-1 rounded-full text-xs border transition"
+                            style="background-color: {{ e($bg) }}; color: {{ e($text) }}; border-color: {{ $isActive ? e($bg) : '#E5E7EB' }}; opacity: {{ $isActive ? '1' : '0.85' }};">
+                            {{ $imp->name }}
+                        </a>
+                    @endforeach
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <form method="GET" action="{{ route('projects.index') }}" class="flex flex-wrap items-center gap-2">
+                        <input type="search" name="q" value="{{ $q ?? '' }}" placeholder="Поиск по названию..."
+                            class="border rounded px-3 py-2 w-72 text-sm" />
+                        @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
+                            <select name="organization" class="border rounded px-3 py-2 text-sm w-36">
+                                <option value="">Организации</option>
+                                @foreach ($organizations as $id => $name)
+                                    <option value="{{ $id }}" @selected((string) ($org ?? '') === (string) $id)>{{ $name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <input type="date" name="contract_date" class="w-36 border rounded px-3 py-2 text-sm"
+                                value="{{ $contract_date ?? '' }}" />
+                            <select name="marketer" class="border rounded px-3 py-2 text-sm w-36">
+                                <option value="">Маркетологи</option>
+                                @foreach ($marketers as $id => $name)
+                                    <option value="{{ $id }}" @selected((string) ($marketer ?? '') === (string) $id)>{{ $name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        @endif
+                        @if (auth()->user()->isAdmin())
+                            <select name="balance_status" class="border rounded px-3 py-2 text-sm w-36">
+                                <option value="">Статус баланса</option>
+                                <option value="debt" @selected((string) ($balance_status ?? '') === 'debt')>Должники</option>
+                                <option value="paid" @selected((string) ($balance_status ?? '') === 'paid')>Оплачено</option>
+                                <option value="overpaid" @selected((string) ($balance_status ?? '') === 'overpaid')>Переплата</option>
+                            </select>
+                        @endif
+                        <select name="importance" class="border rounded px-3 py-2 text-sm w-36">
+                            <option value="">Важность</option>
+                            @foreach ($importances ?? [] as $id => $name)
+                                <option value="{{ $id }}" @selected((string) ($importance ?? '') === (string) $id)>{{ $name }}
                                 </option>
                             @endforeach
                         </select>
-                        <input type="date" name="contract_date" class="w-36 border rounded px-3 py-2 text-sm"
-                            value="{{ $contract_date ?? '' }}" />
-                        <select name="marketer" class="border rounded px-3 py-2 text-sm w-36">
-                            <option value="">Маркетологи</option>
-                            @foreach ($marketers as $id => $name)
-                                <option value="{{ $id }}" @selected((string) ($marketer ?? '') === (string) $id)>{{ $name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    @endif
-                    @if (auth()->user()->isAdmin())
-                        <select name="balance_status" class="border rounded px-3 py-2 text-sm w-36">
-                            <option value="">Статус баланса</option>
-                            <option value="debt" @selected((string) ($balance_status ?? '') === 'debt')>Должники</option>
-                            <option value="paid" @selected((string) ($balance_status ?? '') === 'paid')>Оплачено</option>
-                            <option value="overpaid" @selected((string) ($balance_status ?? '') === 'overpaid')>Переплата</option>
-                        </select>
-                    @endif
-                    <select name="importance" class="border rounded px-3 py-2 text-sm w-36">
-                        <option value="">Важность</option>
-                        @foreach ($importances ?? [] as $id => $name)
-                            <option value="{{ $id }}" @selected((string) ($importance ?? '') === (string) $id)>{{ $name }}</option>
-                        @endforeach
-                    </select>
 
 
 
-                    <button class="px-3 py-2 bg-gray-100 rounded text-sm">Фильтровать</button>
-                    <a href="{{ route('projects.index') }}" class="text-sm text-gray-500 ml-2">Сброс</a>
-                </form>
+                        <button class="px-3 py-2 bg-gray-100 rounded text-sm">Фильтровать</button>
+                        <a href="{{ route('projects.index') }}" class="text-sm text-gray-500 ml-2">Сброс</a>
+                    </form>
 
-                <div class="ml-auto text-sm text-gray-500">Всего: {{ $projects->total() }}</div>
+                    <div class="ml-auto text-sm text-gray-500">Всего: {{ $projects->total() }}</div>
+                </div>
             </div>
 
             <div class="divide-y">
@@ -66,6 +92,18 @@
                                 <div>
                                     <a href="{{ route('projects.show', $project) }}"
                                         class="font-medium text-gray-900">{{ $project->title }}</a>
+                                    @if (!empty($project->importance?->name))
+                                        @php
+                                            $impColor = $project->importance?->color;
+                                            $impBg = $impColor ?: '#E5E7EB';
+                                            $impText = $impColor ? '#FFFFFF' : '#374151';
+                                        @endphp
+                                        <span
+                                            class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                            style="background-color: {{ e($impBg) }}; color: {{ e($impText) }};">
+                                            {{ $project->importance->name }}
+                                        </span>
+                                    @endif
                                     <div class="text-xs text-gray-500">
                                         {{ $project->organization?->name_short ?? ($project->organization?->name_full ?? '-') }}
                                         • {{ $project->city ?? '-' }}

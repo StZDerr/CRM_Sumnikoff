@@ -567,6 +567,10 @@ class DashboardController extends Controller
         $baseSalary = $user->salary_override ?? ($user->specialty->salary ?? 0);
         $expectedTotal = $baseSalary + $calculatedTotalBonus;
 
+        $linkCards = LinkCard::where('user_id', $user->id)
+            ->orderBy('position')
+            ->get();
+
         return view('welcome', [
             'salaryLabels' => $labels,
             'salaryData' => $data,
@@ -580,6 +584,7 @@ class DashboardController extends Controller
                 'projectBonuses' => $expectedProjectBonuses,
                 'total_expected' => $expectedTotal,
             ],
+            'linkCards' => $linkCards,
         ]);
     }
 
