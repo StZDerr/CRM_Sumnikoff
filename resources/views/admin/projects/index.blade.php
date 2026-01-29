@@ -37,48 +37,130 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <form method="GET" action="{{ route('projects.index') }}" class="flex flex-wrap items-center gap-2">
-                        <input type="search" name="q" value="{{ $q ?? '' }}" placeholder="Поиск по названию..."
-                            class="border rounded px-3 py-2 w-72 text-sm" />
-                        @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
-                            <select name="organization" class="border rounded px-3 py-2 text-sm w-36">
-                                <option value="">Организации</option>
-                                @foreach ($organizations as $id => $name)
-                                    <option value="{{ $id }}" @selected((string) ($org ?? '') === (string) $id)>{{ $name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <input type="date" name="contract_date" class="w-36 border rounded px-3 py-2 text-sm"
-                                value="{{ $contract_date ?? '' }}" />
-                            <select name="marketer" class="border rounded px-3 py-2 text-sm w-36">
-                                <option value="">Маркетологи</option>
-                                @foreach ($marketers as $id => $name)
-                                    <option value="{{ $id }}" @selected((string) ($marketer ?? '') === (string) $id)>{{ $name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        @endif
-                        @if (auth()->user()->isAdmin())
-                            <select name="balance_status" class="border rounded px-3 py-2 text-sm w-36">
-                                <option value="">Статус баланса</option>
-                                <option value="debt" @selected((string) ($balance_status ?? '') === 'debt')>Должники</option>
-                                <option value="paid" @selected((string) ($balance_status ?? '') === 'paid')>Оплачено</option>
-                                <option value="overpaid" @selected((string) ($balance_status ?? '') === 'overpaid')>Переплата</option>
-                            </select>
-                        @endif
-                        <select name="importance" class="border rounded px-3 py-2 text-sm w-36">
-                            <option value="">Важность</option>
-                            @foreach ($importances ?? [] as $id => $name)
-                                <option value="{{ $id }}" @selected((string) ($importance ?? '') === (string) $id)>{{ $name }}
-                                </option>
-                            @endforeach
-                        </select>
+                    <details class="mb-0 w-full rounded shadow-sm bg-white">
+                        <summary
+                            class="cursor-pointer select-none px-4 py-3 font-semibold text-gray-800 flex items-center justify-between">
+                            <span>Фильтры</span>
+                            <svg class="h-4 w-4 text-gray-500 transition-transform duration-200" viewBox="0 0 20 20"
+                                fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd"
+                                    d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </summary>
 
+                        <form method="GET" action="{{ route('projects.index') }}" class="p-4">
+                            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                                <div class="lg:col-span-4">
+                                    <div class="p-3 bg-gray-50 rounded border border-gray-100">
+                                        <div class="flex flex-wrap items-end gap-3">
+                                            <div class="w-full">
+                                                <label class="text-xs text-gray-500">Поиск</label>
+                                                <input type="search" name="q" value="{{ $q ?? '' }}"
+                                                    placeholder="Поиск по названию..."
+                                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" />
+                                            </div>
 
+                                            <div class="w-40">
+                                                <label class="text-xs text-gray-500">Дата контракта</label>
+                                                <input type="date" name="contract_date"
+                                                    value="{{ $contract_date ?? '' }}"
+                                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" />
+                                            </div>
+                                        </div>
 
-                        <button class="px-3 py-2 bg-gray-100 rounded text-sm">Фильтровать</button>
-                        <a href="{{ route('projects.index') }}" class="text-sm text-gray-500 ml-2">Сброс</a>
-                    </form>
+                                        <div class="mt-3 flex flex-wrap gap-2">
+                                            <button type="button"
+                                                class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
+                                                onclick="this.form && (this.form.contract_date.value = '')">Все</button>
+                                            <button type="button"
+                                                class="text-sm px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
+                                                onclick="document.querySelector('[name=contract_date]').value = new Date().toISOString().slice(0,10)">Сегодня</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="lg:col-span-8">
+                                    <div
+                                        class="p-3 bg-gray-50 rounded border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
+                                            <div>
+                                                <label class="text-xs text-gray-500">Организация</label>
+                                                <select name="organization"
+                                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                                    <option value="">— все —</option>
+                                                    @foreach ($organizations as $id => $name)
+                                                        <option value="{{ $id }}" @selected((string) ($org ?? '') === (string) $id)>
+                                                            {{ $name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label class="text-xs text-gray-500">Маркетолог</label>
+                                                <select name="marketer"
+                                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                                    <option value="">— все —</option>
+                                                    @foreach ($marketers as $id => $name)
+                                                        <option value="{{ $id }}" @selected((string) ($marketer ?? '') === (string) $id)>
+                                                            {{ $name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        @endif
+
+                                        @if (auth()->user()->isAdmin())
+                                            <div>
+                                                <label class="text-xs text-gray-500">Статус баланса</label>
+                                                <select name="balance_status"
+                                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                                    <option value="">— все —</option>
+                                                    <option value="debt" @selected((string) ($balance_status ?? '') === 'debt')>Должники</option>
+                                                    <option value="paid" @selected((string) ($balance_status ?? '') === 'paid')>Оплачено</option>
+                                                    <option value="overpaid" @selected((string) ($balance_status ?? '') === 'overpaid')>Переплата</option>
+                                                </select>
+                                            </div>
+                                        @endif
+
+                                        <div>
+                                            <label class="text-xs text-gray-500">Важность</label>
+                                            <select name="importance"
+                                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                                <option value="">— все —</option>
+                                                @foreach ($importances ?? [] as $id => $name)
+                                                    <option value="{{ $id }}" @selected((string) ($importance ?? '') === (string) $id)>
+                                                        {{ $name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div class="md:col-span-1">
+                                            <label class="text-xs text-gray-500">Сортировка дня</label>
+                                            <div class="flex items-center gap-2 mt-2">
+                                                <button type="submit" name="sort_due" value="asc"
+                                                    class="text-sm px-3 py-1 rounded {{ (string) ($sort_due ?? '') === 'asc' ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200' }}">По
+                                                    возрастанию</button>
+                                                <button type="submit" name="sort_due" value="desc"
+                                                    class="text-sm px-3 py-1 rounded {{ (string) ($sort_due ?? '') === 'desc' ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200' }}">По
+                                                    убыванию</button>
+                                            </div>
+                                        </div>
+
+                                        <div class="md:col-span-2 md:flex md:items-end md:justify-end">
+                                            <div class="w-full">
+                                                <div class="flex items-center gap-2">
+                                                    <button type="submit"
+                                                        class="inline-flex items-center px-3 py-2 bg-gray-900 text-white rounded">Применить</button>
+                                                    <a href="{{ route('projects.index') }}"
+                                                        class="text-sm text-gray-500">Сброс</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </details>
 
                     <div class="ml-auto text-sm text-gray-500">Всего: {{ $projects->total() }}</div>
                 </div>
@@ -87,6 +169,17 @@
             <div class="divide-y">
                 @forelse($projects as $project)
                     <div class="flex items-center gap-4 px-4 py-3 hover:bg-gray-50">
+                        <div class="w-36 text-center">
+                            @if (auth()->user()->isAdmin())
+                                <div class="text-xs text-gray-500">День оплаты</div>
+                            @else
+                                <div class="text-xs text-gray-500">День отчета</div>
+                            @endif
+                            <div class="text-sm text-gray-700 mt-1">
+                                {{ $project->payment_due_day ?? ($project->contract_date ? $project->contract_date->day : '—') }}
+                            </div>
+                        </div>
+
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
                                 <div>

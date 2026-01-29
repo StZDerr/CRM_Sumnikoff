@@ -43,6 +43,7 @@ class ProjectController extends Controller
         $marketer = $request->query('marketer');
         $importance = $request->query('importance');
         $contract_date = $request->query('contract_date'); // <- фильтр по дате
+        $sort_due = $request->query('sort_due'); // сортировка по дню оплаты (asc|desc)
 
         $balance_status = $request->query('balance_status');
 
@@ -111,13 +112,24 @@ class ProjectController extends Controller
         )';
         $hasInvoicesSubquery = '(SELECT SUM(amount) FROM invoices WHERE invoices.project_id = projects.id)';
 
-        // Сортировка: 1) должники первыми (у кого есть счета и баланс < 0), 2) по балансу, 3) по названию
-        $projects = $query
-            ->orderByRaw("(COALESCE({$hasInvoicesSubquery}, 0) > 0 AND {$balanceSubquery} < 0) DESC")
-            ->orderByRaw("{$balanceSubquery} ASC")
-            ->orderBy('title')
-            ->paginate(100)
-            ->withQueryString();
+        if (in_array($sort_due, ['asc', 'desc'])) {
+            // Сортировка по дню оплаты (payment_due_day, иначе день из contract_date)
+            $orderExpr = 'COALESCE(payment_due_day, DAY(contract_date))';
+            $dir = $sort_due === 'asc' ? 'ASC' : 'DESC';
+            $projects = $query
+                ->orderByRaw("{$orderExpr} {$dir}")
+                ->orderBy('title')
+                ->paginate(100)
+                ->withQueryString();
+        } else {
+            // Сортировка: 1) должники первыми (у кого есть счета и баланс < 0), 2) по балансу, 3) по названию
+            $projects = $query
+                ->orderByRaw("(COALESCE({$hasInvoicesSubquery}, 0) > 0 AND {$balanceSubquery} < 0) DESC")
+                ->orderByRaw("{$balanceSubquery} ASC")
+                ->orderBy('title')
+                ->paginate(100)
+                ->withQueryString();
+        }
 
         $organizations = Organization::orderBy('name_full')->pluck('name_full', 'id');
         $marketers = User::where('role', 'marketer')
@@ -127,7 +139,7 @@ class ProjectController extends Controller
         $importancesList = Importance::ordered()->get(['id', 'name', 'color']);
 
         return view('admin.projects.index', compact(
-            'projects', 'q', 'organizations', 'marketers', 'org', 'marketer', 'importances', 'importancesList', 'importance', 'contract_date', 'balance_status'
+            'projects', 'q', 'organizations', 'marketers', 'org', 'marketer', 'importances', 'importancesList', 'importance', 'contract_date', 'sort_due', 'balance_status'
         ));
     }
 

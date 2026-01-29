@@ -147,11 +147,15 @@
                     Уровень важности
                 </x-dropdown-link>
             </x-buttons-dropdawn>
+            <x-nav-link :href="route('account-credentials.itSumnikoff')" :active="request()->routeIs('account-credentials.itSumnikoff')">
+                Доступы Наши
+            </x-nav-link>
+
+            <x-nav-link :href="route('domains.index')" :active="request()->routeIs('domains.*')">
+                Домены
+            </x-nav-link>
         @elseif (auth()->user()->isProjectManager() || auth()->user()->isMarketer())
             {{-- НЕ admin: обычная кнопка --}}
-
-
-
             <x-nav-link :href="route('account-credentials.itSumnikoff')" :active="request()->routeIs('account-credentials.itSumnikoff')">
                 Доступы Наши
             </x-nav-link>
