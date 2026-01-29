@@ -102,7 +102,7 @@
                         @foreach ($expense->documents as $doc)
                             <div class="bg-white border rounded p-2 flex items-center gap-3">
                                 @if (str_starts_with($doc->mime ?? '', 'image/'))
-                                    <a href="{{ $doc->url }}" target="_blank" class="inline-block">
+                                    <a href="{{ route('documents.download', $doc) }}" class="inline-block">
                                         <img src="{{ $doc->url }}" alt="{{ $doc->original_name ?? 'image' }}"
                                             class="h-20 w-20 object-cover rounded" />
                                     </a>
@@ -110,7 +110,7 @@
                                     </div>
                                 @else
                                     <div class="flex-1">
-                                        <a href="{{ $doc->url }}" target="_blank"
+                                        <a href="{{ route('documents.download', $doc) }}"
                                             class="text-indigo-600 hover:underline break-words">{{ $doc->original_name ?? $doc->path }}</a>
                                         <div class="text-xs text-gray-500">
                                             {{ strtoupper(pathinfo($doc->path ?? '', PATHINFO_EXTENSION)) }}</div>

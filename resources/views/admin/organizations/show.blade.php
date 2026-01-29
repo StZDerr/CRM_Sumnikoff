@@ -146,20 +146,150 @@
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-lg font-semibold">Контакты</h2>
 
-                    <button type="button" onclick="openAddContactModal()"
-                        class="inline-flex items-center gap-2 rounded-xl
-                            bg-blue-600 px-4 py-2.5
-                            text-sm font-semibold text-white
-                            shadow-sm transition
-                            hover:bg-blue-700 hover:shadow-md
-                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                            active:scale-[0.98]">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Добавить контакт
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="openAddContactModal()"
+                            class="inline-flex items-center gap-2 rounded-xl
+                                bg-blue-600 px-4 py-2.5
+                                text-sm font-semibold text-white
+                                shadow-sm transition
+                                hover:bg-blue-700 hover:shadow-md
+                                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                                active:scale-[0.98]">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Добавить контакт
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Add Document Modal --}}
+                {{-- Add Document Modal (styled) --}}
+                <div id="addDocumentModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+                    <div class="fixed inset-0 bg-black/50" onclick="closeAddDocumentModal()"></div>
+
+                    <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl mx-4 z-10 overflow-auto max-h-[90vh] border">
+                        <div class="flex items-center justify-between px-5 py-4 border-b">
+                            <div>
+                                <div class="text-lg font-semibold text-gray-900">Добавить документ</div>
+                                <div class="text-xs text-gray-500">
+                                    {{ $organization->name_short ?: $organization->name_full }}</div>
+                            </div>
+                            <button type="button" class="text-gray-500 hover:text-gray-700"
+                                onclick="closeAddDocumentModal()">✕</button>
+                        </div>
+
+                        <div class="p-6">
+                            <form id="org-document-form"
+                                action="{{ route('organizations.documents.store', $organization) }}" method="POST"
+                                enctype="multipart/form-data" class="space-y-4">
+                                @csrf
+                                <input type="hidden" name="organization_id" value="{{ $organization->id }}">
+                                <input type="hidden" name="form" value="add_document">
+
+                                <div class="grid grid-cols-1 gap-3">
+                                    <label class="block text-sm font-medium text-gray-700">Файлы</label>
+
+                                    <div class="flex items-center gap-3">
+                                        <label for="org-doc-input"
+                                            class="inline-flex items-center gap-2 px-3 py-2 bg-white border rounded-md cursor-pointer hover:shadow-sm text-sm text-gray-700">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M3 15a4 4 0 004 4h10a4 4 0 004-4 4 4 0 00-4-4H7a4 4 0 00-4 4zM16 7l-4-4m0 0L8 7m4-4v11" />
+                                            </svg>
+                                            Выбрать файлы
+                                        </label>
+
+                                        <div class="text-sm text-gray-500">Макс. 5 МБ на файл. Поддерживаются: pdf, doc,
+                                            docx, xls, xlsx, zip, txt, изображения.</div>
+                                    </div>
+
+                                    <input id="org-doc-input" type="file" name="documents[]" multiple
+                                        accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,image/*,text/plain"
+                                        class="hidden" />
+
+                                    <div id="org-doc-selected" class="mt-2 space-y-2"></div>
+
+                                    @if ($errors->any() && old('form') === 'add_document' && old('organization_id') == $organization->id)
+                                        <div class="text-sm text-red-600 mt-2">
+                                            @foreach ($errors->all() as $e)
+                                                <div>{{ $e }}</div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <div class="flex items-center justify-end gap-3 mt-4">
+                                    <button type="button" class="px-4 py-2 text-sm rounded border hover:bg-gray-50"
+                                        onclick="closeAddDocumentModal()">Отмена</button>
+                                    <button type="submit"
+                                        class="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700">Загрузить</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const input = document.getElementById('org-doc-input');
+                                const list = document.getElementById('org-doc-selected');
+                                if (!input || !list) return;
+
+                                function humanSize(bytes) {
+                                    if (!bytes) return '';
+                                    if (bytes < 1024) return bytes + ' B';
+                                    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+                                    return (bytes / 1048576).toFixed(2) + ' MB';
+                                }
+
+                                input.addEventListener('change', function() {
+                                    list.innerHTML = '';
+                                    Array.from(this.files).forEach(f => {
+                                        const row = document.createElement('div');
+                                        row.className = 'flex items-center gap-3 bg-gray-50 border rounded p-2';
+
+                                        if (f.type && f.type.startsWith('image/')) {
+                                            const img = document.createElement('img');
+                                            img.src = URL.createObjectURL(f);
+                                            img.className = 'h-12 w-12 object-cover rounded';
+                                            row.appendChild(img);
+                                        } else {
+                                            const box = document.createElement('div');
+                                            box.className =
+                                                'h-12 w-12 bg-indigo-100 rounded flex items-center justify-center text-indigo-700 font-semibold';
+                                            box.textContent = f.name.split('.').pop().toUpperCase();
+                                            row.appendChild(box);
+                                        }
+
+                                        const meta = document.createElement('div');
+                                        meta.className = 'flex-1 min-w-0';
+
+                                        const name = document.createElement('div');
+                                        name.className = 'text-sm text-gray-900 truncate';
+                                        name.textContent = f.name;
+
+                                        const info = document.createElement('div');
+                                        info.className = 'text-xs text-gray-500';
+                                        info.textContent = humanSize(f.size);
+
+                                        meta.appendChild(name);
+                                        meta.appendChild(info);
+
+                                        row.appendChild(meta);
+
+                                        list.appendChild(row);
+                                    });
+                                });
+
+                                const label = document.querySelector('label[for="org-doc-input"]');
+                                if (label) label.addEventListener('keydown', function(e) {
+                                    if (e.key === 'Enter' || e.key === ' ') input.click();
+                                });
+                            });
+                        </script>
+
+                    </div>
                 </div>
                 @if ($contacts->count())
                     <div class="divide-y rounded border">
@@ -191,8 +321,138 @@
                     <div class="text-sm text-gray-500">Контакты не добавлены.</div>
                 @endif
             </div>
+
+            <hr>
+
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold">Документы</h2>
+                    @if (auth()->user()->isAdmin())
+                        <button type="button" onclick="openAddDocumentModal()"
+                            class="inline-flex items-center gap-2 rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 active:scale-[0.98]">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4" />
+                            </svg>
+                            Добавить документ
+                        </button>
+                    @endif
+                </div>
+                @if ($organization->documents && $organization->documents->count())
+                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        @foreach ($organization->documents as $doc)
+                            @php
+                                $ext = strtolower(pathinfo($doc->path ?? '', PATHINFO_EXTENSION));
+                                $sizeLabel = $doc->size
+                                    ? ($doc->size < 1024
+                                        ? $doc->size . ' B'
+                                        : ($doc->size < 1048576
+                                            ? round($doc->size / 1024, 1) . ' KB'
+                                            : round($doc->size / 1048576, 2) . ' MB'))
+                                    : '';
+                                $date = $doc->created_at ? $doc->created_at->format('d.m.Y H:i') : '';
+                            @endphp
+
+                            <div class="bg-white border rounded-lg p-3 flex flex-col hover:shadow-md transition">
+                                <div class="flex items-start gap-3">
+                                    <div class="shrink-0">
+                                        @if (str_starts_with($doc->mime ?? '', 'image/'))
+                                            <a href="{{ route('documents.download', $doc) }}" class="inline-block">
+                                                <img src="{{ $doc->url }}"
+                                                    alt="{{ $doc->original_name ?? 'image' }}"
+                                                    class="h-12 w-12 object-cover rounded" />
+                                            </a>
+                                        @else
+                                            <div
+                                                class="h-12 w-12 bg-indigo-100 rounded flex items-center justify-center text-indigo-700 font-semibold">
+                                                {{ strtoupper($ext) }}</div>
+                                        @endif
+                                    </div>
+
+                                    <div class="flex-1 min-w-0">
+                                        <a href="{{ route('documents.download', $doc) }}"
+                                            class="block font-medium text-indigo-600 truncate">{{ $doc->original_name ?? $doc->path }}</a>
+                                        <div class="text-xs text-gray-500 mt-1">{{ strtoupper($ext) }} @if ($sizeLabel)
+                                                · {{ $sizeLabel }}
+                                                @endif @if ($date)
+                                                    · {{ $date }}
+                                                @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 flex items-center justify-between">
+                                    <div class="text-xs text-gray-500">
+                                        {{ $doc->created_at ? $doc->created_at->format('d.m.Y') : '' }}</div>
+                                    @if (auth()->user()->isAdmin())
+                                        <div class="flex items-center gap-3">
+                                            <a href="{{ route('documents.download', $doc) }}"
+                                                class="text-indigo-600 hover:text-indigo-800" title="Скачать">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                    <polyline points="7 10 12 15 17 10" />
+                                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                                </svg>
+
+                                            </a>
+
+                                            <button type="button" class="text-red-600 doc-delete-btn"
+                                                data-url="{{ route('documents.destroy', $doc) }}" title="Удалить">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="3 6 5 6 21 6" />
+                                                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                                    <path d="M10 11v6" />
+                                                    <path d="M14 11v6" />
+                                                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                                </svg>
+
+                                            </button>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-sm text-gray-500">Документы не добавлены.</div>
+                @endif
+            </div>
         </div>
     </div>
+
+    <script>
+        // Удаление документов через AJAX (для страницы организации — вверху карточки)
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.doc-delete-btn');
+            if (!btn) return;
+            if (!confirm('Удалить документ?')) return;
+
+            const url = btn.getAttribute('data-url');
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(r => {
+                if (!r.ok) throw new Error('Ошибка при удалении');
+                return r.json();
+            }).then(() => {
+                const item = btn.closest('.bg-white.border.rounded.p-2');
+                if (item) item.remove();
+            }).catch(err => {
+                console.error(err);
+                alert('Не удалось удалить документ.');
+            });
+        });
+    </script>
+
     <!-- Add Contact Modal -->
     <div id="addContactModal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="fixed inset-0 bg-black/50" onclick="closeAddContactModal()"></div>
@@ -360,10 +620,26 @@
             document.getElementById('addContactModal').classList.remove('flex');
         }
 
+        function openAddDocumentModal() {
+            document.getElementById('addDocumentModal').classList.remove('hidden');
+            document.getElementById('addDocumentModal').classList.add('flex');
+        }
+
+        function closeAddDocumentModal() {
+            document.getElementById('addDocumentModal').classList.add('hidden');
+            document.getElementById('addDocumentModal').classList.remove('flex');
+        }
+
         // Если были ошибки валидации при предыдущей попытке — откроем модал автоматически (и только для этой org)
         @if ($errors->any() && old('organization_id') == $organization->id)
             window.addEventListener('DOMContentLoaded', function() {
                 openAddContactModal();
+            });
+        @endif
+
+        @if ($errors->any() && old('organization_id') == $organization->id && old('form') === 'add_document')
+            window.addEventListener('DOMContentLoaded', function() {
+                openAddDocumentModal();
             });
         @endif
     </script>

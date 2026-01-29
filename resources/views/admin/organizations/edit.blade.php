@@ -9,7 +9,8 @@
         </div>
 
         <div class="bg-white shadow rounded p-6">
-            <form action="{{ route('organizations.update', $organization) }}" method="POST" class="space-y-6">
+            <form action="{{ route('organizations.update', $organization) }}" method="POST" enctype="multipart/form-data"
+                class="space-y-6">
                 @method('PUT')
                 @include('admin.organizations._form', ['submit' => 'Обновить'])
             </form>

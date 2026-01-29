@@ -9,7 +9,7 @@
         </div>
 
         <div class="bg-white shadow rounded p-6">
-            <form action="{{ route('organizations.store') }}" method="POST" class="space-y-6">
+            <form action="{{ route('organizations.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 @include('admin.organizations._form', ['submit' => 'Создать'])
             </form>
         </div>

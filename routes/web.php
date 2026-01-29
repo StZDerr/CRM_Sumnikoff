@@ -253,9 +253,17 @@ Route::middleware('auth')->group(function () {
     Route::get('organizations/{organization}/projects', [OrganizationController::class, 'projectsList'])
         ->name('organizations.projects');
 
+    // Быстрое добавление документа для организации
+    Route::post('organizations/{organization}/documents', [OrganizationController::class, 'storeDocument'])
+        ->name('organizations.documents.store');
+
     // Удаление прикреплённого документа
     Route::delete('documents/{document}', [DocumentController::class, 'destroy'])
         ->name('documents.destroy');
+
+    // Скачивание документа (с оригинальным именем и mime)
+    Route::get('documents/{document}/download', [DocumentController::class, 'download'])
+        ->name('documents.download');
 
     // AJAX: Создание организации из модального окна
     Route::post('organizations/store-ajax', [OrganizationController::class, 'storeAjax'])

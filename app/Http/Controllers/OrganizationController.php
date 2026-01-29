@@ -86,11 +86,24 @@ class OrganizationController extends Controller
             'notes' => 'nullable|string',
             'campaign_status_id' => 'nullable|exists:campaign_statuses,id',
             'campaign_source_id' => 'nullable|exists:campaign_sources,id',
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip,txt|max:5120',
         ]);
 
         $data['created_by'] = auth()->id();
 
-        Organization::create($data);
+        $organization = Organization::create($data);
+
+        // Save uploaded documents if any
+        foreach ($request->file('documents', []) as $file) {
+            $path = $file->store('documents', 'public');
+            $organization->documents()->create([
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+            ]);
+        }
 
         return redirect()->route('organizations.index')->with('success', 'Организация создана.');
     }
@@ -116,11 +129,24 @@ class OrganizationController extends Controller
             'corr_account' => 'nullable|string|max:64',
             'bic' => 'nullable|string|max:16',
             'notes' => 'nullable|string',
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip,txt|max:5120',
         ]);
 
         $data['created_by'] = auth()->id();
 
         $organization = Organization::create($data);
+
+        // Save uploaded documents if any
+        foreach ($request->file('documents', []) as $file) {
+            $path = $file->store('documents', 'public');
+            $organization->documents()->create([
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -176,11 +202,24 @@ class OrganizationController extends Controller
             'notes' => 'nullable|string',
             'campaign_status_id' => 'nullable|exists:campaign_statuses,id',
             'campaign_source_id' => 'nullable|exists:campaign_sources,id',
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip,txt|max:5120',
         ]);
 
         $data['updated_by'] = auth()->id();
 
         $organization->update($data);
+
+        // Save uploaded documents if any
+        foreach ($request->file('documents', []) as $file) {
+            $path = $file->store('documents', 'public');
+            $organization->documents()->create([
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+            ]);
+        }
 
         return redirect()->route('organizations.index')->with('success', 'Организация обновлена.');
     }
@@ -212,5 +251,35 @@ class OrganizationController extends Controller
         $projects = $query->get(['id', 'title']);
 
         return response()->json($projects);
+    }
+
+    /**
+     * Загрузить документы для организации
+     */
+    public function storeDocument(Request $request, Organization $organization)
+    {
+        if (! auth()->user()->isAdmin()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Доступ запрещён'], 403);
+            }
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'documents' => 'required|array',
+            'documents.*' => 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip,txt|max:5120',
+        ]);
+
+        foreach ($request->file('documents', []) as $file) {
+            $path = $file->store('documents', 'public');
+            $organization->documents()->create([
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+            ]);
+        }
+
+        return redirect()->route('organizations.show', $organization)->with('success', 'Документы загружены.');
     }
 }

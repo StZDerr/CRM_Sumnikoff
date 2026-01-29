@@ -117,6 +117,13 @@
             <x-input-error :messages="$errors->get('notes')" class="mt-2" />
         </div>
 
+        <div class="col-span-2 p-4 bg-white shadow rounded transition-all duration-300">
+            <label class="block text-sm font-medium text-gray-700">Документы (файлы)</label>
+            <input type="file" name="documents[]" multiple class="mt-1 block w-full" />
+            <x-input-error :messages="$errors->get('documents')" class="mt-2" />
+            <x-input-error :messages="$errors->get('documents.*')" class="mt-2" />
+        </div>
+
         {{-- Статус --}}
         <div class="p-4 bg-white shadow rounded transition-all duration-300">
             <x-input-label for="campaign_status_id" :value="'Статус'" />

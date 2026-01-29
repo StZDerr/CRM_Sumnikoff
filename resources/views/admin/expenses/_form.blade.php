@@ -129,13 +129,13 @@
                     <div class="flex items-center justify-between gap-3 bg-gray-50 p-2 rounded">
                         <div class="flex items-center gap-3">
                             @if (str_starts_with($doc->mime ?? '', 'image/'))
-                                <a href="{{ $doc->url }}" target="_blank" class="inline-block">
+                                <a href="{{ route('documents.download', $doc) }}" class="inline-block">
                                     <img src="{{ $doc->url }}" alt="{{ $doc->original_name ?? 'image' }}"
                                         class="h-12 w-12 object-cover rounded" />
                                 </a>
                                 <div class="text-sm text-gray-600">{{ $doc->original_name ?? $doc->path }}</div>
                             @else
-                                <a href="{{ $doc->url }}" target="_blank"
+                                <a href="{{ route('documents.download', $doc) }}"
                                     class="text-sm text-indigo-600 hover:underline">{{ $doc->original_name ?? $doc->path }}</a>
                             @endif
                         </div>

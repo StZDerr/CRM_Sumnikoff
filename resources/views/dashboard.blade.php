@@ -679,6 +679,15 @@
                                     @endforeach
                                 </tbody>
                             </table>
+
+                            <div class="mt-4 pt-4 border-t text-sm text-gray-700">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                    <div>Проектов: <span class="font-semibold">{{ $expectedProjects->count() }}</span></div>
+                                    <div>Сумма контрактов: <span class="font-semibold">{{ number_format($expectedProjects->sum('contract_amount') ?? 0, 2, '.', ' ') }} ₽</span></div>
+                                    <div>Сумма баланса: <span class="font-semibold">{{ number_format($expectedProjects->sum('balance') ?? 0, 2, '.', ' ') }} ₽</span></div>
+                                </div>
+                            </div>
+
                         </div>
                     @endif
                 </div>

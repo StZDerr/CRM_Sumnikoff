@@ -95,6 +95,11 @@ class Organization extends Model
         return $this->hasMany(\App\Models\Project::class);
     }
 
+    public function documents()
+    {
+        return $this->morphMany(\App\Models\Document::class, 'documentable');
+    }
+
     public function __toString()
     {
         return $this->name_short ?: $this->name_full;
