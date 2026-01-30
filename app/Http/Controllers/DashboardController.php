@@ -483,7 +483,10 @@ class DashboardController extends Controller
                             $q->whereNull('unassigned_at')
                                 ->orWhere('unassigned_at', '>=', $forecastStart);
                         })
-                        ->with('project:id,title,contract_amount')
+                        ->whereHas('project', function ($q) {
+                            $q->where('status', Project::STATUS_IN_PROGRESS);
+                        })
+                        ->with('project:id,title,contract_amount,status')
                         ->get();
 
                     $projects = $histories
