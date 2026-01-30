@@ -8,6 +8,8 @@ use App\Models\MonthlyExpense;
 use App\Models\MonthlyExpenseStatus;
 use App\Models\Payment;
 use App\Models\Project;
+use App\Models\ProjectMarketerHistory;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -438,6 +440,109 @@ class DashboardController extends Controller
         $totalAmount = $salaryFundExpenses->sum('amount');
         // dd($totalAmount);
 
+        // ===== Прогноз ФОТ по пользователям =====
+        $forecastStart = $isAll ? Carbon::now()->startOfMonth() : $start->copy();
+        $forecastEnd = $forecastStart->copy()->endOfMonth();
+        $forecastMonthLabel = $forecastStart->locale('ru')->isoFormat('MMMM YYYY');
+
+        $salaryForecastUsers = User::with('specialty')
+            ->orderBy('name')
+            ->get()
+            ->map(function (User $u) use ($forecastStart, $forecastEnd) {
+                $base = (float) ($u->salary_override ?? ($u->specialty->salary ?? 0));
+                $bonusTotal = 0.0;
+                $projectBreakdown = [];
+                $source = 'auto';
+
+                if (! is_null($u->forecast_amount)) {
+                    $total = (float) $u->forecast_amount;
+                    $source = 'manual';
+                } elseif ($u->role === User::ROLE_MARKETER) {
+                    $percent = $u->individual_bonus_percent ?? 5;
+
+                    // Табель посещаемости за месяц (учитываем work=1, remote/short=0.5)
+                    $attendanceDays = $u->attendanceDays()
+                        ->whereBetween('date', [$forecastStart, $forecastEnd])
+                        ->with('status')
+                        ->get();
+
+                    $workDayCoefficients = [];
+                    foreach ($attendanceDays as $day) {
+                        $dateKey = $day->date->format('Y-m-d');
+                        $code = $day->status->code ?? null;
+                        if ($code === 'work') {
+                            $workDayCoefficients[$dateKey] = 1;
+                        } elseif (in_array($code, ['remote', 'short'])) {
+                            $workDayCoefficients[$dateKey] = 0.5;
+                        }
+                    }
+
+                    $histories = ProjectMarketerHistory::where('user_id', $u->id)
+                        ->where('assigned_at', '<=', $forecastEnd)
+                        ->where(function ($q) use ($forecastStart) {
+                            $q->whereNull('unassigned_at')
+                                ->orWhere('unassigned_at', '>=', $forecastStart);
+                        })
+                        ->with('project:id,title,contract_amount')
+                        ->get();
+
+                    $projects = $histories
+                        ->map(fn ($h) => $h->project)
+                        ->filter()
+                        ->unique('id');
+
+                    $avgWorkDays = 22;
+
+                    foreach ($projects as $p) {
+                        // Считаем дни работы на проекте по табелю
+                        $totalDays = 0;
+                        $projectHistory = $histories->where('project_id', $p->id);
+
+                        foreach ($projectHistory as $record) {
+                            $recordStart = $record->assigned_at->max($forecastStart);
+                            $recordEnd = ($record->unassigned_at ?? $forecastEnd)->min($forecastEnd);
+
+                            $currentDate = $recordStart->copy();
+                            while ($currentDate->lte($recordEnd)) {
+                                $dateKey = $currentDate->format('Y-m-d');
+                                $totalDays += $workDayCoefficients[$dateKey] ?? 0;
+                                $currentDate->addDay();
+                            }
+                        }
+
+                        $contract = (float) ($p->contract_amount ?? 0);
+                        $maxBonus = $contract * ($percent / 100);
+                        $bonusPerDay = $avgWorkDays > 0 ? $maxBonus / $avgWorkDays : 0;
+                        $bonusAmount = $bonusPerDay * $totalDays;
+
+                        $bonusTotal += $bonusAmount;
+                        $projectBreakdown[] = [
+                            'title' => $p->title,
+                            'contract_amount' => $contract,
+                            'bonus_percent' => $percent,
+                            'max_bonus' => $maxBonus,
+                            'days_worked' => $totalDays,
+                            'bonus_amount' => $bonusAmount,
+                        ];
+                    }
+
+                    $total = $base + $bonusTotal;
+                } else {
+                    $total = $base;
+                }
+
+                return [
+                    'user' => $u,
+                    'base' => $base,
+                    'bonus_total' => $bonusTotal,
+                    'total' => $total,
+                    'source' => $source,
+                    'project_breakdown' => $projectBreakdown,
+                ];
+            });
+
+        $salaryForecastTotal = (float) $salaryForecastUsers->sum('total');
+
         $incomeOperations = Payment::leftJoin('projects', 'projects.id', '=', 'payments.project_id')
             ->select(
                 'payments.id',
@@ -485,6 +590,7 @@ class DashboardController extends Controller
             'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit', 'expectedReceivedMonth', 'expectedRemaining',
             'monthlyExpenses', 'monthlyExpensesMonth', 'expectedProjects', 'showWeeklyExpenses',
             'barterProjects', 'ownProjects', 'commercialProjects', 'linkCards', 'officeExpenseCategories', 'totalAmount', 'salaryFundExpenses',
+            'salaryForecastTotal', 'salaryForecastUsers', 'forecastMonthLabel',
             'incomeOperations', 'expenseOperations'
         ));
     }

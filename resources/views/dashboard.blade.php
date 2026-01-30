@@ -108,14 +108,25 @@
             </div>
 
             {{-- ===== SALARY FUND ===== --}}
-            <button type="button" id="salary-fund-open"
-                class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
-                <div class="text-xs text-gray-500">Фонд ЗП (категория ЗП)</div>
-                <div class="text-2xl font-bold mt-1 text-indigo-600">
-                    {{ number_format($totalAmount ?? 0, 2, '.', ' ') }} ₽
-                </div>
-                <div class="text-xs text-gray-500 mt-1">Операции за выбранный месяц</div>
-            </button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button type="button" id="salary-fund-open"
+                    class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
+                    <div class="text-xs text-gray-500">Фонд ЗП (категория ЗП)</div>
+                    <div class="text-2xl font-bold mt-1 text-indigo-600">
+                        {{ number_format($totalAmount ?? 0, 2, '.', ' ') }} ₽
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">Операции за выбранный месяц</div>
+                </button>
+
+                <button type="button" id="salary-fund-forecast-open"
+                    class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
+                    <div class="text-xs text-gray-500">Прогноз ФОТ (ожидаемые выплаты)</div>
+                    <div class="text-2xl font-bold mt-1 text-indigo-600">
+                        {{ number_format($salaryForecastTotal ?? 0, 2, '.', ' ') }} ₽
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">{{ $forecastMonthLabel ?? 'Текущий месяц' }}</div>
+                </button>
+            </div>
 
             @php
                 $currentMonth = \Carbon\Carbon::now()->format('Y-m');
@@ -207,6 +218,101 @@
                                                     </td>
                                                     <td class="px-3 py-2 text-right font-semibold">
                                                         {{ number_format($exp->amount, 2, '.', ' ') }} ₽
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ===== SALARY FUND FORECAST MODAL ===== --}}
+            <div id="salary-fund-forecast-modal" class="fixed inset-0 z-50 hidden">
+                <div id="salary-fund-forecast-overlay" class="absolute inset-0 bg-black/50"></div>
+                <div class="absolute inset-0 flex items-center justify-center p-4">
+                    <div class="w-full max-w-5xl bg-white rounded-xl shadow-lg overflow-hidden">
+                        <div class="flex items-center justify-between px-5 py-4 border-b">
+                            <div>
+                                <div class="text-lg font-semibold text-gray-800">Прогноз ФОТ — детали</div>
+                                <div class="text-xs text-gray-500">{{ $forecastMonthLabel ?? 'Текущий месяц' }}</div>
+                            </div>
+                            <button type="button" id="salary-fund-forecast-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                        </div>
+
+                        <div class="p-5 max-h-[70vh] overflow-y-auto">
+                            @if (($salaryForecastUsers ?? collect())->isEmpty())
+                                <div class="text-sm text-gray-500">Нет пользователей для расчёта.</div>
+                            @else
+                                <div class="overflow-auto">
+                                    <table class="min-w-full text-sm">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">Пользователь</th>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">Роль</th>
+                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">База</th>
+                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">Премия</th>
+                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">Итого</th>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">Источник</th>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">Детализация (маркетологи)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y">
+                                            @foreach ($salaryForecastUsers as $row)
+                                                @php
+                                                    $u = $row['user'];
+                                                    $role = $u->role;
+                                                    $source = $row['source'];
+                                                    $isMarketer = $role === 'marketer';
+                                                @endphp
+                                                <tr>
+                                                    <td class="px-3 py-2 whitespace-nowrap">
+                                                        {{ $u->name }}
+                                                    </td>
+                                                    <td class="px-3 py-2">
+                                                        @switch($role)
+                                                            @case('admin') Администратор @break
+                                                            @case('project_manager') Проект-менеджер @break
+                                                            @case('marketer') Маркетолог @break
+                                                            @case('frontend') Верстальщик @break
+                                                            @case('designer') Дизайнер @break
+                                                            @case('lawyer') Юрист @break
+                                                            @default {{ ucfirst($role) }}
+                                                        @endswitch
+                                                    </td>
+                                                    <td class="px-3 py-2 text-right">
+                                                        {{ number_format($row['base'] ?? 0, 2, '.', ' ') }} ₽
+                                                    </td>
+                                                    <td class="px-3 py-2 text-right">
+                                                        {{ number_format($row['bonus_total'] ?? 0, 2, '.', ' ') }} ₽
+                                                    </td>
+                                                    <td class="px-3 py-2 text-right font-semibold">
+                                                        {{ number_format($row['total'] ?? 0, 2, '.', ' ') }} ₽
+                                                    </td>
+                                                    <td class="px-3 py-2">
+                                                        @if ($source === 'manual')
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">вручную</span>
+                                                        @else
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">авто</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="px-3 py-2 text-xs text-gray-600">
+                                                        @if ($isMarketer && !empty($row['project_breakdown']))
+                                                            <div class="space-y-1">
+                                                                @foreach ($row['project_breakdown'] as $p)
+                                                                    <div>
+                                                                        <span class="font-medium">{{ $p['title'] }}</span>
+                                                                        — {{ number_format($p['bonus_amount'] ?? 0, 2, '.', ' ') }} ₽
+                                                                        <span class="text-gray-400">(дней: {{ number_format($p['days_worked'] ?? 0, 1, '.', ' ') }})</span>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        @else
+                                                            —
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -1251,6 +1357,26 @@
             if (salaryFundClose) salaryFundClose.addEventListener('click', closeSalaryFundModal);
             if (salaryFundOverlay) salaryFundOverlay.addEventListener('click', closeSalaryFundModal);
 
+            // Salary fund forecast modal
+            const salaryFundForecastModal = document.getElementById('salary-fund-forecast-modal');
+            const salaryFundForecastOpen = document.getElementById('salary-fund-forecast-open');
+            const salaryFundForecastClose = document.getElementById('salary-fund-forecast-close');
+            const salaryFundForecastOverlay = document.getElementById('salary-fund-forecast-overlay');
+
+            function openSalaryFundForecastModal() {
+                if (!salaryFundForecastModal) return;
+                salaryFundForecastModal.classList.remove('hidden');
+            }
+
+            function closeSalaryFundForecastModal() {
+                if (!salaryFundForecastModal) return;
+                salaryFundForecastModal.classList.add('hidden');
+            }
+
+            if (salaryFundForecastOpen) salaryFundForecastOpen.addEventListener('click', openSalaryFundForecastModal);
+            if (salaryFundForecastClose) salaryFundForecastClose.addEventListener('click', closeSalaryFundForecastModal);
+            if (salaryFundForecastOverlay) salaryFundForecastOverlay.addEventListener('click', closeSalaryFundForecastModal);
+
             // Income / Expense modals
             const incomeModal = document.getElementById('income-ops-modal');
             const incomeOpen = document.getElementById('income-ops-open');
@@ -1297,6 +1423,7 @@
                     closeOwnModal();
                     closeCommercialModal();
                     closeSalaryFundModal();
+                    closeSalaryFundForecastModal();
                     closeIncomeModal();
                     closeExpenseModal();
                 }

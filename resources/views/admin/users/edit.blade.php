@@ -164,6 +164,15 @@
                                 min="0" max="100" step="1"
                                 class="w-32 rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
+
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium mb-1">Прогноз ФОТ (руб)</label>
+                            <input type="number" name="forecast_amount"
+                                value="{{ old('forecast_amount', $user->forecast_amount) }}" min="0" step="100"
+                                class="w-48 rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            <div class="text-xs text-gray-500 mt-1">При заполнении значение будет использовано в отчёте
+                                прогнозного ФОТ вместо авт. расчёта.</div>
+                        </div>
                     </div>
                 </div>
 

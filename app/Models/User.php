@@ -43,6 +43,7 @@ class User extends Authenticatable
         'specialty_id',
         'salary_override',
         'is_department_head',
+        'forecast_amount',
         'individual_bonus_percent', // новое поле
     ];
 
@@ -61,6 +62,7 @@ class User extends Authenticatable
             'is_department_head' => 'boolean',
             'specialty_id' => 'integer',
             'individual_bonus_percent' => 'integer', // новое поле
+            'forecast_amount' => 'decimal:2',
             'birth_date' => 'date',
         ];
     }

@@ -72,7 +72,9 @@
                         @endif
                     </div>
 
-                    <div class="text-sm font-semibold text-gray-900">{{ $card->title }}</div>
+                    <div class="text-sm font-semibold text-gray-900" title="{{ e($card->title) }}">
+                        {{ e(\Illuminate\Support\Str::limit($card->title, 20)) }}
+                    </div>
                 </a>
 
                 <div class="text-xs text-gray-500 break-all mt-1" title="{{ e($card->url) }}">

@@ -14,6 +14,7 @@
             <p><strong>Email:</strong> {{ $user->email ?? '-' }}</p>
             <p><strong>Роль:</strong> {{ $user->role === 'admin' ? 'Администратор' : 'Менеджер' }}</p>
             <p><strong>Создан:</strong> {{ $user->created_at->format('d.m.Y H:i') }}</p>
+            <p><strong>Прогноз ФОТ:</strong> {!! $user->forecast_amount ? number_format($user->forecast_amount, 0, '', ' ') . ' ₽' : '&mdash;' !!}</p>
         </div>
     </div>
 @endsection
