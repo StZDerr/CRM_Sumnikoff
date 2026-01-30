@@ -36,6 +36,13 @@
                     @endforeach
                 </div>
 
+                <div class="mb-4">
+                    <label class="text-xs text-gray-500">Поиск</label>
+                    <input id="project-search-input" type="search" name="q" value="{{ $q ?? '' }}"
+                        placeholder="Поиск по названию..."
+                        class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" />
+                </div>
+
                 <div class="flex items-center gap-4">
                     <details class="mb-0 w-full rounded shadow-sm bg-white">
                         <summary
@@ -49,16 +56,14 @@
                             </svg>
                         </summary>
 
-                        <form method="GET" action="{{ route('projects.index') }}" class="p-4">
+                        <form method="GET" action="{{ route('projects.index') }}" class="p-4"
+                            id="projects-filters-form">
                             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
                                 <div class="lg:col-span-4">
                                     <div class="p-3 bg-gray-50 rounded border border-gray-100">
                                         <div class="flex flex-wrap items-end gap-3">
                                             <div class="w-full">
-                                                <label class="text-xs text-gray-500">Поиск</label>
-                                                <input type="search" name="q" value="{{ $q ?? '' }}"
-                                                    placeholder="Поиск по названию..."
-                                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" />
+                                                {{-- search moved above details --}}
                                             </div>
 
                                             <div class="w-40">
@@ -166,229 +171,232 @@
                 </div>
             </div>
 
-            <div class="divide-y">
-                @forelse($projects as $project)
-                    <div class="flex items-center gap-4 px-4 py-3 hover:bg-gray-50">
-                        <div class="w-36 text-center">
-                            @if (auth()->user()->isAdmin())
-                                <div class="text-xs text-gray-500">День оплаты</div>
-                            @else
-                                <div class="text-xs text-gray-500">День отчета</div>
-                            @endif
-                            <div class="text-sm text-gray-700 mt-1">
-                                {{ $project->payment_due_day ?? ($project->contract_date ? $project->contract_date->day : '—') }}
+            <div id="projects-list-container">
+                <div id="projects-list" class="divide-y">
+                    @forelse($projects as $project)
+                        <div class="flex items-center gap-4 px-4 py-3 hover:bg-gray-50">
+                            <div class="w-36 text-center">
+                                @if (auth()->user()->isAdmin())
+                                    <div class="text-xs text-gray-500">День оплаты</div>
+                                @else
+                                    <div class="text-xs text-gray-500">День отчета</div>
+                                @endif
+                                <div class="text-sm text-gray-700 mt-1">
+                                    {{ $project->payment_due_day ?? ($project->contract_date ? $project->contract_date->day : '—') }}
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <a href="{{ route('projects.show', $project) }}"
-                                        class="font-medium text-gray-900">{{ $project->title }}</a>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <a href="{{ route('projects.show', $project) }}"
+                                            class="font-medium text-gray-900">{{ $project->title }}</a>
 
-                                    @if (!empty($project->status))
-                                        <span
-                                            class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                                            style="background-color: {{ e($project->status_color) }}; color: {{ $project->status_color === '#F59E0B' ? '#111827' : '#ffffff' }};">
-                                            {{ $project->status_label }}
-                                        </span>
-                                    @endif
-
-                                    @php
-                                        $impColor = $project->importance?->color;
-                                        $impBg = $impColor ?: '#E5E7EB';
-                                        $impText = $impColor ? '#FFFFFF' : '#374151';
-                                    @endphp
-
-                                    @if (auth()->user()->isAdmin())
-                                        <form method="POST" action="{{ route('projects.importance.update', $project) }}"
-                                            class="js-importance-form inline-block">
-                                            @csrf
-                                            @method('PATCH')
-                                            <select name="importance_id"
-                                                data-prev-value="{{ $project->importance_id ?? '' }}"
-                                                data-project-id="{{ $project->id }}"
-                                                class="js-importance-select ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer"
-                                                style="background-color: {{ e($impBg) }}; color: {{ e($impText) }}; border: none;">
-                                                <option value="" data-color="#E5E7EB">— нет —</option>
-                                                @foreach ($importances as $id => $name)
-                                                    @php
-                                                        $color =
-                                                            $importancesList->firstWhere('id', $id)?->color ?:
-                                                            '#E5E7EB';
-                                                        $text = $color ? '#FFFFFF' : '#374151';
-                                                    @endphp
-                                                    <option value="{{ $id }}" @selected((string) $project->importance_id === (string) $id)
-                                                        data-color="{{ e($color) }}"
-                                                        style="background-color: {{ e($color) }}; color: {{ e($text) }}">
-                                                        {{ $name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </form>
-                                    @else
-                                        @if (!empty($project->importance?->name))
+                                        @if (!empty($project->status))
                                             <span
                                                 class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                                                style="background-color: {{ e($impBg) }}; color: {{ e($impText) }};">
-                                                {{ $project->importance->name }}
+                                                style="background-color: {{ e($project->status_color) }}; color: {{ $project->status_color === '#F59E0B' ? '#111827' : '#ffffff' }};">
+                                                {{ $project->status_label }}
                                             </span>
                                         @endif
-                                    @endif
-                                    <div class="text-xs text-gray-500">
-                                        {{ $project->organization?->name_short ?? ($project->organization?->name_full ?? '-') }}
-                                        • {{ $project->city ?? '-' }}
-                                    </div>
-                                </div>
 
-                                <div class="text-right">
-                                    <div class="text-sm text-gray-500">{{ $project->marketer?->name ?? '-' }}</div>
-                                    <div class="text-sm text-gray-400 mt-1">
                                         @php
-                                            // Рассчитываем баланс: платежи - счета
-                                            $invoicesTotal = $project->invoices_total;
-                                            $paymentsTotal = $project->payments_total;
-                                            $bal = $paymentsTotal - $invoicesTotal;
-                                            $hasInvoices = $invoicesTotal > 0;
+                                            $impColor = $project->importance?->color;
+                                            $impBg = $impColor ?: '#E5E7EB';
+                                            $impText = $impColor ? '#FFFFFF' : '#374151';
                                         @endphp
 
-                                        {{-- Пометка закрытого / закрывающегося проекта --}}
-                                        @if (!empty($project->closed_at))
+                                        @if (auth()->user()->isAdmin())
+                                            <form method="POST"
+                                                action="{{ route('projects.importance.update', $project) }}"
+                                                class="js-importance-form inline-block">
+                                                @csrf
+                                                @method('PATCH')
+                                                <select name="importance_id"
+                                                    data-prev-value="{{ $project->importance_id ?? '' }}"
+                                                    data-project-id="{{ $project->id }}"
+                                                    class="js-importance-select ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer"
+                                                    style="background-color: {{ e($impBg) }}; color: {{ e($impText) }}; border: none;">
+                                                    <option value="" data-color="#E5E7EB">— нет —</option>
+                                                    @foreach ($importances as $id => $name)
+                                                        @php
+                                                            $color =
+                                                                $importancesList->firstWhere('id', $id)?->color ?:
+                                                                '#E5E7EB';
+                                                            $text = $color ? '#FFFFFF' : '#374151';
+                                                        @endphp
+                                                        <option value="{{ $id }}" @selected((string) $project->importance_id === (string) $id)
+                                                            data-color="{{ e($color) }}"
+                                                            style="background-color: {{ e($color) }}; color: {{ e($text) }}">
+                                                            {{ $name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </form>
+                                        @else
+                                            @if (!empty($project->importance?->name))
+                                                <span
+                                                    class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                                    style="background-color: {{ e($impBg) }}; color: {{ e($impText) }};">
+                                                    {{ $project->importance->name }}
+                                                </span>
+                                            @endif
+                                        @endif
+                                        <div class="text-xs text-gray-500">
+                                            {{ $project->organization?->name_short ?? ($project->organization?->name_full ?? '-') }}
+                                            • {{ $project->city ?? '-' }}
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right">
+                                        <div class="text-sm text-gray-500">{{ $project->marketer?->name ?? '-' }}</div>
+                                        <div class="text-sm text-gray-400 mt-1">
                                             @php
-                                                $closedDate = \Illuminate\Support\Carbon::make(
-                                                    $project->closed_at,
-                                                )->startOfDay();
-                                                $today = \Illuminate\Support\Carbon::today();
-                                                $tomorrow = $today->copy()->addDay();
-                                                $inSevenDays = $today->copy()->addDays(7);
+                                                // Рассчитываем баланс: платежи - счета
+                                                $invoicesTotal = $project->invoices_total;
+                                                $paymentsTotal = $project->payments_total;
+                                                $bal = $paymentsTotal - $invoicesTotal;
+                                                $hasInvoices = $invoicesTotal > 0;
                                             @endphp
 
-                                            @if ($closedDate->lt($today))
+                                            {{-- Пометка закрытого / закрывающегося проекта --}}
+                                            @if (!empty($project->closed_at))
+                                                @php
+                                                    $closedDate = \Illuminate\Support\Carbon::make(
+                                                        $project->closed_at,
+                                                    )->startOfDay();
+                                                    $today = \Illuminate\Support\Carbon::today();
+                                                    $tomorrow = $today->copy()->addDay();
+                                                    $inSevenDays = $today->copy()->addDays(7);
+                                                @endphp
+
+                                                @if ($closedDate->lt($today))
+                                                    <button type="button"
+                                                        class="inline-flex items-center px-2 py-1 bg-black text-white rounded text-sm mr-2"
+                                                        data-tippy
+                                                        data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
+                                                        Закрыт
+                                                    </button>
+                                                @elseif ($closedDate->isSameDay($today))
+                                                    <button type="button"
+                                                        class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
+                                                        data-tippy
+                                                        data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
+                                                        Сегодня закрытия
+                                                    </button>
+                                                @elseif ($closedDate->isSameDay($tomorrow))
+                                                    <button type="button"
+                                                        class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
+                                                        data-tippy
+                                                        data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
+                                                        Остался 1 день до закрытия
+                                                    </button>
+                                                @elseif ($closedDate->lte($inSevenDays))
+                                                    <button type="button"
+                                                        class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
+                                                        data-tippy
+                                                        data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
+                                                        На стадии закрытия
+                                                    </button>
+                                                @endif
+                                            @endif
+
+                                            {{-- Пометка бартерного проекта --}}
+                                            @if (isset($project->payment_type) && $project->payment_type === 'barter')
                                                 <button type="button"
-                                                    class="inline-flex items-center px-2 py-1 bg-black text-white rounded text-sm mr-2"
+                                                    class="inline-flex items-center px-2 py-1 bg-yellow-500 text-white rounded text-sm mr-2"
                                                     data-tippy
-                                                    data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
-                                                    Закрыт
-                                                </button>
-                                            @elseif ($closedDate->isSameDay($today))
-                                                <button type="button"
-                                                    class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
-                                                    data-tippy
-                                                    data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
-                                                    Сегодня закрытия
-                                                </button>
-                                            @elseif ($closedDate->isSameDay($tomorrow))
-                                                <button type="button"
-                                                    class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
-                                                    data-tippy
-                                                    data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
-                                                    Остался 1 день до закрытия
-                                                </button>
-                                            @elseif ($closedDate->lte($inSevenDays))
-                                                <button type="button"
-                                                    class="inline-flex items-center px-2 py-1 bg-gray-200 text-gray-800 rounded text-sm mr-2"
-                                                    data-tippy
-                                                    data-tippy-content="Дата закрытия: {{ $closedDate->format('Y-m-d') }}">
-                                                    На стадии закрытия
+                                                    data-tippy-content="Бартерный проект — счета не выставляются автоматически">
+                                                    Бартер
                                                 </button>
                                             @endif
-                                        @endif
 
-                                        {{-- Пометка бартерного проекта --}}
-                                        @if (isset($project->payment_type) && $project->payment_type === 'barter')
-                                            <button type="button"
-                                                class="inline-flex items-center px-2 py-1 bg-yellow-500 text-white rounded text-sm mr-2"
-                                                data-tippy
-                                                data-tippy-content="Бартерный проект — счета не выставляются автоматически">
-                                                Бартер
-                                            </button>
-                                        @endif
-
-                                        {{-- Пометка своих проектов --}}
-                                        @if (isset($project->payment_type) && $project->payment_type === 'own')
-                                            <button type="button"
-                                                class="inline-flex items-center px-2 py-1 bg-indigo-600 text-white rounded text-sm mr-2"
-                                                data-tippy
-                                                data-tippy-content="Свой проект — счета не выставляются автоматически">
-                                                Свой проект
-                                            </button>
-                                        @endif
-                                        @if (auth()->user()->isAdmin())
-                                            @if ($hasInvoices && $bal < 0)
-                                                {{-- Долг: счета > платежей --}}
+                                            {{-- Пометка своих проектов --}}
+                                            @if (isset($project->payment_type) && $project->payment_type === 'own')
                                                 <button type="button"
-                                                    class="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded text-sm"
+                                                    class="inline-flex items-center px-2 py-1 bg-indigo-600 text-white rounded text-sm mr-2"
                                                     data-tippy
-                                                    data-tippy-content="Счета: {{ number_format($invoicesTotal, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽<br>Долг: {{ number_format(abs($bal), 0, '.', ' ') }} ₽">
-                                                    Долг
+                                                    data-tippy-content="Свой проект — счета не выставляются автоматически">
+                                                    Свой проект
                                                 </button>
-                                            @elseif ($hasInvoices && $bal > 0)
-                                                {{-- Переплата: платежей > счетов --}}
-                                                <button type="button"
-                                                    class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-sm"
-                                                    data-tippy
-                                                    data-tippy-content="Счета: {{ number_format($invoicesTotal, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽<br>Переплата: {{ number_format($bal, 0, '.', ' ') }} ₽">
-                                                    Переплата
-                                                </button>
-                                            @elseif ($hasInvoices && round($bal, 2) == 0)
-                                                {{-- Оплачено: счета = платежам --}}
-                                                <button type="button"
-                                                    class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-sm"
-                                                    data-tippy
-                                                    data-tippy-content="Счета: {{ number_format($invoicesTotal, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽">
-                                                    Оплачено
-                                                </button>
-                                            @elseif (!$hasInvoices && $paymentsTotal > 0)
-                                                {{-- Нет счетов, но есть платежи --}}
-                                                <button type="button"
-                                                    class="inline-flex items-center px-2 py-1 bg-blue-600 text-white rounded text-sm"
-                                                    data-tippy
-                                                    data-tippy-content="Нет счетов<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽">
-                                                    Без счёта
-                                                </button>
-                                            @else
-                                                <span class="text-sm text-gray-400">—</span>
                                             @endif
-                                        @endif
+                                            @if (auth()->user()->isAdmin())
+                                                @if ($hasInvoices && $bal < 0)
+                                                    {{-- Долг: счета > платежей --}}
+                                                    <button type="button"
+                                                        class="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded text-sm"
+                                                        data-tippy
+                                                        data-tippy-content="Счета: {{ number_format($invoicesTotal, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽<br>Долг: {{ number_format(abs($bal), 0, '.', ' ') }} ₽">
+                                                        Долг
+                                                    </button>
+                                                @elseif ($hasInvoices && $bal > 0)
+                                                    {{-- Переплата: платежей > счетов --}}
+                                                    <button type="button"
+                                                        class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-sm"
+                                                        data-tippy
+                                                        data-tippy-content="Счета: {{ number_format($invoicesTotal, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽<br>Переплата: {{ number_format($bal, 0, '.', ' ') }} ₽">
+                                                        Переплата
+                                                    </button>
+                                                @elseif ($hasInvoices && round($bal, 2) == 0)
+                                                    {{-- Оплачено: счета = платежам --}}
+                                                    <button type="button"
+                                                        class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-sm"
+                                                        data-tippy
+                                                        data-tippy-content="Счета: {{ number_format($invoicesTotal, 0, '.', ' ') }} ₽<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽">
+                                                        Оплачено
+                                                    </button>
+                                                @elseif (!$hasInvoices && $paymentsTotal > 0)
+                                                    {{-- Нет счетов, но есть платежи --}}
+                                                    <button type="button"
+                                                        class="inline-flex items-center px-2 py-1 bg-blue-600 text-white rounded text-sm"
+                                                        data-tippy
+                                                        data-tippy-content="Нет счетов<br>Оплачено: {{ number_format($paymentsTotal, 0, '.', ' ') }} ₽">
+                                                        Без счёта
+                                                    </button>
+                                                @else
+                                                    <span class="text-sm text-gray-400">—</span>
+                                                @endif
+                                            @endif
 
+                                        </div>
                                     </div>
                                 </div>
+
+                                @if ($project->stages->count())
+                                    <div class="text-xs text-gray-500 mt-2">
+                                        Виды продвижения: {{ $project->stages->pluck('name')->join(' • ') }}
+                                    </div>
+                                @endif
                             </div>
 
-                            @if ($project->stages->count())
-                                <div class="text-xs text-gray-500 mt-2">
-                                    Виды продвижения: {{ $project->stages->pluck('name')->join(' • ') }}
-                                </div>
-                            @endif
+                            <div class="flex items-center gap-2">
+                                @can('view', $project)
+                                    <a href="{{ route('projects.show', $project) }}"
+                                        class="text-indigo-600 hover:text-indigo-800 text-sm p-2">Просмотр</a>
+                                @endcan
+
+                                @can('update', $project)
+                                    <a href="{{ route('projects.edit', $project) }}"
+                                        class="text-indigo-600 hover:text-indigo-800 text-sm p-2">Редактировать</a>
+                                @endcan
+
+                                @can('delete', $project)
+                                    <form action="{{ route('projects.destroy', $project) }}" method="POST"
+                                        onsubmit="return confirm('Удалить проект?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="text-red-600 hover:text-red-800 text-sm p-2">Удалить</button>
+                                    </form>
+                                @endcan
+                            </div>
                         </div>
+                    @empty
+                        <div class="px-4 py-6 text-gray-500">Пока нет проектов.</div>
+                    @endforelse
+                </div>
 
-                        <div class="flex items-center gap-2">
-                            @can('view', $project)
-                                <a href="{{ route('projects.show', $project) }}"
-                                    class="text-indigo-600 hover:text-indigo-800 text-sm p-2">Просмотр</a>
-                            @endcan
-
-                            @can('update', $project)
-                                <a href="{{ route('projects.edit', $project) }}"
-                                    class="text-indigo-600 hover:text-indigo-800 text-sm p-2">Редактировать</a>
-                            @endcan
-
-                            @can('delete', $project)
-                                <form action="{{ route('projects.destroy', $project) }}" method="POST"
-                                    onsubmit="return confirm('Удалить проект?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="text-red-600 hover:text-red-800 text-sm p-2">Удалить</button>
-                                </form>
-                            @endcan
-                        </div>
-                    </div>
-                @empty
-                    <div class="px-4 py-6 text-gray-500">Пока нет проектов.</div>
-                @endforelse
-            </div>
-
-            <div class="p-4">
-                {{ $projects->links() }}
+                <div class="p-4">
+                    {{ $projects->links() }}
+                </div>
             </div>
         </div>
     </div>
@@ -396,7 +404,6 @@
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                const selects = document.querySelectorAll('.js-importance-select');
                 const toastContainer = document.querySelector('[aria-live="polite"]');
 
                 function showToast(message, type = 'success') {
@@ -410,60 +417,145 @@
                     setTimeout(() => el.remove(), 4000);
                 }
 
-                selects.forEach(select => {
-                    select.addEventListener('change', async (e) => {
-                        const prev = select.dataset.prevValue ?? '';
-                        const form = select.closest('form');
-                        if (!form) return;
+                // Importance selects initializer (call after any DOM replacement)
+                function initImportanceSelects() {
+                    const selects = document.querySelectorAll('.js-importance-select');
 
-                        select.disabled = true;
+                    selects.forEach(select => {
+                        // avoid duplicate listeners
+                        if (select.dataset._importanceInit) return;
+                        select.dataset._importanceInit = '1';
 
-                        const tokenEl = document.querySelector('meta[name="csrf-token"]');
-                        const token = tokenEl ? tokenEl.getAttribute('content') : '';
+                        select.addEventListener('change', async (e) => {
+                            const prev = select.dataset.prevValue ?? '';
+                            const form = select.closest('form');
+                            if (!form) return;
 
-                        try {
-                            const res = await fetch(form.action, {
-                                method: 'PATCH',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json',
-                                    'X-CSRF-TOKEN': token,
-                                },
-                                body: JSON.stringify({
-                                    importance_id: select.value
-                                })
-                            });
+                            select.disabled = true;
 
-                            if (!res.ok) {
-                                let err = null;
-                                try {
-                                    err = await res.json();
-                                } catch (ex) {
-                                    /* ignore */ }
-                                throw err || new Error('Ошибка сети');
+                            const tokenEl = document.querySelector('meta[name="csrf-token"]');
+                            const token = tokenEl ? tokenEl.getAttribute('content') : '';
+
+                            try {
+                                const res = await fetch(form.action, {
+                                    method: 'PATCH',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json',
+                                        'X-CSRF-TOKEN': token,
+                                    },
+                                    body: JSON.stringify({
+                                        importance_id: select.value
+                                    })
+                                });
+
+                                if (!res.ok) {
+                                    let err = null;
+                                    try {
+                                        err = await res.json();
+                                    } catch (ex) {
+                                        /* ignore */
+                                    }
+                                    throw err || new Error('Ошибка сети');
+                                }
+
+                                const data = await res.json();
+
+                                const option = select.querySelector('option:checked');
+                                const color = data.color || option?.dataset?.color || '#E5E7EB';
+                                const textColor = (color === '#F59E0B') ? '#111827' : '#ffffff';
+
+                                select.style.backgroundColor = color;
+                                select.style.color = textColor;
+
+                                // update prev value
+                                select.dataset.prevValue = select.value;
+
+                                showToast('Важность обновлена', 'success');
+                            } catch (err) {
+                                // rollback selection
+                                select.value = prev;
+                                showToast(err?.message || 'Ошибка при сохранении', 'error');
+                            } finally {
+                                select.disabled = false;
                             }
+                        });
+                    });
+                }
 
-                            const data = await res.json();
+                initImportanceSelects();
 
-                            const option = select.querySelector('option:checked');
-                            const color = data.color || option?.dataset?.color || '#E5E7EB';
-                            const textColor = (color === '#F59E0B') ? '#111827' : '#ffffff';
+                // Live search + pagination handling
+                const searchInput = document.getElementById('project-search-input');
+                const filtersForm = document.getElementById('projects-filters-form');
+                const container = document.getElementById('projects-list-container');
 
-                            select.style.backgroundColor = color;
-                            select.style.color = textColor;
+                function buildUrlFromForm(queryOverrides = {}) {
+                    const params = new URLSearchParams(new FormData(filtersForm));
+                    Object.keys(queryOverrides).forEach(k => {
+                        if (queryOverrides[k] === null) params.delete(k);
+                        else params.set(k, queryOverrides[k]);
+                    });
+                    return filtersForm.action + (params.toString() ? ('?' + params.toString()) : '');
+                }
 
-                            // update prev value
-                            select.dataset.prevValue = select.value;
+                async function fetchAndReplace(url) {
+                    try {
+                        const res = await fetch(url, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        if (!res.ok) throw new Error('Ошибка при получении данных');
+                        const html = await res.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newCont = doc.querySelector('#projects-list-container');
+                        if (newCont && container) {
+                            container.innerHTML = newCont.innerHTML;
+                            initImportanceSelects();
+                        }
+                        // update URL
+                        history.pushState({}, '', url);
+                    } catch (err) {
+                        showToast(err?.message || 'Ошибка при обновлении списка', 'error');
+                    }
+                }
 
-                            showToast('Важность обновлена', 'success');
-                        } catch (err) {
-                            // rollback selection
-                            select.value = prev;
-                            showToast(err?.message || 'Ошибка при сохранении', 'error');
-                        } finally {
-                            select.disabled = false;
+                let debounceTimer = null;
+                if (searchInput && filtersForm) {
+                    searchInput.addEventListener('input', (e) => {
+                        clearTimeout(debounceTimer);
+                        debounceTimer = setTimeout(() => {
+                            // ensure form q = searchInput value
+                            const url = buildUrlFromForm({
+                                q: searchInput.value,
+                                page: null
+                            });
+                            fetchAndReplace(url);
+                        }, 300);
+                    });
+                }
+
+                // Intercept clicks on links inside container (pagination links)
+                if (container) {
+                    container.addEventListener('click', function(e) {
+                        const a = e.target.closest('a');
+                        if (!a) return;
+                        const href = a.getAttribute('href');
+                        if (!href) return;
+                        const url = new URL(href, window.location.origin);
+                        // Only intercept links to the same path (projects index)
+                        if (url.pathname === new URL(filtersForm.action, window.location.origin).pathname) {
+                            e.preventDefault();
+                            fetchAndReplace(url.toString());
                         }
                     });
+                }
+
+                // Handle browser navigation
+                window.addEventListener('popstate', function() {
+                    fetchAndReplace(window.location.pathname + window.location.search);
                 });
             });
         </script>
