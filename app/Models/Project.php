@@ -23,6 +23,25 @@ class Project extends Model
 
     public const STATUS_STOPPED = 'stopped';     // стоп
 
+    // Человекочитаемые статусы и цвета для отображения
+    public const STATUSES = [
+        self::STATUS_IN_PROGRESS => ['label' => 'В работе', 'color' => '#10B981'], // green-500
+        self::STATUS_PAUSED => ['label' => 'Пауза', 'color' => '#F59E0B'], // yellow-500
+        self::STATUS_STOPPED => ['label' => 'Стоп', 'color' => '#EF4444'], // red-500
+    ];
+
+    // Читаемый статус
+    public function getStatusLabelAttribute(): string
+    {
+        return self::STATUSES[$this->status]['label'] ?? ($this->status ?? '-');
+    }
+
+    // Цвет для бейджа (hex)
+    public function getStatusColorAttribute(): string
+    {
+        return self::STATUSES[$this->status]['color'] ?? '#6B7280';
+    }
+
     protected $fillable = [
         'title',
         'organization_id',

@@ -344,6 +344,35 @@ class ProjectController extends Controller
     }
 
     /**
+     * Быстро изменить важность проекта (только для admin). Возвращает JSON при AJAX-запросе.
+     */
+    public function updateImportance(Request $request, Project $project)
+    {
+        if (! auth()->user()->isAdmin()) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'importance_id' => ['nullable', 'integer', 'exists:importances,id'],
+        ]);
+
+        $project->update([
+            'importance_id' => $data['importance_id'] ?? null,
+            'updated_by' => auth()->id(),
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'status' => 'ok',
+                'label' => $project->importance?->name,
+                'color' => $project->importance?->color,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Важность проекта обновлена.');
+    }
+
+    /**
      * Удаление
      */
     public function destroy(Project $project)

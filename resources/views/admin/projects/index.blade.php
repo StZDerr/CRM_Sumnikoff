@@ -185,17 +185,54 @@
                                 <div>
                                     <a href="{{ route('projects.show', $project) }}"
                                         class="font-medium text-gray-900">{{ $project->title }}</a>
-                                    @if (!empty($project->importance?->name))
-                                        @php
-                                            $impColor = $project->importance?->color;
-                                            $impBg = $impColor ?: '#E5E7EB';
-                                            $impText = $impColor ? '#FFFFFF' : '#374151';
-                                        @endphp
+
+                                    @if (!empty($project->status))
                                         <span
                                             class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                                            style="background-color: {{ e($impBg) }}; color: {{ e($impText) }};">
-                                            {{ $project->importance->name }}
+                                            style="background-color: {{ e($project->status_color) }}; color: {{ $project->status_color === '#F59E0B' ? '#111827' : '#ffffff' }};">
+                                            {{ $project->status_label }}
                                         </span>
+                                    @endif
+
+                                    @php
+                                        $impColor = $project->importance?->color;
+                                        $impBg = $impColor ?: '#E5E7EB';
+                                        $impText = $impColor ? '#FFFFFF' : '#374151';
+                                    @endphp
+
+                                    @if (auth()->user()->isAdmin())
+                                        <form method="POST" action="{{ route('projects.importance.update', $project) }}"
+                                            class="js-importance-form inline-block">
+                                            @csrf
+                                            @method('PATCH')
+                                            <select name="importance_id"
+                                                data-prev-value="{{ $project->importance_id ?? '' }}"
+                                                data-project-id="{{ $project->id }}"
+                                                class="js-importance-select ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer"
+                                                style="background-color: {{ e($impBg) }}; color: {{ e($impText) }}; border: none;">
+                                                <option value="" data-color="#E5E7EB">— нет —</option>
+                                                @foreach ($importances as $id => $name)
+                                                    @php
+                                                        $color =
+                                                            $importancesList->firstWhere('id', $id)?->color ?:
+                                                            '#E5E7EB';
+                                                        $text = $color ? '#FFFFFF' : '#374151';
+                                                    @endphp
+                                                    <option value="{{ $id }}" @selected((string) $project->importance_id === (string) $id)
+                                                        data-color="{{ e($color) }}"
+                                                        style="background-color: {{ e($color) }}; color: {{ e($text) }}">
+                                                        {{ $name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </form>
+                                    @else
+                                        @if (!empty($project->importance?->name))
+                                            <span
+                                                class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                                style="background-color: {{ e($impBg) }}; color: {{ e($impText) }};">
+                                                {{ $project->importance->name }}
+                                            </span>
+                                        @endif
                                     @endif
                                     <div class="text-xs text-gray-500">
                                         {{ $project->organization?->name_short ?? ($project->organization?->name_full ?? '-') }}
@@ -355,4 +392,81 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const selects = document.querySelectorAll('.js-importance-select');
+                const toastContainer = document.querySelector('[aria-live="polite"]');
+
+                function showToast(message, type = 'success') {
+                    if (!toastContainer) return;
+                    const el = document.createElement('div');
+                    el.className = 'max-w-sm w-full rounded shadow p-3 flex items-start gap-3 text-sm';
+                    if (type === 'success') el.classList.add('bg-green-600', 'text-white');
+                    else el.classList.add('bg-red-600', 'text-white');
+                    el.textContent = message;
+                    toastContainer.appendChild(el);
+                    setTimeout(() => el.remove(), 4000);
+                }
+
+                selects.forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const prev = select.dataset.prevValue ?? '';
+                        const form = select.closest('form');
+                        if (!form) return;
+
+                        select.disabled = true;
+
+                        const tokenEl = document.querySelector('meta[name="csrf-token"]');
+                        const token = tokenEl ? tokenEl.getAttribute('content') : '';
+
+                        try {
+                            const res = await fetch(form.action, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': token,
+                                },
+                                body: JSON.stringify({
+                                    importance_id: select.value
+                                })
+                            });
+
+                            if (!res.ok) {
+                                let err = null;
+                                try {
+                                    err = await res.json();
+                                } catch (ex) {
+                                    /* ignore */ }
+                                throw err || new Error('Ошибка сети');
+                            }
+
+                            const data = await res.json();
+
+                            const option = select.querySelector('option:checked');
+                            const color = data.color || option?.dataset?.color || '#E5E7EB';
+                            const textColor = (color === '#F59E0B') ? '#111827' : '#ffffff';
+
+                            select.style.backgroundColor = color;
+                            select.style.color = textColor;
+
+                            // update prev value
+                            select.dataset.prevValue = select.value;
+
+                            showToast('Важность обновлена', 'success');
+                        } catch (err) {
+                            // rollback selection
+                            select.value = prev;
+                            showToast(err?.message || 'Ошибка при сохранении', 'error');
+                        } finally {
+                            select.disabled = false;
+                        }
+                    });
+                });
+            });
+        </script>
+    @endpush
+
 @endsection

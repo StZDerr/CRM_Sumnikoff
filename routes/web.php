@@ -86,6 +86,10 @@ Route::middleware('auth')->group(function () {
         // 'account-credentials' => AccountCredentialController::class,
     ]);
 
+    // Admin-only endpoint to update project importance quickly from the list
+    Route::patch('projects/{project}/importance', [ProjectController::class, 'updateImportance'])
+        ->name('projects.importance.update');
+
     Route::prefix('projects/{project}')->group(function () {
         Route::get('history', [ProjectController::class, 'userHistory'])->name('projects.userHistory');
         Route::patch('history/{history}', [ProjectController::class, 'updateHistory'])->name('projects.history.update');
