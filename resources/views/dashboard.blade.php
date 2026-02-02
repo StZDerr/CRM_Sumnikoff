@@ -130,48 +130,97 @@
 
             @php
                 $currentMonth = \Carbon\Carbon::now()->format('Y-m');
+                // determine selected month (use query param if set) and derive date range
+                $selectedMonth = $monthParam ?? $currentMonth;
+                $selectedCarbon = \Carbon\Carbon::createFromFormat('Y-m', $selectedMonth);
+                $startOfMonth = $selectedCarbon->copy()->startOfMonth()->startOfDay();
+                $endOfMonth = $selectedCarbon->copy()->endOfMonth()->endOfDay();
+
+                // counts for paused/stopped projects (global) and new clients for selected month
+                $pausedCount = \App\Models\Project::where('status', \App\Models\Project::STATUS_PAUSED)->count();
+                $stoppedCount = \App\Models\Project::where('status', \App\Models\Project::STATUS_STOPPED)->count();
+                $newClientsCount = \App\Models\Project::whereNotNull('contract_date')
+                    ->whereBetween('contract_date', [$startOfMonth, $endOfMonth])
+                    ->count();
+
+                // closed projects in selected month
+                $closedCount = \App\Models\Project::whereNotNull('closed_at')
+                    ->whereBetween('closed_at', [$startOfMonth, $endOfMonth])
+                    ->count();
             @endphp
-            @if (request('period') !== 'all' && ($monthParam ?? $currentMonth) === $currentMonth)
-                {{-- ===== BARTER AND OWN PROJECTS (count) ===== --}}
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                    <button type="button" id="barter-open"
-                        class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
-                        <div class="text-xs text-gray-500">Бартерные проекты (на
-                            {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
-                        <div class="text-2xl font-bold mt-1 text-yellow-600">{{ $barterCount ?? 0 }}</div>
-                    </button>
+            {{-- ===== BARTER AND OWN PROJECTS (count) ===== --}}
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                <button type="button" id="barter-open"
+                    class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition min-h-20">
+                    <div class="text-xs text-gray-500">Бартерные проекты</div>
+                    <div class="text-2xl font-bold mt-2 text-yellow-600">{{ $barterCount ?? 0 }}</div>
+                </button>
 
-                    <button type="button" id="own-open"
-                        class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
-                        <div class="text-xs text-gray-500">Свои проекты (на
-                            {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
-                        <div class="text-2xl font-bold mt-1 text-indigo-600">{{ $ownCount ?? 0 }}</div>
-                    </button>
+                <button type="button" id="own-open"
+                    class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition min-h-20">
+                    <div class="text-xs text-gray-500">Свои проекты</div>
+                    <div class="text-2xl font-bold mt-2 text-indigo-600">{{ $ownCount ?? 0 }}</div>
+                </button>
 
-                    <button type="button" id="commercial-open"
-                        class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
-                        <div class="text-xs text-gray-500">Коммерческие проекты (на
-                            {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
-                        <div class="text-2xl font-bold mt-1 text-indigo-600">{{ $commercialCount }}</div>
-                    </button>
-
+                <button type="button" id="commercial-open"
+                    class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition min-h-20">
+                    <div class="text-xs text-gray-500">Коммерческие проекты</div>
+                    <div class="text-2xl font-bold mt-2 text-indigo-600">{{ $commercialCount }}</div>
+                </button>
+                @if (request('period') !== 'all' && ($monthParam ?? $currentMonth) === $currentMonth)
                     <button type="button" id="expected-profit-open"
-                        class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
-                        <div class="text-xs text-gray-500">Ожидаемая прибыль (сумма по контрактам на
-                            {{ now()->locale('ru')->isoFormat('MMMM YYYY') }})</div>
-                        <div class="text-2xl font-bold mt-1 text-indigo-600">
+                        class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition min-h-20">
+                        <div class="text-xs text-gray-500">Ожидаемая прибыль</div>
+                        <div class="text-sm text-gray-400">{{ now()->locale('ru')->isoFormat('MMMM YYYY') }}</div>
+                        <div class="text-2xl font-bold mt-2 text-indigo-600">
                             {{ number_format($expectedProfit ?? 0, 2, '.', ' ') }} ₽
                         </div>
-                        <div class="text-xs text-gray-500 mt-1">
-                            Получено в этом месяце: {{ number_format($expectedReceivedMonth ?? 0, 2, '.', ' ') }} ₽
+
+                        <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-500">
+                            <div>Получено:<div class="text-sm text-gray-700 font-semibold">
+                                    {{ number_format($expectedReceivedMonth ?? 0, 2, '.', ' ') }} ₽</div>
+                            </div>
+                            <div>Осталось:<div class="text-sm text-gray-700 font-semibold">
+                                    {{ number_format($expectedRemaining ?? 0, 2, '.', ' ') }} ₽</div>
+                            </div>
                         </div>
-                        <div class="text-sm font-semibold mt-1 text-indigo-600">
-                            Осталось получить: {{ number_format($expectedRemaining ?? 0, 2, '.', ' ') }} ₽
-                        </div>
-                        <div class="text-xs text-gray-500 mt-1">Не учитываются бартерные и свои проекты</div>
+
+                        <div class="text-xs text-gray-400 mt-3">Не учитываются бартерные и свои проекты</div>
                     </button>
-                </div>
-            @endif
+                @endif
+
+                <button type="button" id="paused-open"
+                    class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition min-h-20">
+                    <div class="text-xs text-gray-500">Проекты на паузе</div>
+                    <div class="text-sm text-gray-400">{{ now()->locale('ru')->isoFormat('MMMM YYYY') }}</div>
+                    <div class="text-2xl font-bold mt-2 text-yellow-600">{{ $pausedCount }}</div>
+                </button>
+
+                <button type="button" id="stopped-open"
+                    class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition min-h-20">
+                    <div class="text-xs text-gray-500">Проекты в стопе</div>
+                    <div class="text-sm text-gray-400">{{ now()->locale('ru')->isoFormat('MMMM YYYY') }}</div>
+                    <div class="text-2xl font-bold mt-2 text-red-600">{{ $stoppedCount }}</div>
+                </button>
+
+                <button type="button" id="new-clients-open"
+                    class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition min-h-20">
+                    <div class="text-xs text-gray-500">Новые клиенты</div>
+                    <div class="text-sm text-gray-400">
+                        {{ \Carbon\Carbon::createFromFormat('Y-m', $selectedMonth)->locale('ru')->isoFormat('MMMM YYYY') }}
+                    </div>
+                    <div class="text-2xl font-bold mt-2 text-indigo-600">{{ $newClientsCount }}</div>
+                </button>
+
+                <button type="button" id="closed-open"
+                    class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition min-h-20">
+                    <div class="text-xs text-gray-500">Проекты закрытые</div>
+                    <div class="text-sm text-gray-400">
+                        {{ \Carbon\Carbon::createFromFormat('Y-m', $selectedMonth)->locale('ru')->isoFormat('MMMM YYYY') }}
+                    </div>
+                    <div class="text-2xl font-bold mt-2 text-gray-700">{{ $closedCount }}</div>
+                </button>
+            </div>
 
             {{-- ===== SALARY FUND MODAL ===== --}}
             <div id="salary-fund-modal" class="fixed inset-0 z-50 hidden">
@@ -183,7 +232,8 @@
                                 <div class="text-lg font-semibold text-gray-800">Операции по фонду ЗП</div>
                                 <div class="text-xs text-gray-500">{{ $monthLabel }}</div>
                             </div>
-                            <button type="button" id="salary-fund-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                            <button type="button" id="salary-fund-close"
+                                class="text-gray-500 hover:text-gray-700">✕</button>
                         </div>
 
                         <div class="p-5 max-h-[70vh] overflow-y-auto">
@@ -194,13 +244,17 @@
                                     <table class="min-w-full text-sm">
                                         <thead class="bg-gray-50">
                                             <tr>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                                     Дата</th>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                                     Категория</th>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                                     Описание</th>
-                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
                                                     Сумма</th>
                                             </tr>
                                         </thead>
@@ -208,10 +262,10 @@
                                             @foreach ($salaryFundExpenses as $exp)
                                                 <tr>
                                                     <td class="px-3 py-2 whitespace-nowrap">
-                                                        {{ ($exp->expense_date ?? $exp->created_at)?->format('d.m.Y') ?? '—' }}
+                                                        {{ optional($exp->expense_date ?? $exp->created_at)->format('d.m.Y') ?? '—' }}
                                                     </td>
                                                     <td class="px-3 py-2">
-                                                        {{ $exp->category?->title ?? '—' }}
+                                                        {{ optional($exp->category)->title ?? '—' }}
                                                     </td>
                                                     <td class="px-3 py-2 text-gray-600">
                                                         {{ $exp->description ?? '—' }}
@@ -240,7 +294,8 @@
                                 <div class="text-lg font-semibold text-gray-800">Прогноз ФОТ — детали</div>
                                 <div class="text-xs text-gray-500">{{ $forecastMonthLabel ?? 'Текущий месяц' }}</div>
                             </div>
-                            <button type="button" id="salary-fund-forecast-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                            <button type="button" id="salary-fund-forecast-close"
+                                class="text-gray-500 hover:text-gray-700">✕</button>
                         </div>
 
                         <div class="p-5 max-h-[70vh] overflow-y-auto">
@@ -251,13 +306,27 @@
                                     <table class="min-w-full text-sm">
                                         <thead class="bg-gray-50">
                                             <tr>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">Пользователь</th>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">Роль</th>
-                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">База</th>
-                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">Премия</th>
-                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">Итого</th>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">Источник</th>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">Детализация (маркетологи)</th>
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Пользователь</th>
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Роль</th>
+                                                <th
+                                                    class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
+                                                    База</th>
+                                                <th
+                                                    class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
+                                                    Премия</th>
+                                                <th
+                                                    class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
+                                                    Итого</th>
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Источник</th>
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                    Детализация (маркетологи)</th>
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y">
@@ -274,13 +343,32 @@
                                                     </td>
                                                     <td class="px-3 py-2">
                                                         @switch($role)
-                                                            @case('admin') Администратор @break
-                                                            @case('project_manager') Проект-менеджер @break
-                                                            @case('marketer') Маркетолог @break
-                                                            @case('frontend') Верстальщик @break
-                                                            @case('designer') Дизайнер @break
-                                                            @case('lawyer') Юрист @break
-                                                            @default {{ ucfirst($role) }}
+                                                            @case('admin')
+                                                                Администратор
+                                                            @break
+
+                                                            @case('project_manager')
+                                                                Проект-менеджер
+                                                            @break
+
+                                                            @case('marketer')
+                                                                Маркетолог
+                                                            @break
+
+                                                            @case('frontend')
+                                                                Верстальщик
+                                                            @break
+
+                                                            @case('designer')
+                                                                Дизайнер
+                                                            @break
+
+                                                            @case('lawyer')
+                                                                Юрист
+                                                            @break
+
+                                                            @default
+                                                                {{ ucfirst($role) }}
                                                         @endswitch
                                                     </td>
                                                     <td class="px-3 py-2 text-right">
@@ -294,9 +382,11 @@
                                                     </td>
                                                     <td class="px-3 py-2">
                                                         @if ($source === 'manual')
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">вручную</span>
+                                                            <span
+                                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">вручную</span>
                                                         @else
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">авто</span>
+                                                            <span
+                                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">авто</span>
                                                         @endif
                                                     </td>
                                                     <td class="px-3 py-2 text-xs text-gray-600">
@@ -304,9 +394,13 @@
                                                             <div class="space-y-1">
                                                                 @foreach ($row['project_breakdown'] as $p)
                                                                     <div>
-                                                                        <span class="font-medium">{{ $p['title'] }}</span>
-                                                                        — {{ number_format($p['bonus_amount'] ?? 0, 2, '.', ' ') }} ₽
-                                                                        <span class="text-gray-400">(дней: {{ number_format($p['days_worked'] ?? 0, 1, '.', ' ') }})</span>
+                                                                        <span
+                                                                            class="font-medium">{{ $p['title'] }}</span>
+                                                                        —
+                                                                        {{ number_format($p['bonus_amount'] ?? 0, 2, '.', ' ') }}
+                                                                        ₽
+                                                                        <span class="text-gray-400">(дней:
+                                                                            {{ number_format($p['days_worked'] ?? 0, 1, '.', ' ') }})</span>
                                                                     </div>
                                                                 @endforeach
                                                             </div>
@@ -335,7 +429,8 @@
                                 <div class="text-lg font-semibold text-gray-800">Операции по доходам</div>
                                 <div class="text-xs text-gray-500">{{ $monthLabel }}</div>
                             </div>
-                            <button type="button" id="income-ops-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                            <button type="button" id="income-ops-close"
+                                class="text-gray-500 hover:text-gray-700">✕</button>
                         </div>
 
                         <div class="p-5 max-h-[70vh] overflow-y-auto">
@@ -346,13 +441,17 @@
                                     <table class="min-w-full text-sm">
                                         <thead class="bg-gray-50">
                                             <tr>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                                     Дата</th>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                                     Проект</th>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                                     Примечание</th>
-                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
                                                     Сумма</th>
                                             </tr>
                                         </thead>
@@ -395,7 +494,8 @@
                                 <div class="text-lg font-semibold text-gray-800">Операции по расходам</div>
                                 <div class="text-xs text-gray-500">{{ $monthLabel }}</div>
                             </div>
-                            <button type="button" id="expense-ops-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                            <button type="button" id="expense-ops-close"
+                                class="text-gray-500 hover:text-gray-700">✕</button>
                         </div>
 
                         <div class="p-5 max-h-[70vh] overflow-y-auto">
@@ -406,13 +506,17 @@
                                     <table class="min-w-full text-sm">
                                         <thead class="bg-gray-50">
                                             <tr>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                                     Дата</th>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                                     Проект</th>
-                                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                                     Описание</th>
-                                                <th class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
+                                                <th
+                                                    class="px-3 py-2 text-right text-xs font-semibold uppercase text-gray-500">
                                                     Сумма</th>
                                             </tr>
                                         </thead>
@@ -672,7 +776,7 @@
             <div class="bg-white rounded-xl shadow p-6 mt-6">
                 <div class="mb-4">
                     <div class="text-sm font-medium text-gray-800">Должники</div>
-                    <div class="text-xs text-gray-500">Топ-10 должников (balance &lt; 0) — показываем абсолютные
+                    <div class="text-xs text-gray-500">Топ-10 должников (balance > 0) — показываем абсолютные
                         значения задолженности</div>
                 </div>
 
@@ -776,7 +880,7 @@
                                                 {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽
                                             </td>
                                             <td class="px-3 py-2">
-                                                {{ $proj->closed_at?->format('d.m.Y') ?? '—' }}
+                                                {{ optional($proj->closed_at)->format('d.m.Y') ?? '—' }}
                                             </td>
                                             <td class="px-3 py-2">
                                                 {{ number_format($proj->balance ?? 0, 2, '.', ' ') }} ₽
@@ -788,9 +892,14 @@
 
                             <div class="mt-4 pt-4 border-t text-sm text-gray-700">
                                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                    <div>Проектов: <span class="font-semibold">{{ $expectedProjects->count() }}</span></div>
-                                    <div>Сумма контрактов: <span class="font-semibold">{{ number_format($expectedProjects->sum('contract_amount') ?? 0, 2, '.', ' ') }} ₽</span></div>
-                                    <div>Сумма баланса: <span class="font-semibold">{{ number_format($expectedProjects->sum('balance') ?? 0, 2, '.', ' ') }} ₽</span></div>
+                                    <div>Проектов: <span class="font-semibold">{{ $expectedProjects->count() }}</span>
+                                    </div>
+                                    <div>Сумма контрактов: <span
+                                            class="font-semibold">{{ number_format($expectedProjects->sum('contract_amount') ?? 0, 2, '.', ' ') }}
+                                            ₽</span></div>
+                                    <div>Сумма баланса: <span
+                                            class="font-semibold">{{ number_format($expectedProjects->sum('balance') ?? 0, 2, '.', ' ') }}
+                                            ₽</span></div>
                                 </div>
                             </div>
 
@@ -839,7 +948,8 @@
                                             </td>
                                             <td class="px-3 py-2">
                                                 {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
-                                            <td class="px-3 py-2">{{ $proj->created_at?->format('d.m.Y') ?? '—' }}
+                                            <td class="px-3 py-2">
+                                                {{ optional($proj->created_at)->format('d.m.Y') ?? '—' }}
                                             </td>
                                         </tr>
                                     @endforeach
@@ -890,7 +1000,8 @@
                                             </td>
                                             <td class="px-3 py-2">
                                                 {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
-                                            <td class="px-3 py-2">{{ $proj->created_at?->format('d.m.Y') ?? '—' }}
+                                            <td class="px-3 py-2">
+                                                {{ optional($proj->created_at)->format('d.m.Y') ?? '—' }}
                                             </td>
                                         </tr>
                                     @endforeach
@@ -941,8 +1052,250 @@
                                             </td>
                                             <td class="px-3 py-2">
                                                 {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
-                                            <td class="px-3 py-2">{{ $proj->created_at?->format('d.m.Y') ?? '—' }}
+                                            <td class="px-3 py-2">
+                                                {{ optional($proj->created_at)->format('d.m.Y') ?? '—' }}
                                             </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== PAUSED PROJECTS MODAL ===== --}}
+    <div id="paused-projects-modal" class="fixed inset-0 z-50 hidden">
+        <div id="paused-projects-overlay" class="absolute inset-0 bg-black/50"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b">
+                    <div>
+                        <div class="text-lg font-semibold text-gray-800">Проекты на паузе</div>
+                        <div class="text-xs text-gray-500">{{ now()->locale('ru')->isoFormat('MMMM YYYY') }}</div>
+                    </div>
+                    <button type="button" id="paused-projects-close"
+                        class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+
+                <div class="p-5 max-h-[70vh] overflow-y-auto">
+                    @php
+                        $pausedProjects = \App\Models\Project::where('status', \App\Models\Project::STATUS_PAUSED)
+                            ->orderBy('contract_date', 'desc')
+                            ->get();
+                    @endphp
+
+                    @if ($pausedProjects->isEmpty())
+                        <div class="text-sm text-gray-500">Нет проектов на паузе.</div>
+                    @else
+                        <div class="overflow-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Проект</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Сумма контракта</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Контакт/город</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @foreach ($pausedProjects as $proj)
+                                        <tr>
+                                            <td class="px-3 py-2"><a href="{{ route('projects.show', $proj) }}"
+                                                    class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
+                                            <td class="px-3 py-2">
+                                                {{ optional($proj->organization)->name_short ?? ($proj->city ?? '—') }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== STOPPED PROJECTS MODAL ===== --}}
+    <div id="stopped-projects-modal" class="fixed inset-0 z-50 hidden">
+        <div id="stopped-projects-overlay" class="absolute inset-0 bg-black/50"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b">
+                    <div>
+                        <div class="text-lg font-semibold text-gray-800">Проекты в стопе</div>
+                        <div class="text-xs text-gray-500">{{ now()->locale('ru')->isoFormat('MMMM YYYY') }}</div>
+                    </div>
+                    <button type="button" id="stopped-projects-close"
+                        class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+
+                <div class="p-5 max-h-[70vh] overflow-y-auto">
+                    @php
+                        $stoppedProjects = \App\Models\Project::where('status', \App\Models\Project::STATUS_STOPPED)
+                            ->orderBy('contract_date', 'desc')
+                            ->get();
+                    @endphp
+
+                    @if ($stoppedProjects->isEmpty())
+                        <div class="text-sm text-gray-500">Нет проектов в стопе.</div>
+                    @else
+                        <div class="overflow-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Проект</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Сумма контракта</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Контакт/город</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @foreach ($stoppedProjects as $proj)
+                                        <tr>
+                                            <td class="px-3 py-2"><a href="{{ route('projects.show', $proj) }}"
+                                                    class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
+                                            <td class="px-3 py-2">
+                                                {{ optional($proj->organization)->name_short ?? ($proj->city ?? '—') }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== NEW CLIENTS (CONTRACTS THIS MONTH) MODAL ===== --}}
+    <div id="new-clients-modal" class="fixed inset-0 z-50 hidden">
+        <div id="new-clients-overlay" class="absolute inset-0 bg-black/50"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b">
+                    <div>
+                        <div class="text-lg font-semibold text-gray-800">Новые клиенты — контракты
+                            ({{ \Carbon\Carbon::createFromFormat('Y-m', $selectedMonth)->locale('ru')->isoFormat('MMMM YYYY') }})
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            {{ \Carbon\Carbon::createFromFormat('Y-m', $selectedMonth)->locale('ru')->isoFormat('MMMM YYYY') }}
+                        </div>
+                    </div>
+                    <button type="button" id="new-clients-close"
+                        class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+
+                <div class="p-5 max-h-[70vh] overflow-y-auto">
+                    @php
+                        $newClients = \App\Models\Project::whereNotNull('contract_date')
+                            ->whereBetween('contract_date', [$startOfMonth, $endOfMonth])
+                            ->orderBy('contract_date', 'desc')
+                            ->get();
+                    @endphp
+
+                    @if ($newClients->isEmpty())
+                        <div class="text-sm text-gray-500">Нет контрактов в выбранном месяце.</div>
+                    @else
+                        <div class="overflow-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Проект</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Дата контракта</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Организация</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @foreach ($newClients as $proj)
+                                        <tr>
+                                            <td class="px-3 py-2"><a href="{{ route('projects.show', $proj) }}"
+                                                    class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ optional($proj->contract_date)->format('d.m.Y') ?? '—' }}</td>
+                                            <td class="px-3 py-2">
+                                                {{ optional($proj->organization)->name_short ?? (optional($proj->organization)->name_full ?? '—') }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== CLOSED PROJECTS (CLOSED THIS MONTH) MODAL ===== --}}
+    <div id="closed-projects-modal" class="fixed inset-0 z-50 hidden">
+        <div id="closed-projects-overlay" class="absolute inset-0 bg-black/50"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b">
+                    <div>
+                        <div class="text-lg font-semibold text-gray-800">Проекты, закрытые в
+                            {{ \Carbon\Carbon::createFromFormat('Y-m', $selectedMonth)->locale('ru')->isoFormat('MMMM YYYY') }}
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            {{ \Carbon\Carbon::createFromFormat('Y-m', $selectedMonth)->locale('ru')->isoFormat('MMMM YYYY') }}
+                        </div>
+                    </div>
+                    <button type="button" id="closed-projects-close"
+                        class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+
+                <div class="p-5 max-h-[70vh] overflow-y-auto">
+                    @php
+                        $closedProjects = \App\Models\Project::whereNotNull('closed_at')
+                            ->whereBetween('closed_at', [$startOfMonth, $endOfMonth])
+                            ->orderBy('closed_at', 'desc')
+                            ->get();
+                    @endphp
+
+                    @if ($closedProjects->isEmpty())
+                        <div class="text-sm text-gray-500">Нет закрытых проектов в выбранном месяце.</div>
+                    @else
+                        <div class="overflow-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Проект</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Дата закрытия</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Сумма контракта</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @foreach ($closedProjects as $proj)
+                                        <tr>
+                                            <td class="px-3 py-2"><a href="{{ route('projects.show', $proj) }}"
+                                                    class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {{ optional($proj->closed_at)->format('d.m.Y') ?? '—' }}</td>
+                                            <td class="px-3 py-2">
+                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -1337,6 +1690,83 @@
             if (commercialClose) commercialClose.addEventListener('click', closeCommercialModal);
             if (commercialOverlay) commercialOverlay.addEventListener('click', closeCommercialModal);
 
+            // Paused / Stopped / New clients modals
+            const pausedModal = document.getElementById('paused-projects-modal');
+            const pausedOpen = document.getElementById('paused-open');
+            const pausedClose = document.getElementById('paused-projects-close');
+            const pausedOverlay = document.getElementById('paused-projects-overlay');
+
+            function openPausedModal() {
+                if (!pausedModal) return;
+                pausedModal.classList.remove('hidden');
+            }
+
+            function closePausedModal() {
+                if (!pausedModal) return;
+                pausedModal.classList.add('hidden');
+            }
+
+            if (pausedOpen) pausedOpen.addEventListener('click', openPausedModal);
+            if (pausedClose) pausedClose.addEventListener('click', closePausedModal);
+            if (pausedOverlay) pausedOverlay.addEventListener('click', closePausedModal);
+
+            const stoppedModal = document.getElementById('stopped-projects-modal');
+            const stoppedOpen = document.getElementById('stopped-open');
+            const stoppedClose = document.getElementById('stopped-projects-close');
+            const stoppedOverlay = document.getElementById('stopped-projects-overlay');
+
+            function openStoppedModal() {
+                if (!stoppedModal) return;
+                stoppedModal.classList.remove('hidden');
+            }
+
+            function closeStoppedModal() {
+                if (!stoppedModal) return;
+                stoppedModal.classList.add('hidden');
+            }
+
+            if (stoppedOpen) stoppedOpen.addEventListener('click', openStoppedModal);
+            if (stoppedClose) stoppedClose.addEventListener('click', closeStoppedModal);
+            if (stoppedOverlay) stoppedOverlay.addEventListener('click', closeStoppedModal);
+
+            const newClientsModal = document.getElementById('new-clients-modal');
+            const newClientsOpen = document.getElementById('new-clients-open');
+            const newClientsClose = document.getElementById('new-clients-close');
+            const newClientsOverlay = document.getElementById('new-clients-overlay');
+
+            function openNewClientsModal() {
+                if (!newClientsModal) return;
+                newClientsModal.classList.remove('hidden');
+            }
+
+            function closeNewClientsModal() {
+                if (!newClientsModal) return;
+                newClientsModal.classList.add('hidden');
+            }
+
+            if (newClientsOpen) newClientsOpen.addEventListener('click', openNewClientsModal);
+            if (newClientsClose) newClientsClose.addEventListener('click', closeNewClientsModal);
+            if (newClientsOverlay) newClientsOverlay.addEventListener('click', closeNewClientsModal);
+
+            const closedModal = document.getElementById('closed-projects-modal');
+            const closedOpen = document.getElementById('closed-open');
+            const closedClose = document.getElementById('closed-projects-close');
+            const closedOverlay = document.getElementById('closed-projects-overlay');
+
+            function openClosedModal() {
+                if (!closedModal) return;
+                closedModal.classList.remove('hidden');
+            }
+
+            function closeClosedModal() {
+                if (!closedModal) return;
+                closedModal.classList.add('hidden');
+            }
+
+            if (closedOpen) closedOpen.addEventListener('click', openClosedModal);
+            if (closedClose) closedClose.addEventListener('click', closeClosedModal);
+            if (closedOverlay) closedOverlay.addEventListener('click', closeClosedModal);
+
             // Salary fund modal
             const salaryFundModal = document.getElementById('salary-fund-modal');
             const salaryFundOpen = document.getElementById('salary-fund-open');
@@ -1373,9 +1803,12 @@
                 salaryFundForecastModal.classList.add('hidden');
             }
 
-            if (salaryFundForecastOpen) salaryFundForecastOpen.addEventListener('click', openSalaryFundForecastModal);
-            if (salaryFundForecastClose) salaryFundForecastClose.addEventListener('click', closeSalaryFundForecastModal);
-            if (salaryFundForecastOverlay) salaryFundForecastOverlay.addEventListener('click', closeSalaryFundForecastModal);
+            if (salaryFundForecastOpen) salaryFundForecastOpen.addEventListener('click',
+                openSalaryFundForecastModal);
+            if (salaryFundForecastClose) salaryFundForecastClose.addEventListener('click',
+                closeSalaryFundForecastModal);
+            if (salaryFundForecastOverlay) salaryFundForecastOverlay.addEventListener('click',
+                closeSalaryFundForecastModal);
 
             // Income / Expense modals
             const incomeModal = document.getElementById('income-ops-modal');

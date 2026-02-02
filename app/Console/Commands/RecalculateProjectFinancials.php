@@ -80,11 +80,12 @@ class RecalculateProjectFinancials extends Command
             return 0.0;
         }
 
-        $start = Carbon::make($project->contract_date)->startOfMonth();
-        $end = $today->copy()->endOfMonth();
+        // Start from exact contract date (not startOfMonth) and iterate monthly periods
+        $start = Carbon::make($project->contract_date)->startOfDay();
+        $end = $today->copy()->endOfDay();
 
         if (! empty($project->closed_at)) {
-            $closed = Carbon::make($project->closed_at)->endOfMonth();
+            $closed = Carbon::make($project->closed_at)->endOfDay();
             if ($closed->lt($end)) {
                 $end = $closed;
             }
@@ -95,32 +96,59 @@ class RecalculateProjectFinancials extends Command
             return 0.0;
         }
 
-        // Суммы выставленных счетов по месяцам для проекта (формат: YYYY-MM => total)
-        $invoicesByMonth = Invoice::selectRaw("DATE_FORMAT(COALESCE(issued_at, created_at), '%Y-%m') as ym, SUM(amount) as total")
-            ->where('project_id', $project->id)
+        // Подгружаем все счета проекта внутри диапазона (issued_at или created_at)
+        $invoices = Invoice::where('project_id', $project->id)
             ->where(function ($q) use ($start, $end) {
                 $q->whereNotNull('issued_at')->whereBetween('issued_at', [$start->toDateString(), $end->toDateString()])
                     ->orWhere(function ($q2) use ($start, $end) {
                         $q2->whereNull('issued_at')->whereBetween('created_at', [$start->toDateString(), $end->toDateString()]);
                     });
             })
-            ->groupBy('ym')
-            ->pluck('total', 'ym')
-            ->toArray();
+            ->get(['amount', 'issued_at', 'created_at'])
+            ->map(function ($inv) {
+                $d = $inv->issued_at ? Carbon::make($inv->issued_at) : Carbon::make($inv->created_at);
+
+                return ['date' => $d, 'amount' => (float) $inv->amount];
+            });
 
         $expectedSum = 0.0;
         $periodStart = $start->copy();
         $guard = 0;
 
+        // Iterate periods: [periodStart, periodEnd] until end — handle month overflow (e.g., Feb shorter) correctly
         while ($periodStart->lte($end) && $guard < 240) {
-            $ym = $periodStart->format('Y-m');
+            $nextStart = $periodStart->copy()->addMonthNoOverflow();
 
-            // Если есть счёт в месяце — используем его сумму, иначе — contract_amount
-            $expectedSum += isset($invoicesByMonth[$ym]) && (float) $invoicesByMonth[$ym] > 0
-                ? (float) $invoicesByMonth[$ym]
-                : $contractAmount;
+            // If next month's day is smaller (month overflow like Feb), include that last day in current period
+            if ($nextStart->day < $periodStart->day) {
+                $periodEnd = $nextStart->endOfDay();
+            } else {
+                $periodEnd = $nextStart->subSecond();
+            }
 
-            $periodStart->addMonthNoOverflow();
+            if ($periodEnd->gt($end)) {
+                $periodEnd = $end->copy();
+            }
+
+            // Sum invoices that fall into this period
+            $sumInvoices = 0.0;
+            foreach ($invoices as $inv) {
+                if ($inv['date']->gte($periodStart) && $inv['date']->lte($periodEnd)) {
+                    $sumInvoices += $inv['amount'];
+                }
+            }
+
+            if ($sumInvoices > 0) {
+                $expectedSum += $sumInvoices;
+            } else {
+                // Only add full contract amount if the period fully passed (not a partial current period)
+                if ($periodEnd->lte($today)) {
+                    $expectedSum += $contractAmount;
+                }
+            }
+
+            // Start next period immediately after current period end to avoid overlapping/extra short periods
+            $periodStart = $periodEnd->copy()->addSecond();
             $guard++;
         }
 

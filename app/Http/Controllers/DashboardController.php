@@ -286,24 +286,25 @@ class DashboardController extends Controller
 
         // === Debtors (projects with negative balance) ===
         // Show top projects that owe us (balance < 0). Chart uses absolute values for bar heights.
-        $debtorsRows = \App\Models\Project::select('id', 'title', 'balance')
-            ->where('balance', '<', 0)
+        $debtorsRows = Project::select('id', 'title', 'balance')
+            ->where('balance', '>', 0) // теперь долг = положительное число
             ->where(function ($q) {
-                $q->whereNull('payment_type')->orWhereNotIn('payment_type', ['barter', 'own']);
+                $q->whereNull('payment_type')
+                    ->orWhereNotIn('payment_type', ['barter', 'own']);
             })
-            ->orderBy('balance') // most negative first
+            ->orderByDesc('balance') // самый большой долг — первый
             ->limit(10)
             ->get();
 
         $debtorLabels = $debtorsRows->pluck('title')->all();
-        // Use absolute values for chart bars
-        $debtorData = $debtorsRows->pluck('balance')->map(function ($v) {
-            return (float) abs($v);
-        })->all();
-        // Keep raw balances (negative) for tooltips if needed
-        $debtorRaw = $debtorsRows->pluck('balance')->map(function ($v) {
-            return (float) $v;
-        })->all();
+
+        // данные для графика — как есть
+        $debtorData = $debtorsRows->pluck('balance')
+            ->map(fn ($v) => (float) $v)
+            ->all();
+
+        // если нужны для tooltip'ов (по сути то же самое)
+        $debtorRaw = $debtorData;
 
         $debtorMax = count($debtorData) ? max($debtorData) : 0;
         $debtorStep = max(10000, $this->niceStep($debtorMax));
@@ -323,52 +324,25 @@ class DashboardController extends Controller
             ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
             ->sum('usn_amount');
 
-        // Count barter projects and own projects for the selected period (or all time)
-        if ($isAll) {
-            $barterCount = \App\Models\Project::where('payment_type', 'barter')->count();
-            $ownCount = \App\Models\Project::where('payment_type', 'own')->count();
-            $commercialCount = \App\Models\Project::where('payment_type', 'paid')->count();
+        // Count barter/own/commercial projects for all time (always current total)
+        $barterCount = \App\Models\Project::where('payment_type', 'barter')->count();
+        $ownCount = \App\Models\Project::where('payment_type', 'own')->count();
+        $commercialCount = \App\Models\Project::where('payment_type', 'paid')->count();
 
-            $barterProjects = \App\Models\Project::where('payment_type', 'barter')
-                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
-                ->orderBy('title')
-                ->get();
+        $barterProjects = \App\Models\Project::where('payment_type', 'barter')
+            ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
+            ->orderBy('title')
+            ->get();
 
-            $ownProjects = \App\Models\Project::where('payment_type', 'own')
-                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
-                ->orderBy('title')
-                ->get();
+        $ownProjects = \App\Models\Project::where('payment_type', 'own')
+            ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
+            ->orderBy('title')
+            ->get();
 
-            $commercialProjects = \App\Models\Project::where('payment_type', 'paid')
-                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
-                ->orderBy('title')
-                ->get();
-        } else {
-            $barterCount = \App\Models\Project::where('payment_type', 'barter')
-                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
-            $ownCount = \App\Models\Project::where('payment_type', 'own')
-                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
-            $commercialCount = \App\Models\Project::where('payment_type', 'paid')
-                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])->count();
-
-            $barterProjects = \App\Models\Project::where('payment_type', 'barter')
-                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])
-                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
-                ->orderBy('title')
-                ->get();
-
-            $ownProjects = \App\Models\Project::where('payment_type', 'own')
-                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])
-                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
-                ->orderBy('title')
-                ->get();
-
-            $commercialProjects = \App\Models\Project::where('payment_type', 'paid')
-                ->whereRaw('DATE(created_at) between ? and ?', [$start->toDateString(), $end->toDateString()])
-                ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
-                ->orderBy('title')
-                ->get();
-        }
+        $commercialProjects = \App\Models\Project::where('payment_type', 'paid')
+            ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
+            ->orderBy('title')
+            ->get();
 
         $monthlyExpenses = collect();
         $monthlyExpensesMonth = null;
