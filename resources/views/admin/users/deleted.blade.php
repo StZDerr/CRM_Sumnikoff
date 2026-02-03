@@ -17,7 +17,7 @@
                     'designer' => 'Дизайнер',
                     'lawyer' => 'Юрист',
                 ];
-                $canManage = auth()->user()->isAdmin() || auth()->user()->isProjectManager();
+                $canManage = auth()->user()->isAdmin();
             @endphp
 
             <table class="w-full text-sm">

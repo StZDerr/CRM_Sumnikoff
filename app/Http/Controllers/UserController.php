@@ -20,10 +20,10 @@ class UserController extends Controller
         $this->middleware('auth');
 
         // только admin
-        $this->middleware('admin')->except(['index', 'show', 'deleted', 'restore']);
+        $this->middleware('admin')->except(['index', 'show']);
 
         // show: admin + PM
-        $this->middleware('role:admin,project_manager')->only(['show', 'deleted', 'restore']);
+        $this->middleware('role:admin,project_manager')->only(['show']);
 
         // index: admin + PM + marketer
         $this->middleware('role:admin,project_manager,marketer')->only(['index']);

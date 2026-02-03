@@ -5,7 +5,7 @@
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-semibold">Пользователи</h1>
             <div class="flex items-center gap-2">
-                @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
+                @if (auth()->user()->isAdmin())
                     <a href="{{ route('users.deleted') }}" class="px-4 py-2 bg-gray-700 text-white rounded">Удаленные
                         пользователи</a>
                 @endif
