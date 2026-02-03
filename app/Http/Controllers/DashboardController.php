@@ -455,23 +455,6 @@ class DashboardController extends Controller
                 } elseif ($u->role === User::ROLE_MARKETER) {
                     $percent = $u->individual_bonus_percent ?? 5;
 
-                    // Табель посещаемости за месяц (учитываем work=1, remote/short=0.5)
-                    $attendanceDays = $u->attendanceDays()
-                        ->whereBetween('date', [$forecastStart, $forecastEnd])
-                        ->with('status')
-                        ->get();
-
-                    $workDayCoefficients = [];
-                    foreach ($attendanceDays as $day) {
-                        $dateKey = $day->date->format('Y-m-d');
-                        $code = $day->status->code ?? null;
-                        if ($code === 'work') {
-                            $workDayCoefficients[$dateKey] = 1;
-                        } elseif (in_array($code, ['remote', 'short'])) {
-                            $workDayCoefficients[$dateKey] = 0.5;
-                        }
-                    }
-
                     $histories = ProjectMarketerHistory::where('user_id', $u->id)
                         ->where('assigned_at', '<=', $forecastEnd)
                         ->where(function ($q) use ($forecastStart) {
@@ -492,21 +475,8 @@ class DashboardController extends Controller
                     $avgWorkDays = 22;
 
                     foreach ($projects as $p) {
-                        // Считаем дни работы на проекте по табелю
-                        $totalDays = 0;
-                        $projectHistory = $histories->where('project_id', $p->id);
-
-                        foreach ($projectHistory as $record) {
-                            $recordStart = $record->assigned_at->max($forecastStart);
-                            $recordEnd = ($record->unassigned_at ?? $forecastEnd)->min($forecastEnd);
-
-                            $currentDate = $recordStart->copy();
-                            while ($currentDate->lte($recordEnd)) {
-                                $dateKey = $currentDate->format('Y-m-d');
-                                $totalDays += $workDayCoefficients[$dateKey] ?? 0;
-                                $currentDate->addDay();
-                            }
-                        }
+                        // Прогноз: считаем максимум (22 дня по каждому проекту)
+                        $totalDays = $avgWorkDays;
 
                         $contract = (float) ($p->contract_amount ?? 0);
                         $maxBonus = $contract * ($percent / 100);
