@@ -193,10 +193,29 @@
                                             class="font-medium text-gray-900">{{ $project->title }}</a>
 
                                         @if (!empty($project->status))
-                                            <span
-                                                class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                                                style="background-color: {{ e($project->status_color) }}; color: {{ $project->status_color === '#F59E0B' ? '#111827' : '#ffffff' }};">
-                                                {{ $project->status_label }}
+                                            @php
+                                                // Определяем цвет точки по статусу (аналог дискорд-индикатора)
+                                                $dotColor = '#9CA3AF'; // серый по умолчанию
+                                                try {
+                                                    if ($project->status === \App\Models\Project::STATUS_IN_PROGRESS) {
+                                                        $dotColor = '#10B981'; // зелёный
+                                                    } elseif ($project->status === \App\Models\Project::STATUS_PAUSED) {
+                                                        $dotColor = '#F59E0B'; // жёлтый
+                                                    } elseif (
+                                                        $project->status === \App\Models\Project::STATUS_STOPPED
+                                                    ) {
+                                                        $dotColor = '#EF4444'; // красный
+                                                    }
+                                                } catch (\Throwable $e) {
+                                                    // fallback — используем статусный цвет, если он задан
+                                                    $dotColor = $project->status_color ?? $dotColor;
+                                                }
+                                            @endphp
+
+                                            <span class="ml-2 inline-flex items-center">
+                                                <span class="inline-block w-3 h-3 rounded-full"
+                                                    style="background-color: {{ e($dotColor) }};"
+                                                    aria-hidden="true"></span>
                                             </span>
                                         @endif
 
