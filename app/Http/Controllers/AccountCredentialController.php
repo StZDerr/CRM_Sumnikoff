@@ -255,6 +255,10 @@ class AccountCredentialController extends Controller
 
     public function itSumnikoff()
     {
+        if (! auth()->user()?->isAdmin() && ! auth()->user()?->isProjectManager()) {
+            abort(403);
+        }
+
         $accountCredential = AccountCredential::whereNull('project_id')
             ->where('type', 'it_sumnikoff')
             ->get();
@@ -264,11 +268,18 @@ class AccountCredentialController extends Controller
 
     public function createItSumnikoff()
     {
+        if (! auth()->user()?->isAdmin() && ! auth()->user()?->isProjectManager()) {
+            abort(403);
+        }
+
         return view('admin.account_credentials.createItSumnikoff');
     }
 
     public function showItSumnikoff(AccountCredential $accountCredential)
     {
+        if (! auth()->user()?->isAdmin() && ! auth()->user()?->isProjectManager()) {
+            abort(403);
+        }
 
         return view('admin.account_credentials.showItSumnikoff', compact('accountCredential'));
     }
@@ -284,6 +295,10 @@ class AccountCredentialController extends Controller
 
     public function storeItSumnikoff(Request $request)
     {
+        if (! auth()->user()?->isAdmin() && ! auth()->user()?->isProjectManager()) {
+            abort(403);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'login' => 'nullable|string|max:255',
@@ -304,6 +319,10 @@ class AccountCredentialController extends Controller
 
     public function updateItSumnikoff(Request $request, AccountCredential $accountCredential)
     {
+        if (! auth()->user()?->isAdmin() && ! auth()->user()?->isProjectManager()) {
+            abort(403);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'login' => 'nullable|string|max:255',
