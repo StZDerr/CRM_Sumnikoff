@@ -26,6 +26,13 @@ class OrganizationController extends Controller
 
         $query = Organization::query();
 
+        $user = auth()->user();
+        if ($user && $user->isMarketer()) {
+            $query->whereHas('projects', function ($q) use ($user) {
+                $q->where('marketer_id', $user->id);
+            });
+        }
+
         if ($q) {
             $query->where(function ($qBuilder) use ($q) {
                 $qBuilder->where('name_full', 'like', "%{$q}%")
@@ -162,6 +169,17 @@ class OrganizationController extends Controller
      */
     public function show(Organization $organization)
     {
+        $user = auth()->user();
+        if ($user && $user->isMarketer()) {
+            $hasAccess = $organization->projects()
+                ->where('marketer_id', $user->id)
+                ->exists();
+
+            if (! $hasAccess) {
+                abort(403);
+            }
+        }
+
         $contacts = $organization->contacts()->orderBy('last_name')->paginate(25);
 
         return view('admin.organizations.show', compact('organization', 'contacts'));

@@ -425,7 +425,17 @@ class AttendanceController extends Controller
         $absentDays = $attendanceDays->where('status.code', 'absent')->count();
 
         // Базовые данные для зарплаты
-        $projects = $user->projects()
+        // Берём проекты, где маркетолог был назначен хотя бы на один день в выбранном месяце
+        $projectIds = \App\Models\ProjectMarketerHistory::where('user_id', $user->id)
+            ->where('assigned_at', '<=', $monthEnd)
+            ->where(function ($q) use ($monthStart) {
+                $q->whereNull('unassigned_at')
+                    ->orWhere('unassigned_at', '>=', $monthStart);
+            })
+            ->distinct('project_id')
+            ->pluck('project_id');
+
+        $projects = \App\Models\Project::whereIn('id', $projectIds)
             ->where(function ($q) use ($monthStart) {
                 $q->whereNull('closed_at')
                     ->orWhere('closed_at', '>=', $monthStart);
