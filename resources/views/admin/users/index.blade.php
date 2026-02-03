@@ -4,7 +4,13 @@
     <div class="max-w-7xl mx-auto">
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-semibold">Пользователи</h1>
-            <a href="{{ route('users.create') }}" class="px-4 py-2 bg-indigo-600 text-white rounded">Создать</a>
+            <div class="flex items-center gap-2">
+                @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
+                    <a href="{{ route('users.deleted') }}" class="px-4 py-2 bg-gray-700 text-white rounded">Удаленные
+                        пользователи</a>
+                @endif
+                <a href="{{ route('users.create') }}" class="px-4 py-2 bg-indigo-600 text-white rounded">Создать</a>
+            </div>
         </div>
 
         <div class="bg-white rounded shadow overflow-hidden">

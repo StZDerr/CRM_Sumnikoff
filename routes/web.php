@@ -64,6 +64,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::get('users/deleted', [UserController::class, 'deleted'])->name('users.deleted');
+    Route::post('users/{user}/restore', [UserController::class, 'restore'])->name('users.restore')->withTrashed();
+
     Route::resources([
         'users' => UserController::class,
         'importances' => ImportanceController::class,
@@ -310,7 +313,7 @@ Route::middleware('auth')->group(function () {
         ->name('attendance.rejected')
         ->middleware('auth'); // при необходимости можно добавить middleware для роли начальника
 
-    Route::get('attendance/{user}', [AttendanceController::class, 'userShow'])->name('attendance.userShow');
+    Route::get('attendance/{user}', [AttendanceController::class, 'userShow'])->name('attendance.userShow')->withTrashed();
 
     Route::get('rejected/{report}', [AttendanceController::class, 'rejectedUserShow'])->name('rejected.userShow');
 

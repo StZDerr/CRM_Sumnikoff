@@ -20,10 +20,10 @@ class UserController extends Controller
         $this->middleware('auth');
 
         // только admin
-        $this->middleware('admin')->except(['index', 'show']);
+        $this->middleware('admin')->except(['index', 'show', 'deleted', 'restore']);
 
         // show: admin + PM
-        $this->middleware('role:admin,project_manager')->only(['show']);
+        $this->middleware('role:admin,project_manager')->only(['show', 'deleted', 'restore']);
 
         // index: admin + PM + marketer
         $this->middleware('role:admin,project_manager,marketer')->only(['index']);
@@ -47,6 +47,26 @@ class UserController extends Controller
         $users = User::with('activeVacation')->orderBy('id', 'desc')->paginate(15);
 
         return view('admin.users.index', compact('groupedUsers', 'marketers', 'users'));
+    }
+
+    public function deleted(): View
+    {
+        $deletedUsers = User::onlyTrashed()
+            ->orderBy('deleted_at', 'desc')
+            ->paginate(15);
+
+        return view('admin.users.deleted', compact('deletedUsers'));
+    }
+
+    public function restore(User $user): RedirectResponse
+    {
+        if (! $user->trashed()) {
+            return redirect()->route('users.deleted')->with('error', 'Пользователь не находится в удалённых.');
+        }
+
+        $user->restore();
+
+        return redirect()->route('users.deleted')->with('success', 'Пользователь восстановлён.');
     }
 
     public function create(): View
