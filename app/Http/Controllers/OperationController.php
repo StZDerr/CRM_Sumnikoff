@@ -33,9 +33,9 @@ class OperationController extends Controller
 
         $currentUser = auth()->user();
 
-        // date filter (required — default to current month)
-        $dateFrom = $request->query('date_from') ? \Illuminate\Support\Carbon::parse($request->query('date_from'))->startOfDay() : \Illuminate\Support\Carbon::now()->startOfMonth();
-        $dateTo = $request->query('date_to') ? \Illuminate\Support\Carbon::parse($request->query('date_to'))->endOfDay() : \Illuminate\Support\Carbon::now()->endOfMonth();
+        // date filter (optional — default to all time)
+        $dateFrom = $request->query('date_from') ? \Illuminate\Support\Carbon::parse($request->query('date_from'))->startOfDay() : null;
+        $dateTo = $request->query('date_to') ? \Illuminate\Support\Carbon::parse($request->query('date_to'))->endOfDay() : null;
 
         $type = $request->query('type', 'all'); // payment|expense|all
         $projectId = $request->query('project_id');
@@ -63,8 +63,14 @@ class OperationController extends Controller
         if ($currentUser->isAdmin()) {
             $paymentsQuery = Payment::with(['project', 'paymentMethod', 'invoice', 'bankAccount']);
 
-            // Date
-            $paymentsQuery->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$dateFrom->toDateString(), $dateTo->toDateString()]);
+            // Date (apply only when dates provided)
+            if ($dateFrom && $dateTo) {
+                $paymentsQuery->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$dateFrom->toDateString(), $dateTo->toDateString()]);
+            } elseif ($dateFrom) {
+                $paymentsQuery->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) >= ?', [$dateFrom->toDateString()]);
+            } elseif ($dateTo) {
+                $paymentsQuery->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) <= ?', [$dateTo->toDateString()]);
+            }
 
             if ($projectId) {
                 $paymentsQuery->where('project_id', $projectId);
@@ -122,8 +128,14 @@ class OperationController extends Controller
             $expensesQuery->whereHas('project', fn ($q) => $q->where('marketer_id', $currentUser->id));
         }
 
-        // Date (include full day range for datetime values)
-        $expensesQuery->whereBetween('expense_date', [$dateFrom->toDateTimeString(), $dateTo->toDateTimeString()]);
+        // Date (apply only when dates provided)
+        if ($dateFrom && $dateTo) {
+            $expensesQuery->whereBetween('expense_date', [$dateFrom->toDateTimeString(), $dateTo->toDateTimeString()]);
+        } elseif ($dateFrom) {
+            $expensesQuery->where('expense_date', '>=', $dateFrom->toDateTimeString());
+        } elseif ($dateTo) {
+            $expensesQuery->where('expense_date', '<=', $dateTo->toDateTimeString());
+        }
 
         if ($projectId) {
             $expensesQuery->where('project_id', $projectId);

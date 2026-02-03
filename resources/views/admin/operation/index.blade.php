@@ -156,18 +156,14 @@
                             <div class="flex flex-wrap items-end gap-3">
                                 <div class="w-40">
                                     <label class="text-xs text-gray-500">От</label>
-                                    <input type="date" name="date_from"
-                                        value="{{ request('date_from', now()->startOfMonth()->format('Y-m-d')) }}"
-                                        class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                                        required>
+                                    <input type="date" name="date_from" value="{{ request('date_from', '') }}"
+                                        class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                                 </div>
 
                                 <div class="w-40">
                                     <label class="text-xs text-gray-500">До</label>
-                                    <input type="date" name="date_to"
-                                        value="{{ request('date_to', now()->endOfMonth()->format('Y-m-d')) }}"
-                                        class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                                        required>
+                                    <input type="date" name="date_to" value="{{ request('date_to', '') }}"
+                                        class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                                 </div>
 
                                 <div class="flex-1 min-w-[180px]">
