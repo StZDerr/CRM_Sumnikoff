@@ -6,6 +6,7 @@ use App\Models\CampaignSource;
 use App\Models\CampaignStatus;
 use App\Models\Organization;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class OrganizationController extends Controller
@@ -28,8 +29,13 @@ class OrganizationController extends Controller
 
         $user = auth()->user();
         if ($user && $user->isMarketer()) {
-            $query->whereHas('projects', function ($q) use ($user) {
-                $q->where('marketer_id', $user->id);
+            $today = Carbon::today();
+            $query->whereHas('projects', function ($q) use ($user, $today) {
+                $q->where('marketer_id', $user->id)
+                    ->where(function ($q2) use ($today) {
+                        $q2->whereNull('closed_at')
+                            ->orWhere('closed_at', '>=', $today);
+                    });
             });
         }
 
@@ -171,8 +177,13 @@ class OrganizationController extends Controller
     {
         $user = auth()->user();
         if ($user && $user->isMarketer()) {
+            $today = Carbon::today();
             $hasAccess = $organization->projects()
                 ->where('marketer_id', $user->id)
+                ->where(function ($q) use ($today) {
+                    $q->whereNull('closed_at')
+                        ->orWhere('closed_at', '>=', $today);
+                })
                 ->exists();
 
             if (! $hasAccess) {
