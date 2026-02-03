@@ -51,17 +51,23 @@ class DashboardController extends Controller
 
             // Income per month (YYYY-MM) — исключаем платежи по бартерным и "своим" проектам
             $incRows = Payment::leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+                ->leftJoin('payment_categories', 'payment_categories.id', '=', 'payments.payment_category_id')
                 ->selectRaw("DATE_FORMAT(COALESCE(payment_date, payments.created_at), '%Y-%m') as ym, SUM(payments.amount) as total")
                 ->where(function ($q) {
-                    $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                    $q->whereNull('projects.payment_type')
+                        ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
+                        ->orWhere('payment_categories.is_domains_hosting', true);
                 })
                 ->groupBy('ym')->orderBy('ym')->get()->pluck('total', 'ym')->toArray();
 
             // Expense per month — исключаем расходы, привязанные к бартерным и "своим" проектам
             $expRows = Expense::leftJoin('projects', 'projects.id', '=', 'expenses.project_id')
+                ->leftJoin('expense_categories', 'expense_categories.id', '=', 'expenses.expense_category_id')
                 ->selectRaw("DATE_FORMAT(COALESCE(expense_date, expenses.created_at), '%Y-%m') as ym, SUM(expenses.amount) as total")
                 ->where(function ($q) {
-                    $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                    $q->whereNull('projects.payment_type')
+                        ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
+                        ->orWhere('expense_categories.is_domains_hosting', true);
                 })
                 ->groupBy('ym')->orderBy('ym')->get()->pluck('total', 'ym')->toArray();
 
@@ -96,18 +102,24 @@ class DashboardController extends Controller
 
             // Income per day — исключаем платежи по бартерным и "своим" проектам
             $incRows = Payment::leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+                ->leftJoin('payment_categories', 'payment_categories.id', '=', 'payments.payment_category_id')
                 ->selectRaw('DATE(COALESCE(payment_date, payments.created_at)) as day, SUM(payments.amount) as total')
                 ->where(function ($q) {
-                    $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                    $q->whereNull('projects.payment_type')
+                        ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
+                        ->orWhere('payment_categories.is_domains_hosting', true);
                 })
                 ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
                 ->groupBy('day')->orderBy('day')->get()->pluck('total', 'day')->toArray();
 
             // Expense per day — исключаем расходы, привязанные к бартерным и "своим" проектам
             $expRows = Expense::leftJoin('projects', 'projects.id', '=', 'expenses.project_id')
+                ->leftJoin('expense_categories', 'expense_categories.id', '=', 'expenses.expense_category_id')
                 ->selectRaw('DATE(COALESCE(expense_date, expenses.created_at)) as day, SUM(expenses.amount) as total')
                 ->where(function ($q) {
-                    $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                    $q->whereNull('projects.payment_type')
+                        ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
+                        ->orWhere('expense_categories.is_domains_hosting', true);
                 })
                 ->whereRaw('DATE(COALESCE(expense_date, expenses.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
                 ->groupBy('day')->orderBy('day')->get()->pluck('total', 'day')->toArray();
@@ -187,8 +199,11 @@ class DashboardController extends Controller
         // Top 5 projects by income for the selected month
         $topProjectsRows = Payment::selectRaw('projects.id, COALESCE(projects.title, CONCAT("Проект #", projects.id)) as title, SUM(payments.amount) as total')
             ->leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+            ->leftJoin('payment_categories', 'payment_categories.id', '=', 'payments.payment_category_id')
             ->where(function ($q) {
-                $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                $q->whereNull('projects.payment_type')
+                    ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
+                    ->orWhere('payment_categories.is_domains_hosting', true);
             })
             ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
             ->groupBy('projects.id', 'projects.title')
@@ -312,14 +327,20 @@ class DashboardController extends Controller
 
         // Taxes totals for the selected period (or full range if period=all)
         $monthVatTotal = (float) Payment::leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+            ->leftJoin('payment_categories', 'payment_categories.id', '=', 'payments.payment_category_id')
             ->where(function ($q) {
-                $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                $q->whereNull('projects.payment_type')
+                    ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
+                    ->orWhere('payment_categories.is_domains_hosting', true);
             })
             ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
             ->sum('vat_amount');
         $monthUsnTotal = (float) Payment::leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+            ->leftJoin('payment_categories', 'payment_categories.id', '=', 'payments.payment_category_id')
             ->where(function ($q) {
-                $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                $q->whereNull('projects.payment_type')
+                    ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
+                    ->orWhere('payment_categories.is_domains_hosting', true);
             })
             ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
             ->sum('usn_amount');
@@ -521,6 +542,7 @@ class DashboardController extends Controller
         $salaryForecastTotal = (float) $salaryForecastUsers->sum('total');
 
         $incomeOperations = Payment::leftJoin('projects', 'projects.id', '=', 'payments.project_id')
+            ->leftJoin('payment_categories', 'payment_categories.id', '=', 'payments.payment_category_id')
             ->select(
                 'payments.id',
                 'payments.amount',
@@ -531,7 +553,9 @@ class DashboardController extends Controller
                 'payments.project_id'
             )
             ->where(function ($q) {
-                $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                $q->whereNull('projects.payment_type')
+                    ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
+                    ->orWhere('payment_categories.is_domains_hosting', true);
             })
             ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
             ->orderByDesc('payments.payment_date')
@@ -539,6 +563,7 @@ class DashboardController extends Controller
             ->get();
 
         $expenseOperations = Expense::leftJoin('projects', 'projects.id', '=', 'expenses.project_id')
+            ->leftJoin('expense_categories', 'expense_categories.id', '=', 'expenses.expense_category_id')
             ->select(
                 'expenses.id',
                 'expenses.amount',
@@ -549,7 +574,9 @@ class DashboardController extends Controller
                 'expenses.project_id'
             )
             ->where(function ($q) {
-                $q->whereNull('projects.payment_type')->orWhereNotIn('projects.payment_type', ['barter', 'own']);
+                $q->whereNull('projects.payment_type')
+                    ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
+                    ->orWhere('expense_categories.is_domains_hosting', true);
             })
             ->whereRaw('DATE(COALESCE(expense_date, expenses.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
             ->orderByDesc('expenses.expense_date')

@@ -28,4 +28,11 @@
         <x-input-error :messages="$errors->get('sort_order')" class="mt-2" />
     </div>
 
+    <div class="flex items-center gap-2">
+        <input type="hidden" name="is_domains_hosting" value="0" />
+        <input id="is_domains_hosting" type="checkbox" name="is_domains_hosting" value="1" class="h-4 w-4"
+            @checked(old('is_domains_hosting', $paymentCategory->is_domains_hosting ?? false)) />
+        <label for="is_domains_hosting" class="text-sm text-gray-700">Категория для доменов/хостинга</label>
+    </div>
+
 </div>

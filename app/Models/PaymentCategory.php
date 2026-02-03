@@ -14,14 +14,17 @@ class PaymentCategory extends Model
         'title',
         'slug',
         'sort_order',
+        'is_domains_hosting',
     ];
 
     protected $casts = [
         'sort_order' => 'integer',
+        'is_domains_hosting' => 'boolean',
     ];
 
     protected $attributes = [
         'sort_order' => 0,
+        'is_domains_hosting' => false,
     ];
 
     protected static function booted()

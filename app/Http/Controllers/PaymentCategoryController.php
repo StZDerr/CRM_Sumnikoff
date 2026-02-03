@@ -33,6 +33,7 @@ class PaymentCategoryController extends Controller
             'title' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:payment_categories,slug',
             'sort_order' => 'nullable|integer|min:1',
+            'is_domains_hosting' => 'sometimes|boolean',
         ]);
 
         if (empty($data['slug'])) {
@@ -70,6 +71,7 @@ class PaymentCategoryController extends Controller
             'title' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:payment_categories,slug,'.$paymentCategory->id,
             'sort_order' => 'nullable|integer|min:1',
+            'is_domains_hosting' => 'sometimes|boolean',
         ]);
 
         if (empty($data['slug'])) {
