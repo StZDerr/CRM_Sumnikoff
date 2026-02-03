@@ -156,13 +156,15 @@
                             <div class="flex flex-wrap items-end gap-3">
                                 <div class="w-40">
                                     <label class="text-xs text-gray-500">От</label>
-                                    <input type="date" name="date_from" value="{{ request('date_from', '') }}"
+                                    <input type="date" name="date_from"
+                                        value="{{ request('date_from', request('month') ? \Illuminate\Support\Carbon::createFromFormat('Y-m', request('month'))->startOfMonth()->format('Y-m-d') : '') }}"
                                         class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                                 </div>
 
                                 <div class="w-40">
                                     <label class="text-xs text-gray-500">До</label>
-                                    <input type="date" name="date_to" value="{{ request('date_to', '') }}"
+                                    <input type="date" name="date_to"
+                                        value="{{ request('date_to', request('month') ? \Illuminate\Support\Carbon::createFromFormat('Y-m', request('month'))->endOfMonth()->format('Y-m-d') : '') }}"
                                         class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                                 </div>
 
@@ -171,6 +173,65 @@
                                     <input type="search" name="q" value="{{ request('q') }}"
                                         placeholder="По описанию, счёту, заметке"
                                         class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+
+                                <div class="w-48">
+                                    <label class="text-xs text-gray-500">Месяц</label>
+                                    <select name="month" onchange="onMonthSelect(this.value)"
+                                        class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                        <option value="">— месяц —</option>
+
+                                        @php
+                                            // Use controller-provided $availableMonths if present, otherwise
+                                            // derive months from the current $operations collection (shows only months with records)
+                                            if (isset($availableMonths) && is_iterable($availableMonths)) {
+                                                $monthsList = collect($availableMonths)->values();
+                                            } else {
+                                                $opsColl =
+                                                    is_object($operations) && method_exists($operations, 'items')
+                                                        ? collect($operations->items())
+                                                        : collect($operations ?? []);
+
+                                                $monthsList = $opsColl
+                                                    ->map(function ($op) {
+                                                        $date = $op['date'] ?? null;
+                                                        if (!$date) {
+                                                            return null;
+                                                        }
+                                                        try {
+                                                            $c = \Illuminate\Support\Carbon::parse($date);
+                                                            return $c->format('Y-m');
+                                                        } catch (\Throwable $e) {
+                                                            return null;
+                                                        }
+                                                    })
+                                                    ->filter()
+                                                    ->unique()
+                                                    ->sortDesc()
+                                                    ->values();
+                                            }
+                                        @endphp
+
+                                        @foreach ($monthsList as $val)
+                                            @php
+                                                try {
+                                                    $d = \Illuminate\Support\Carbon::createFromFormat(
+                                                        'Y-m',
+                                                        $val,
+                                                    )->locale('ru');
+                                                    $label = mb_convert_case(
+                                                        $d->translatedFormat('F Y'),
+                                                        MB_CASE_TITLE,
+                                                        'UTF-8',
+                                                    );
+                                                } catch (\Throwable $e) {
+                                                    $label = $val;
+                                                }
+                                            @endphp
+                                            <option value="{{ $val }}" @selected(request('month') === $val)>
+                                                {{ $label }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
 
@@ -408,6 +469,48 @@
                     const m = String(d.getMonth() + 1).padStart(2, '0');
                     const day = String(d.getDate()).padStart(2, '0');
                     return `${y}-${m}-${day}`;
+                };
+
+                from.value = fmt(start);
+                to.value = fmt(end);
+
+                // clear month selector when using date presets
+                const monthSel = document.querySelector('select[name="month"]');
+                if (monthSel) monthSel.value = '';
+
+                const form = from.closest('form');
+                if (form) {
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit();
+                    } else {
+                        form.submit();
+                    }
+                }
+            }
+
+            function onMonthSelect(value) {
+                const from = document.querySelector('input[name="date_from"]');
+                const to = document.querySelector('input[name="date_to"]');
+                if (!from || !to) return;
+
+                if (!value) {
+                    from.value = '';
+                    to.value = '';
+                    return;
+                }
+
+                const parts = value.split('-');
+                if (parts.length !== 2) return;
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10);
+                const start = new Date(y, m - 1, 1);
+                const end = new Date(y, m, 0);
+
+                const fmt = (d) => {
+                    const y = d.getFullYear();
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    return `${y}-${mm}-${dd}`;
                 };
 
                 from.value = fmt(start);

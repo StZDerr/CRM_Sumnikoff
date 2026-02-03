@@ -267,6 +267,25 @@ class OperationController extends Controller
         // Итоги по текущему набору айтемов
         $sumIncome = $items->where('type', 'payment')->sum('amount');
         $sumExpense = $items->where('type', 'expense')->sum('amount');
+        // Build available months list (for month selector) from all payments/expenses
+        // Note: this ignores the date_from/date_to filters so the selector always shows
+        // months that actually have records. Respect marketer visibility for expenses.
+        $paymentMonths = collect();
+        if ($currentUser->isAdmin()) {
+            $paymentMonths = \DB::table('payments')
+                ->selectRaw("DATE_FORMAT(COALESCE(payment_date, created_at), '%Y-%m') as ym")
+                ->distinct()
+                ->pluck('ym');
+        }
+
+        $expensesMonthsQuery = \DB::table('expenses')->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as ym");
+        if ($currentUser->isMarketer()) {
+            $expensesMonthsQuery->join('projects', 'expenses.project_id', '=', 'projects.id')
+                ->where('projects.marketer_id', $currentUser->id);
+        }
+        $expenseMonths = $expensesMonthsQuery->distinct()->pluck('ym');
+
+        $availableMonths = $paymentMonths->merge($expenseMonths)->filter()->unique()->sortDesc()->values();
 
         return view('admin.operation.index', compact(
             'operations',
@@ -282,6 +301,7 @@ class OperationController extends Controller
             'sumExpense',
             'domainHostingCategories',
             'domains'
+            , 'availableMonths'
         ));
     }
 }
