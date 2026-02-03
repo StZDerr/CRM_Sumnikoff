@@ -14,12 +14,17 @@
             <div class="divide-y">
                 @forelse ($items as $item)
                     <div class="flex items-center gap-4 px-4 py-3 hover:bg-gray-50">
+                        <div class="w-20 text-center">
+                            <div class="text-sm font-semibold text-gray-900">{{ $item->day_of_month ?? '—' }}</div>
+                            <div class="text-xs text-gray-500">День</div>
+                        </div>
+
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
                                 <div>
                                     <div class="font-medium text-gray-900">{{ $item->title }}</div>
                                     <div class="text-xs text-gray-500">
-                                        {{ $item->user?->name ?? '—' }} • День оплаты: {{ $item->day_of_month }}
+                                        {{ $item->user?->name ?? '—' }}
                                         @if (!empty($item->note))
                                             • {{ $item->note }}
                                         @endif
