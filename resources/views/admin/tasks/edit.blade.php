@@ -1,0 +1,86 @@
+@extends('layouts.app')
+
+@section('content')
+    <div class="max-w-3xl mx-auto bg-white rounded shadow p-6">
+        <h1 class="text-xl font-semibold mb-4">Редактирование задачи</h1>
+
+        <form method="POST" action="{{ route('tasks.update', $task) }}" class="space-y-4">
+            @csrf
+            @method('PUT')
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Проект</label>
+                <select name="project_id" class="w-full border rounded p-2">
+                    @foreach ($projects as $project)
+                        <option value="{{ $project->id }}" @selected($task->project_id === $project->id)>
+                            {{ $project->title }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Название</label>
+                <input name="title" value="{{ $task->title }}" class="w-full border rounded p-2" required />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Описание</label>
+                <textarea name="description" class="w-full border rounded p-2" rows="4">{{ $task->description }}</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Статус</label>
+                    <select name="status_id" class="w-full border rounded p-2">
+                        @foreach ($statuses as $status)
+                            <option value="{{ $status->id }}" @selected($task->status_id === $status->id)>
+                                {{ $status->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Ответственный</label>
+                    <select name="assignee_id" class="w-full border rounded p-2">
+                        @foreach ($users as $user)
+                            <option value="{{ $user->id }}" @selected($task->assignee_id === $user->id)>
+                                {{ $user->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Дедлайн</label>
+                <input type="datetime-local" name="deadline_at" value="{{ $task->deadline_at?->format('Y-m-d\TH:i') }}"
+                    class="w-full border rounded p-2" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Соисполнители</label>
+                <select name="co_executor_ids[]" multiple class="w-full border rounded p-2">
+                    @php $coExecutorIds = $task->coExecutors->pluck('id')->all(); @endphp
+                    @foreach ($users as $user)
+                        <option value="{{ $user->id }}" @selected(in_array($user->id, $coExecutorIds, true))>
+                            {{ $user->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Наблюдатели</label>
+                <select name="observer_ids[]" multiple class="w-full border rounded p-2">
+                    @php $observerIds = $task->observers->pluck('id')->all(); @endphp
+                    @foreach ($users as $user)
+                        <option value="{{ $user->id }}" @selected(in_array($user->id, $observerIds, true))>
+                            {{ $user->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="flex gap-2">
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">Сохранить</button>
+                <a href="{{ route('tasks.show', $task) }}" class="px-4 py-2 bg-gray-200 rounded">Отмена</a>
+            </div>
+        </form>
+    </div>
+@endsection

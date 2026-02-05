@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             \Database\Seeders\ProjectSeeder::class,
             \Database\Seeders\PaymentCategorySeeder::class,
             \Database\Seeders\InvoiceStatusSeeder::class,
+            \Database\Seeders\TaskStatusSeeder::class,
         ]);
     }
 }

@@ -32,6 +32,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('projects:pause-on-close-date')
             ->dailyAt('00:00')
             ->appendOutputTo(storage_path('logs/pause_projects_on_close_date.log'));
+
+        $schedule->command('tasks:generate-recurring')
+            ->hourly()
+            ->appendOutputTo(storage_path('logs/generate_recurring_tasks.log'));
     }
 
     /**

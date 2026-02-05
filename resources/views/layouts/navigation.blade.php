@@ -17,6 +17,11 @@
             Dashboard
         </x-nav-link>
 
+        {{-- Задачи --}}
+        <x-nav-link :href="url('/tasks')" :active="request()->is('tasks*')">
+            Задачи
+        </x-nav-link>
+
         @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager() || auth()->user()->isMarketer())
             {{-- Пользователи: admin + project manager + marketer --}}
             <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">

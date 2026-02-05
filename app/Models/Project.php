@@ -168,6 +168,16 @@ class Project extends Model
         return $this->hasMany(\App\Models\ProjectComment::class)->orderBy('created_at', 'desc');
     }
 
+    public function tasks()
+    {
+        return $this->hasMany(\App\Models\Task::class);
+    }
+
+    public function recurringTasks()
+    {
+        return $this->hasMany(\App\Models\RecurringTask::class);
+    }
+
     public function vacationAssignments()
     {
         return $this->hasMany(\App\Models\VacationProject::class);

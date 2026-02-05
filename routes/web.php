@@ -27,8 +27,13 @@ use App\Http\Controllers\RegDomainController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SpecialtyController;
 use App\Http\Controllers\StageController;
+use App\Http\Controllers\TaskCommentController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskDisputeController;
+use App\Http\Controllers\TaskStatusController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VacationController;
+use App\Http\Controllers\RecurringTaskController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -88,6 +93,19 @@ Route::middleware('auth')->group(function () {
         'specialties' => SpecialtyController::class,
         // 'account-credentials' => AccountCredentialController::class,
     ]);
+
+    Route::resource('tasks', TaskController::class);
+    Route::post('tasks/{task}/status', [TaskController::class, 'changeStatus'])->name('tasks.change-status');
+    Route::post('tasks/{task}/deadline', [TaskController::class, 'changeDeadline'])->name('tasks.change-deadline');
+    Route::post('tasks/{task}/close', [TaskController::class, 'close'])->name('tasks.close');
+    Route::post('tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');
+    Route::post('tasks/{task}/disputes', [TaskDisputeController::class, 'store'])->name('tasks.disputes.store');
+    Route::post('task-disputes/{dispute}/resolve', [TaskDisputeController::class, 'resolve'])->name('tasks.disputes.resolve');
+
+    Route::get('task-statuses', [TaskStatusController::class, 'index'])->name('task-statuses.index');
+    Route::post('task-statuses', [TaskStatusController::class, 'store'])->name('task-statuses.store');
+
+    Route::resource('recurring-tasks', RecurringTaskController::class);
 
     // Admin-only endpoint to update project importance quickly from the list
     Route::patch('projects/{project}/importance', [ProjectController::class, 'updateImportance'])

@@ -156,6 +156,43 @@ class User extends Authenticatable
         return $this->hasMany(MonthlyExpense::class);
     }
 
+    public function tasksCreated()
+    {
+        return $this->hasMany(Task::class, 'created_by');
+    }
+
+    public function tasksAssigned()
+    {
+        return $this->hasMany(Task::class, 'assignee_id');
+    }
+
+    public function taskParticipations()
+    {
+        return $this->belongsToMany(Task::class, 'task_user')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    public function taskComments()
+    {
+        return $this->hasMany(TaskComment::class);
+    }
+
+    public function taskDeadlineChanges()
+    {
+        return $this->hasMany(TaskDeadlineChange::class, 'changed_by');
+    }
+
+    public function recurringTasksCreated()
+    {
+        return $this->hasMany(RecurringTask::class, 'created_by');
+    }
+
+    public function recurringTasksAssigned()
+    {
+        return $this->hasMany(RecurringTask::class, 'assignee_id');
+    }
+
     // Валидируем перед сохранением
     protected static function booted()
     {
