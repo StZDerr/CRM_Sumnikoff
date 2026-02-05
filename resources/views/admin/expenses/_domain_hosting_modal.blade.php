@@ -54,9 +54,9 @@
                     {{-- Домен --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Домен</label>
-                        <select name="domain_id" id="domainHostingDomainSelect" required
+                        <select name="domain_id" id="domainHostingDomainSelect"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="">— выбрать домен —</option>
+                            <option value="">— без домена (хостинг) —</option>
                             @foreach ($domainsForModal ?? ($domains ?? []) as $d)
                                 <option value="{{ $d->id }}"
                                     data-expires-at="{{ optional($d->expires_at)->format('Y-m-d') }}">

@@ -470,7 +470,8 @@ class ExpenseController extends Controller
             'document_number' => 'nullable|string|max:255',
             'status' => 'required|string|in:paid,awaiting,partial,stoplist',
             'description' => 'nullable|string',
-            'domain_id' => 'required|exists:domains,id',
+            // domain_id can be null for hosting-only expenses
+            'domain_id' => 'nullable|exists:domains,id',
             'renew_until' => 'nullable|date',
             'documents' => 'nullable|array',
             'documents.*' => 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx|max:5120',
