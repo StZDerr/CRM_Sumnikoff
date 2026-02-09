@@ -168,6 +168,17 @@
                 </div>
             </div>
 
+            <!-- Аванс -->
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>Аванс (вводите число без знака — оно автоматически будет вычитаться):</div>
+                <div>
+                    <input id="advance-input" type="number" name="advance_amount" step="0.01"
+                        value="{{ isset($report->advance_amount) ? abs($report->advance_amount) : 0 }}"
+                        class="w-28 border rounded p-1 text-center" />
+                    ₽
+                </div>
+            </div>
+
             <!-- Итоговая ЗП -->
             <div class="flex justify-between items-center text-lg font-semibold pt-3">
                 <div>Итоговая ЗП:</div>
@@ -176,10 +187,10 @@
             </div>
 
             <div class="flex justify-end gap-3">
-                <button type="button" id="calculate-salary"
-                    class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
-                    Рассчитать
-                </button>
+                <!-- <button type="button" id="calculate-salary"
+                        class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                        Рассчитать
+                    </button> -->
 
                 <!-- Форма обновления и повторной отправки -->
                 <form id="resubmit-form" method="POST" action="{{ route('attendance.update', $report->id) }}">
@@ -199,6 +210,8 @@
                         value="{{ $report->custom_bonus }}">
                     <input type="hidden" name="fees" id="hidden-fees" value="{{ $report->fees }}">
                     <input type="hidden" name="penalties" id="hidden-penalties" value="{{ $report->penalties }}">
+                    <input type="hidden" name="advance_amount" id="hidden-advance-amount"
+                        value="{{ $report->advance_amount ?? 0 }}">
                     <input type="hidden" name="total_salary" id="hidden-total-salary"
                         value="{{ $report->total_salary }}">
 
@@ -240,6 +253,7 @@
             const customBonusInput = document.querySelector('input[name="custom_bonus"]');
             const feesInput = document.querySelector('input[name="fees"]');
             const penaltiesInput = document.getElementById('penalties-input');
+            const advanceInput = document.getElementById('advance-input');
 
             const auditsPrice = 300;
             const baseSalary = {{ $report->base_salary }};
@@ -260,6 +274,7 @@
                 const fees = feesRaw > 0 ? -Math.abs(feesRaw) : feesRaw;
                 const penaltiesRaw = parseFloat(penaltiesInput?.value) || 0;
                 const penalties = penaltiesRaw > 0 ? -Math.abs(penaltiesRaw) : penaltiesRaw;
+                const advanceRaw = parseFloat(advanceInput?.value) || 0;
 
                 const salaryPerDay = baseSalary / 22;
                 const ordinaryPay = ordinaryDays * salaryPerDay;
@@ -268,7 +283,7 @@
                 const individualBonusPay = calculatedIndividualBonus;
 
                 const totalSalary = ordinaryPay + remotePay + auditsPay + individualBonusPay + customBonus + fees +
-                    penalties;
+                    penalties - advanceRaw;
 
                 individualBonusSpan.textContent = Math.round(individualBonusPay).toLocaleString('ru-RU');
                 totalSalarySpan.textContent = Math.round(totalSalary).toLocaleString('ru-RU');
@@ -285,6 +300,8 @@
                 document.getElementById('hidden-custom-bonus').value = customBonus;
                 document.getElementById('hidden-fees').value = fees;
                 document.getElementById('hidden-penalties').value = penalties;
+                const advanceRaw = parseFloat(advanceInput?.value) || 0;
+                document.getElementById('hidden-advance-amount').value = Math.abs(advanceRaw);
                 document.getElementById('hidden-individual-bonus').value = calculatedIndividualBonus;
                 document.getElementById('hidden-total-salary').value = Math.round(totalSalary);
 
@@ -297,18 +314,18 @@
                     const projectId = input.dataset.projectId;
                     const days = parseFloat(input.value) || 0;
                     document.querySelectorAll(`.pb-days[data-project-id="${projectId}"]`).forEach(
-                    hidden => {
-                        hidden.value = days;
-                    });
+                        hidden => {
+                            hidden.value = days;
+                        });
                 });
 
                 document.querySelectorAll('.project-bonus-input').forEach(input => {
                     const projectId = input.dataset.projectId;
                     const bonus = parseFloat(input.value) || 0;
                     document.querySelectorAll(`.pb-bonus[data-project-id="${projectId}"]`).forEach(
-                    hidden => {
-                        hidden.value = bonus;
-                    });
+                        hidden => {
+                            hidden.value = bonus;
+                        });
                 });
             }
 
@@ -367,14 +384,18 @@
                 });
             });
 
-            // Рассчитываем при клике на кнопку
-            calcButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                calculateSalary();
-            });
+            // Рассчитываем при клике на кнопку (если кнопка присутствует)
+            if (calcButton) {
+                calcButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    calculateSalary();
+                });
+            }
 
             // Авто-пересчёт при изменении полей
-            [ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput]
+            [ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput,
+                advanceInput
+            ]
             .filter(Boolean)
                 .forEach(input => {
                     input.addEventListener('input', calculateSalary);
