@@ -30,7 +30,7 @@
             <div class="flex justify-between items-center border-b pb-3">
                 <div>Отработано обычных дней:</div>
                 <div>
-                    <input type="number" name="ordinary_days" value="{{ $ordinaryDays }}"
+                    <input type="number" name="ordinary_days" value="{{ $existingReport->ordinary_days ?? $ordinaryDays }}"
                         class="w-20 border rounded p-1 text-center" />
                     дней
                 </div>
@@ -39,7 +39,7 @@
             <div class="flex justify-between items-center border-b pb-3">
                 <div>Отработано удаленных дней:</div>
                 <div>
-                    <input type="number" name="remote_days" value="{{ $remoteDays }}"
+                    <input type="number" name="remote_days" value="{{ $existingReport->remote_days ?? $remoteDays }}"
                         class="w-20 border rounded p-1 text-center" />
                     дней (1 день = 0.5)
                 </div>
@@ -49,7 +49,8 @@
             <div class="flex justify-between items-center border-b pb-3">
                 <div>Количество аудитов:</div>
                 <div>
-                    <input type="number" name="audits_count" value="0" class="w-20 border rounded p-1 text-center" />
+                    <input type="number" name="audits_count" value="{{ $existingReport->audits_count ?? 0 }}"
+                        class="w-20 border rounded p-1 text-center" />
                     x 300 ₽ = <span id="audits-pay" class="font-medium">1 500 ₽</span>
                 </div>
             </div>
@@ -99,11 +100,12 @@
                         {{-- Rows --}}
                         @foreach ($projects as $project)
                             @php
-                                $contractAmount = $project->contract_amount ?? 0;
-                                $maxProjectBonus = $contractAmount * ($bonusPercent / 100);
-                                $bonusPerDay = $maxProjectBonus / $avgWorkDays;
-                                $daysWorked = $projectDaysData[$project->id] ?? 0;
-                                $projectBonus = $bonusPerDay * $daysWorked;
+                                $bonusData = $projectBonusesData[$project->id] ?? null;
+                                $contractAmount = $bonusData['contract_amount'] ?? ($project->contract_amount ?? 0);
+                                $maxProjectBonus = $bonusData['max_bonus'] ?? $contractAmount * ($bonusPercent / 100);
+                                $bonusPerDay = $avgWorkDays > 0 ? $maxProjectBonus / $avgWorkDays : 0;
+                                $daysWorked = $bonusData['days_worked'] ?? ($projectDaysData[$project->id] ?? 0);
+                                $projectBonus = $bonusData['bonus_amount'] ?? $bonusPerDay * $daysWorked;
                                 $calculatedTotalBonus += $projectBonus;
                             @endphp
 
@@ -164,7 +166,8 @@
             <div class="flex justify-between items-center border-b pb-3">
                 <div>Произвольная премия:</div>
                 <div>
-                    <input type="number" name="custom_bonus" value="0" class="w-28 border rounded p-1 text-center" />
+                    <input type="number" name="custom_bonus" value="{{ $existingReport->custom_bonus ?? 0 }}"
+                        class="w-28 border rounded p-1 text-center" />
                     ₽
                 </div>
             </div>
@@ -191,6 +194,38 @@
                 </div>
             </div>
 
+            <!-- Аванс -->
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>Аванс (вводите число без знака — оно автоматически будет вычитаться):</div>
+                <div>
+                    <input id="advance-input" type="number" name="advance_amount" step="0.01"
+                        value="{{ isset($existingReport->advance_amount) ? abs($existingReport->advance_amount) : $advanceTotal ?? 0 }}"
+                        class="w-28 border rounded p-1 text-center" />
+                    ₽
+                    <div class="text-sm text-gray-500 mt-1">
+                        @if (!empty($salaryExpenses) && $salaryExpenses->count() > 0)
+                            <ul class="mt-2 text-sm text-gray-600 space-y-1">
+                                @foreach ($salaryExpenses as $exp)
+                                    <li>
+                                        {{ $exp->expense_date->translatedFormat('d.m.Y') }} — <span
+                                            class="font-medium">{{ number_format($exp->amount, 2, '.', ' ') }} ₽</span>
+                                        @if ($exp->document_number)
+                                            <span class="text-gray-500">(№{{ $exp->document_number }})</span>
+                                        @endif
+                                        @if ($exp->description)
+                                            <div class="text-gray-500">
+                                                {{ \Illuminate\Support\Str::limit($exp->description, 80) }}</div>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <div class="mt-2 text-sm text-gray-400">Авансы не зарегистрированы</div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
             <!-- Итоговая ЗП -->
             <div class="flex justify-between items-center text-lg font-semibold pt-3">
                 <div>Итоговая ЗП:</div>
@@ -200,12 +235,12 @@
             </div>
 
             <div class="flex justify-end">
-                <button type="button" id="calculate-salary"
+                {{-- <button type="button" id="calculate-salary"
                     class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition mx-4">
                     Рассчитать
-                </button>
+                </button> --}}
 
-                @if (!$existingReport)
+                @if (!$existingReport || $existingReport->status === 'save')
                     <form id="submit-for-approval-form" method="POST"
                         action="{{ route('attendance.submit', $user->id) }}">
                         @csrf
@@ -215,18 +250,22 @@
                         <input type="hidden" name="base_salary" id="base-salary-input"
                             value="{{ $user->salary_override ?? ($user->specialty->salary ?? 0) }}">
                         <input type="hidden" name="ordinary_days" id="ordinary-days-input"
-                            value="{{ $ordinaryDays }}">
-                        <input type="hidden" name="remote_days" id="remote-days-input" value="{{ $remoteDays }}">
-                        <input type="hidden" name="audits_count" id="audits-count-hidden" value="0">
+                            value="{{ $existingReport->ordinary_days ?? $ordinaryDays }}">
+                        <input type="hidden" name="remote_days" id="remote-days-input"
+                            value="{{ $existingReport->remote_days ?? $remoteDays }}">
+                        <input type="hidden" name="audits_count" id="audits-count-hidden"
+                            value="{{ $existingReport->audits_count ?? 0 }}">
                         <input type="hidden" name="individual_bonus" id="individual-bonus-input"
-                            value="{{ $calculatedTotalBonus ?? 0 }}">
+                            value="{{ $existingReport->individual_bonus ?? ($calculatedTotalBonus ?? 0) }}">
                         <input type="hidden" name="fees" id="fees-hidden" value="{{ $existingReport->fees ?? 0 }}">
                         <input type="hidden" name="penalties" id="penalties-hidden"
                             value="{{ $existingReport->penalties ?? 0 }}">
-                        <input type="hidden" name="custom_bonus" id="custom-bonus-hidden" value="0">
-                        <input type="hidden" name="status" value="submitted">
+                        <input type="hidden" name="advance_amount" id="advance-hidden"
+                            value="{{ $existingReport->advance_amount ?? ($advanceTotal ?? 0) }}">
+                        <input type="hidden" name="custom_bonus" id="custom-bonus-hidden"
+                            value="{{ $existingReport->custom_bonus ?? 0 }}">
                         <input type="hidden" name="total_salary" id="total-salary-input"
-                            value="{{ $user->salary_override ?? ($user->specialty->salary ?? 0) }}">
+                            value="{{ $existingReport->total_salary ?? ($user->salary_override ?? ($user->specialty->salary ?? 0)) }}">
 
                         <!-- Детализация премии по проектам -->
                         @foreach ($projects as $project)
@@ -247,13 +286,19 @@
                                 value="{{ $projectBonusesData[$project->id]['bonus_amount'] ?? 0 }}">
                         @endforeach
 
-                        <button type="submit" id="submit-for-approval-button"
-                            class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                            Отправить на согласование
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button type="submit" name="status" value="save"
+                                class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
+                                Сохранить
+                            </button>
+                            <button type="submit" id="submit-for-approval-button" name="status" value="submitted"
+                                class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                                Отправить на согласование
+                            </button>
+                        </div>
                     </form>
                 @else
-                    <p class="text-gray-500 italic mr-4">Табель за этот месяц уже создан.</p>
+                    <p class="text-gray-500 italic mr-4">Табель за этот месяц уже создан и отправлен на согласование.</p>
                 @endif
             </div>
 
@@ -270,6 +315,7 @@
             const customBonusInput = document.querySelector('input[name="custom_bonus"]'); // новое поле
             const feesInput = document.querySelector('input[name="fees"]');
             const penaltiesInput = document.getElementById('penalties-input');
+            const advanceInput = document.getElementById('advance-input');
 
 
             const auditsPrice = 300;
@@ -294,6 +340,7 @@
                     feesRaw; // положительные вводы автоматически считаем удержанием
                 const penaltiesRaw = parseFloat(penaltiesInput?.value) || 0;
                 const penalties = penaltiesRaw > 0 ? -Math.abs(penaltiesRaw) : penaltiesRaw;
+                const advanceRaw = parseFloat(advanceInput?.value) || 0; // вводимый аванс (будет вычитаться)
 
                 const salaryPerDay = baseSalary / 22; // стандартный месяц = 22 дня
                 const ordinaryPay = ordinaryDays * salaryPerDay;
@@ -302,8 +349,9 @@
                 // Используем рассчитанную премию с учётом дней
                 const individualBonusPay = calculatedIndividualBonus;
 
+                // Аванс вводится без знака и вычитается из итоговой суммы
                 const totalSalary = ordinaryPay + remotePay + auditsPay + individualBonusPay + customBonus + fees +
-                    penalties;
+                    penalties - advanceRaw;
 
                 individualBonusSpan.textContent = Math.round(individualBonusPay).toLocaleString('ru-RU');
                 totalSalarySpan.textContent = Math.round(totalSalary).toLocaleString('ru-RU');
@@ -317,14 +365,18 @@
             });
 
             // Авто-пересчет при изменении полей
-            ([ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput].filter(
+            ([ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput,
+                advanceInput
+            ].filter(
                 Boolean)).forEach(
                 input => {
                     input.addEventListener('input', calculateSalary);
                 });
 
             // Также синхронизируем скрытые поля при изменении
-            ([ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput].filter(
+            ([ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput,
+                advanceInput
+            ].filter(
                 Boolean)).forEach(
                 input => {
                     input.addEventListener('input', () => {
@@ -346,12 +398,14 @@
                 const fees = feesRaw > 0 ? -Math.abs(feesRaw) : feesRaw;
                 const penaltiesRaw = parseFloat(penaltiesInput?.value) || 0;
                 const penalties = penaltiesRaw > 0 ? -Math.abs(penaltiesRaw) : penaltiesRaw;
+                const advanceRaw = parseFloat(advanceInput?.value) || 0;
 
                 // Основная форма отправки
                 const auditsHidden = document.getElementById('audits-count-hidden');
                 const customHidden = document.getElementById('custom-bonus-hidden');
                 const feesHidden = document.getElementById('fees-hidden');
                 const penaltiesHidden = document.getElementById('penalties-hidden');
+                const advanceHidden = document.getElementById('advance-hidden');
                 const indivHidden = document.getElementById('individual-bonus-input');
                 const totalHidden = document.getElementById('total-salary-input');
                 const ordinaryHidden = document.getElementById('ordinary-days-input');
@@ -361,10 +415,11 @@
                 if (customHidden) customHidden.value = customBonus;
                 if (feesHidden) feesHidden.value = fees;
                 if (penaltiesHidden) penaltiesHidden.value = penalties;
+                if (advanceHidden) advanceHidden.value = Math.abs(advanceRaw);
                 if (indivHidden) indivHidden.value = calculatedIndividualBonus;
                 if (totalHidden) totalHidden.value = Math.round((ordinary * (baseSalary / 22)) + (
                         remote * (baseSalary / 22) * 0.5) + (audits * auditsPrice) + calculatedIndividualBonus +
-                    customBonus + fees + penalties);
+                    customBonus + fees + penalties - advanceRaw);
                 if (ordinaryHidden) ordinaryHidden.value = ordinary;
                 if (remoteHidden) remoteHidden.value = remote;
 
@@ -470,7 +525,9 @@
             });
 
             // Вызываем синхронизацию при изменении полей и после расчёта
-            ([ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput].filter(
+            ([ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput,
+                advanceInput
+            ].filter(
                 Boolean)).forEach(input => {
                 input.addEventListener('input', () => {
                     calculateSalary();
@@ -493,6 +550,15 @@
                         if (penHidden) penHidden.value = p;
 
                     }
+
+                    // Гарантированно копируем видимое поле аванса в скрытое перед отправкой
+                    const visibleAdv = document.getElementById('advance-input');
+                    if (visibleAdv) {
+                        const ar = parseFloat(visibleAdv.value) || 0;
+                        const advHidden = document.getElementById('advance-hidden');
+                        if (advHidden) advHidden.value = Math.abs(ar);
+                    }
+
                     syncHiddenFields();
                 });
             }

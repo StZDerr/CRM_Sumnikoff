@@ -22,19 +22,40 @@
                     <div class="mt-2 font-medium">{{ $report->status_label }}</div>
                 </div>
 
+                @php
+                    $wage_days = ($report->base_salary / 22) * $report->ordinary_days;
+                    $wage_remote = ($report->base_salary / 22) * ($report->remote_days / 2);
+                    $audits = $report->audits_count * 300;
+                    $individual = $report->individual_bonus;
+                    $custom = $report->custom_bonus;
+                    $fees = abs($report->fees ?? 0);
+                    $penalties = abs($report->penalties ?? 0);
+                    // Приоритет: явно сохранённый advance_amount, иначе сумма найденных расходов
+                    $advance = abs($report->advance_amount ?? ($advanceTotal ?? 0));
+                    $computedTotal =
+                        $wage_days + $wage_remote + $audits + $individual + $custom - $fees - $penalties - $advance;
+                @endphp
+
                 <div class="border rounded p-4">
                     <div class="text-sm text-gray-500">Итоговая ЗП</div>
                     <div class="mt-2 text-indigo-600 font-semibold">
-                        {{ number_format(($report->base_salary / 22) * $report->ordinary_days, 0, '', ' ') }} +
-                        {{ number_format(($report->base_salary / 22) * ($report->remote_days / 2), 0, '', ' ') }} +
-                        {{ number_format($report->audits_count * 300, 0, '', ' ') }} +
-                        {{ number_format($report->individual_bonus, 0, '', ' ') }} +
-                        {{ number_format($report->custom_bonus, 0, '', ' ') }} -
-                        {{ number_format(abs($report->fees), 0, '', ' ') }} -
-                        {{ number_format(abs($report->penalties ?? 0), 0, '', ' ') }}
+                        {{ number_format($wage_days, 0, '', ' ') }} +
+                        {{ number_format($wage_remote, 0, '', ' ') }} +
+                        {{ number_format($audits, 0, '', ' ') }} +
+                        {{ number_format($individual, 0, '', ' ') }} +
+                        {{ number_format($custom, 0, '', ' ') }} -
+                        {{ number_format($fees, 0, '', ' ') }} -
+                        {{ number_format($penalties, 0, '', ' ') }} -
+                        {{ number_format($advance, 0, '', ' ') }}
                         =
-                        {{ number_format($report->total_salary, 0, '', ' ') }} ₽
+                        {{ number_format($computedTotal, 0, '', ' ') }} ₽
                     </div>
+
+                    @if (round($computedTotal) != round($report->total_salary))
+                        <div class="mt-2 text-sm text-yellow-600">Внимание: сохранённая итоговая ЗП
+                            {{ number_format($report->total_salary, 0, '', ' ') }} ₽ отличается от рассчитанной
+                            ({{ number_format($computedTotal, 0, '', ' ') }} ₽).</div>
+                    @endif
                 </div>
 
                 <div class="border rounded p-4">
@@ -88,6 +109,35 @@
                 <div class="border rounded p-4">
                     <div class="text-sm text-gray-500">Штрафы</div>
                     <div class="mt-2 font-medium">{{ number_format($report->penalties ?? 0, 0, '.', ' ') }} ₽</div>
+                </div>
+
+                <div class="border rounded p-4">
+                    <div class="text-sm text-gray-500">Аванс</div>
+                    <div class="mt-2 font-medium">
+                        {{ number_format(abs($report->advance_amount ?? ($advanceTotal ?? 0)), 2, '.', ' ') }} ₽</div>
+
+                    @if (!empty($salaryExpenses) && $salaryExpenses->count() > 0)
+                        <div class="mt-3 text-sm text-gray-600">
+                            <div class="font-medium mb-2">Подробно:</div>
+                            <ul class="space-y-1">
+                                @foreach ($salaryExpenses as $exp)
+                                    <li>
+                                        {{ $exp->expense_date->translatedFormat('d.m.Y') }} — <span
+                                            class="font-medium">{{ number_format($exp->amount, 2, '.', ' ') }} ₽</span>
+                                        @if ($exp->document_number)
+                                            <span class="text-gray-500">(№{{ $exp->document_number }})</span>
+                                        @endif
+                                        @if ($exp->description)
+                                            <div class="text-gray-500">
+                                                {{ \Illuminate\Support\Str::limit($exp->description, 120) }}</div>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @else
+                        <div class="mt-2 text-sm text-gray-400">Авансы не зарегистрированы</div>
+                    @endif
                 </div>
 
                 <div class="border rounded p-4">

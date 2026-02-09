@@ -44,9 +44,9 @@
                     Табели на согласовании
                 </x-dropdown-link>
 
-                <x-dropdown-link :href="route('attendance.payable')" :active="request()->routeIs('attendance.payable')">
+                {{-- <x-dropdown-link :href="route('attendance.payable')" :active="request()->routeIs('attendance.payable')">
                     Табели на Аванс
-                </x-dropdown-link>
+                </x-dropdown-link> --}}
 
                 <x-dropdown-link :href="route('attendance.advance')" :active="request()->routeIs('attendance.advance')">
                     Табели на оплату Зарплаты

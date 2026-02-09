@@ -46,7 +46,7 @@
                         <label class="block text-sm font-medium text-gray-700">Сумма зарплаты</label>
                         <input name="amount" type="number" step="0.01" min="0.01" required
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            placeholder="0.00" value="{{ $report->remaining_amount ?? '' }}" />
+                            placeholder="0.00" value="{{ $report->total_salary ?? '' }}" />
                     </div>
 
                     {{-- Зарплатная категория --}}

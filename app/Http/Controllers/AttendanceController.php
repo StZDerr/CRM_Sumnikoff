@@ -260,6 +260,7 @@ class AttendanceController extends Controller
             'custom_bonus' => 'nullable|numeric|min:0',
             'fees' => 'nullable|numeric',
             'penalties' => 'nullable|numeric',
+            'advance_amount' => 'nullable|numeric',
             'total_salary' => 'required|numeric|min:0',
             'comment' => 'nullable|string|max:255',
             'project_bonuses' => 'nullable|array',
@@ -272,6 +273,7 @@ class AttendanceController extends Controller
             'custom_bonus' => $request->input('custom_bonus') ?? 0,
             'fees' => $request->input('fees') ?? 0,
             'penalties' => $request->input('penalties') ?? 0,
+            'advance_amount' => $request->input('advance_amount') ?? 0,
             'total_salary' => $request->input('total_salary'),
             'comment' => $request->input('comment') ?? $report->comment,
             'updated_by' => auth()->id(),
@@ -312,9 +314,24 @@ class AttendanceController extends Controller
 
     public function show(SalaryReport $report)
     {
-        $report->load('projectBonuses.project');
+        // Подгружаем связанные данные
+        $report->load(['projectBonuses.project', 'user']);
 
-        return view('admin.attendance.show', compact('report'));
+        // Период месяца табеля
+        $month = \Illuminate\Support\Carbon::parse($report->month);
+        $monthStart = $month->copy()->startOfMonth();
+        $monthEnd = $month->copy()->endOfMonth();
+
+        // Список расходов-авансов за месяц для этого сотрудника (категории ЗП)
+        $salaryExpenses = \App\Models\Expense::salary()
+            ->where('salary_recipient', $report->user_id)
+            ->whereBetween('expense_date', [$monthStart, $monthEnd])
+            ->orderBy('expense_date', 'asc')
+            ->get();
+
+        $advanceTotal = $salaryExpenses->sum('amount');
+
+        return view('admin.attendance.show', compact('report', 'salaryExpenses', 'advanceTotal'));
     }
 
     // Сохраняем/обновляем только комментарий табеля
@@ -342,13 +359,14 @@ class AttendanceController extends Controller
             return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
         }
 
+        // Помечаем табель как выданный под аванс и перенаправляем в список авансов
         $report->update([
-            'status' => 'approved',
-            'approved_by' => auth()->id(),
+            'status' => 'advance_paid',
+            'advance_paid_by' => auth()->id(),
             'approved_at' => now(),
         ]);
 
-        return redirect()->back()->with('success', 'Табель успешно одобрен');
+        return redirect()->route('attendance.advance')->with('success', 'Табель помечен как выданный аванс и перенесён в раздел Авансы');
     }
 
     // Отклонение табеля начальством
@@ -501,6 +519,14 @@ class AttendanceController extends Controller
             $projectDaysData[$project->id] = $totalDays;
         }
 
+        // Проверяем, есть ли уже табель за месяц
+        $existingReport = SalaryReport::where('user_id', $user->id)
+            ->where('month', $monthStart->format('Y-m-01'))
+            ->with('projectBonuses')
+            ->first();
+
+        $savedProjectBonuses = $existingReport?->projectBonuses?->keyBy('project_id') ?? collect();
+
         // Рассчитываем бонусы по проектам для передачи во view и сохранения
         $projectBonusesData = [];
         $avgWorkDays = 22;
@@ -508,25 +534,41 @@ class AttendanceController extends Controller
 
         foreach ($projects as $project) {
             $contractAmount = $project->contract_amount ?? 0;
-            $maxBonus = $contractAmount * ($individualBonusPercent / 100);
+            $bonusPercent = $individualBonusPercent;
+            $maxBonus = $contractAmount * ($bonusPercent / 100);
             $bonusPerDay = $avgWorkDays > 0 ? $maxBonus / $avgWorkDays : 0;
             $daysWorked = $projectDaysData[$project->id] ?? 0;
-            $bonusAmount = $bonusPerDay * $daysWorked;
+
+            $savedBonus = $savedProjectBonuses->get($project->id);
+            if ($savedBonus) {
+                $contractAmount = $savedBonus->contract_amount ?? $contractAmount;
+                $bonusPercent = $savedBonus->bonus_percent ?? $bonusPercent;
+                $maxBonus = $savedBonus->max_bonus ?? $maxBonus;
+                $daysWorked = $savedBonus->days_worked ?? $daysWorked;
+                $bonusAmount = $savedBonus->bonus_amount ?? ($bonusPerDay * $daysWorked);
+            } else {
+                $bonusAmount = $bonusPerDay * $daysWorked;
+            }
+
             $calculatedTotalBonus += $bonusAmount;
 
             $projectBonusesData[$project->id] = [
                 'contract_amount' => $contractAmount,
-                'bonus_percent' => $individualBonusPercent,
+                'bonus_percent' => $bonusPercent,
                 'max_bonus' => $maxBonus,
                 'days_worked' => $daysWorked,
                 'bonus_amount' => $bonusAmount,
             ];
         }
 
-        // Проверяем, есть ли уже табель за месяц
-        $existingReport = SalaryReport::where('user_id', $user->id)
-            ->where('month', $monthStart->format('Y-m-01'))
-            ->first();
+        // Список авансов: все расходы за прошлый месяц с категорией ЗП и получателем = пользователь
+        $salaryExpenses = \App\Models\Expense::salary()
+            ->where('salary_recipient', $user->id)
+            ->whereBetween('expense_date', [$monthStart, $monthEnd])
+            ->orderBy('expense_date', 'asc')
+            ->get();
+
+        $advanceTotal = $salaryExpenses->sum('amount');
 
         return view('admin.attendance.userShow', compact(
             'user',
@@ -544,7 +586,9 @@ class AttendanceController extends Controller
             'auditsCount',
             'auditPrice',
             'baseSalary',
-            'existingReport'
+            'existingReport',
+            'advanceTotal',
+            'salaryExpenses'
         ));
     }
 
@@ -587,8 +631,9 @@ class AttendanceController extends Controller
             'custom_bonus' => 'nullable|numeric|min:0',
             'fees' => 'nullable|numeric',
             'penalties' => 'nullable|numeric',
+            'advance_amount' => 'nullable|numeric|min:0',
             'total_salary' => 'required|numeric|min:0',
-            'status' => 'nullable|in:draft,submitted,approved,rejected',
+            'status' => 'nullable|in:draft,save,submitted,approved,rejected',
             'comment' => 'nullable|string|max:255',
             'project_bonuses' => 'nullable|array',
         ]);
@@ -608,6 +653,7 @@ class AttendanceController extends Controller
                 'custom_bonus' => $request->custom_bonus ?? 0,
                 'fees' => $request->fees ?? 0,
                 'penalties' => $request->penalties ?? 0,
+                'advance_amount' => $request->advance_amount ?? 0,
                 'total_salary' => $request->total_salary,
                 'status' => $request->status ?? 'submitted',
                 'comment' => $request->comment,
@@ -632,6 +678,10 @@ class AttendanceController extends Controller
                     'bonus_amount' => $data['bonus_amount'] ?? 0,
                 ]);
             }
+        }
+
+        if ($salaryReport->status === 'save') {
+            return redirect()->back()->with('success', 'Черновик табеля сохранён.');
         }
 
         // Перенаправляем на страницу просмотра созданного/обновлённого табеля
