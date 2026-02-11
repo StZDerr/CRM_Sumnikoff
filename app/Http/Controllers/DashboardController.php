@@ -177,24 +177,44 @@ class DashboardController extends Controller
 
         $monthLabel = $start->locale('ru')->isoFormat('MMMM YYYY');
 
-        // Expected profit (sum of contract_amount for in-progress projects with non-negative balance)
+        // Expected profit: potential income until end of month
+        // Formula per project: balance + contract_amount
+        // balance > 0 means debt from previous months, so we add it to this month's contract
+        // balance = 0 means no debt, just this month's contract amount
+        // balance < 0 means overpayment — exclude from expected profit entirely
         $expectedBaseQuery = Project::expectedProfitForMonth($start)
             ->where('status', Project::STATUS_IN_PROGRESS)
             ->where('balance', '>=', 0);
 
-        $expectedProfit = (float) $expectedBaseQuery->sum('contract_amount');
         $expectedProjects = (clone $expectedBaseQuery)
             ->where('contract_amount', '>', 0)
             ->select(['id', 'title', 'contract_amount', 'closed_at', 'payment_type', 'balance', 'status'])
             ->orderBy('title')
             ->get();
 
-        $expectedProjectIdsQuery = (clone $expectedBaseQuery)->select('id');
-        $expectedReceivedMonth = (float) Payment::whereIn('project_id', $expectedProjectIdsQuery)
+        // Per-project payments received this month
+        $expectedProjectIds = $expectedProjects->pluck('id')->all();
+        $receivedByProject = Payment::selectRaw('project_id, SUM(payments.amount) as total')
+            ->whereIn('project_id', $expectedProjectIds ?: [0])
             ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
-            ->sum('payments.amount');
+            ->groupBy('project_id')
+            ->pluck('total', 'project_id');
 
-        $expectedRemaining = (float) ($expectedProfit - $expectedReceivedMonth);
+        // Calculate expected income, received and remaining per project
+        $expectedProjects->each(function ($proj) use ($receivedByProject) {
+            $proj->expected_income = (float) $proj->balance + (float) $proj->contract_amount;
+            $proj->received_month = (float) ($receivedByProject[$proj->id] ?? 0);
+            $proj->remaining = (float) ($proj->expected_income - $proj->received_month);
+        });
+
+        $expectedProfit = (float) $expectedProjects->sum('expected_income');
+
+        $expectedReceivedMonth = (float) $expectedProjects->sum('received_month');
+
+        // Overpaid projects (remaining < 0) should not reduce the total remaining
+        $expectedRemaining = (float) $expectedProjects->sum(function ($proj) {
+            return max(0, $proj->remaining);
+        });
 
         // Top 5 projects by income for the selected month
         $topProjectsRows = Payment::selectRaw('projects.id, COALESCE(projects.title, CONCAT("Проект #", projects.id)) as title, SUM(payments.amount) as total')

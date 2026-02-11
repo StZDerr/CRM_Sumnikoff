@@ -864,7 +864,11 @@
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Дата закрытия</th>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
-                                            Долг</th>
+                                            Ожидаемая прибыль</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Получено</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
+                                            Осталось</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y">
@@ -882,8 +886,15 @@
                                             <td class="px-3 py-2">
                                                 {{ optional($proj->closed_at)->format('d.m.Y') ?? '—' }}
                                             </td>
-                                            <td class="px-3 py-2">
-                                                {{ number_format($proj->balance ?? 0, 2, '.', ' ') }} ₽
+                                            <td class="px-3 py-2 font-semibold text-indigo-600">
+                                                {{ number_format($proj->expected_income ?? 0, 2, '.', ' ') }} ₽
+                                            </td>
+                                            <td class="px-3 py-2 text-green-600 font-semibold">
+                                                {{ number_format($proj->received_month ?? 0, 2, '.', ' ') }} ₽
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 font-semibold {{ ($proj->remaining ?? 0) > 0 ? 'text-orange-600' : 'text-green-600' }}">
+                                                {{ number_format($proj->remaining ?? 0, 2, '.', ' ') }} ₽
                                             </td>
                                         </tr>
                                     @endforeach
@@ -891,14 +902,21 @@
                             </table>
 
                             <div class="mt-4 pt-4 border-t text-sm text-gray-700">
-                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div
+                                    class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 flex-wrap">
                                     <div>Проектов: <span class="font-semibold">{{ $expectedProjects->count() }}</span>
                                     </div>
                                     <div>Сумма контрактов: <span
                                             class="font-semibold">{{ number_format($expectedProjects->sum('contract_amount') ?? 0, 2, '.', ' ') }}
                                             ₽</span></div>
-                                    <div>Сумма баланса: <span
-                                            class="font-semibold">{{ number_format($expectedProjects->sum('balance') ?? 0, 2, '.', ' ') }}
+                                    <div>Ожидаемая прибыль: <span
+                                            class="font-semibold text-indigo-600">{{ number_format($expectedProjects->sum('expected_income') ?? 0, 2, '.', ' ') }}
+                                            ₽</span></div>
+                                    <div>Получено: <span
+                                            class="font-semibold text-green-600">{{ number_format($expectedProjects->sum('received_month') ?? 0, 2, '.', ' ') }}
+                                            ₽</span></div>
+                                    <div>Осталось: <span
+                                            class="font-semibold text-orange-600">{{ number_format($expectedProjects->sum(function ($p) {return max(0, $p->remaining);}) ?? 0,2,'.',' ') }}
                                             ₽</span></div>
                                 </div>
                             </div>

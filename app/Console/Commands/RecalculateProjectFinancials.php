@@ -96,12 +96,13 @@ class RecalculateProjectFinancials extends Command
             return 0.0;
         }
 
-        // Подгружаем все счета проекта внутри диапазона (issued_at или created_at)
+        // Подгружаем все счета проекта до конца периода (включая те, что выписаны до даты договора)
+        // Это позволяет учитывать преддоговорные счета в первом периоде
         $invoices = Invoice::where('project_id', $project->id)
-            ->where(function ($q) use ($start, $end) {
-                $q->whereNotNull('issued_at')->whereBetween('issued_at', [$start->toDateString(), $end->toDateString()])
-                    ->orWhere(function ($q2) use ($start, $end) {
-                        $q2->whereNull('issued_at')->whereBetween('created_at', [$start->toDateString(), $end->toDateString()]);
+            ->where(function ($q) use ($end) {
+                $q->whereNotNull('issued_at')->whereDate('issued_at', '<=', $end->toDateString())
+                    ->orWhere(function ($q2) use ($end) {
+                        $q2->whereNull('issued_at')->whereDate('created_at', '<=', $end->toDateString());
                     });
             })
             ->get(['amount', 'issued_at', 'created_at'])
@@ -130,11 +131,21 @@ class RecalculateProjectFinancials extends Command
                 $periodEnd = $end->copy();
             }
 
-            // Sum invoices that fall into this period
+            // Sum invoices that fall into this period.
+            // For the first period we also include invoices issued before contract date
+            // (they are treated as belonging to the first period).
             $sumInvoices = 0.0;
-            foreach ($invoices as $inv) {
-                if ($inv['date']->gte($periodStart) && $inv['date']->lte($periodEnd)) {
-                    $sumInvoices += $inv['amount'];
+            if ($periodStart->eq($start)) {
+                foreach ($invoices as $inv) {
+                    if ($inv['date']->lte($periodEnd)) {
+                        $sumInvoices += $inv['amount'];
+                    }
+                }
+            } else {
+                foreach ($invoices as $inv) {
+                    if ($inv['date']->gte($periodStart) && $inv['date']->lte($periodEnd)) {
+                        $sumInvoices += $inv['amount'];
+                    }
                 }
             }
 
