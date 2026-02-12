@@ -252,14 +252,15 @@
                                         <div
                                             class="h-9 w-9 flex items-center justify-center rounded-full
                                        bg-blue-100 text-blue-700 text-sm font-semibold">
-                                            {{ mb_strtoupper(mb_substr($comment->user->name, 0, 1)) }}
+                                            {{ mb_strtoupper(mb_substr($comment->user?->name ?? ($comment->user_name ?? '—'), 0, 1)) }}
+
                                         </div>
 
                                         <div class="flex-1">
                                             <div class="flex items-start justify-between">
                                                 <div>
                                                     <div class="font-medium text-gray-900">
-                                                        {{ $comment->user->name }}
+                                                        {{ $comment->user?->name ?? ($comment->user_name ?? 'Удалённый пользователь') }}
                                                     </div>
                                                     <div class="text-xs text-gray-500">
                                                         {{ $comment->created_at->diffForHumans() }}

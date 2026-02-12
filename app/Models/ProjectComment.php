@@ -23,7 +23,8 @@ class ProjectComment extends Model
 
     public function user()
     {
-        return $this->belongsTo(\App\Models\User::class);
+        // Показывать пользователя даже если он soft-deleted — чтобы имя оставалось видимым
+        return $this->belongsTo(\App\Models\User::class)->withTrashed();
     }
 
     public function photos()

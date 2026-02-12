@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Project;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -11,7 +12,7 @@ class RecalculateProjectFinancials extends Command
 {
     protected $signature = 'projects:recalc-financials {--project=} {--chunk=200} {--dry-run}';
 
-    protected $description = 'Recalculate debt, received_total and balance for projects';
+    protected $description = 'Recalculate debt, received_total and balance for projects as of end of previous month';
 
     public function handle(): int
     {
@@ -19,25 +20,28 @@ class RecalculateProjectFinancials extends Command
         $chunkSize = (int) ($this->option('chunk') ?: 200);
         $dryRun = (bool) $this->option('dry-run');
 
-        $query = Project::query()
-            ->withSum('payments', 'amount');
+        $query = Project::query();
 
         if (! empty($projectId)) {
             $query->where('id', $projectId);
         }
 
         $updated = 0;
-        $now = Carbon::now();
+        $asOf = Carbon::now()->startOfMonth()->subSecond();
 
-        $query->chunkById($chunkSize, function ($projects) use (&$updated, $now, $dryRun) {
+        $query->chunkById($chunkSize, function ($projects) use (&$updated, $asOf, $dryRun) {
             foreach ($projects as $project) {
-                $receivedTotal = (float) ($project->payments_sum_amount ?? 0);
-                $debt = $this->calculateExpectedDebt($project, $now);
+                $receivedTotal = (float) Payment::where('project_id', $project->id)
+                    ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) <= ?', [$asOf->toDateString()])
+                    ->sum('amount');
+
+                $debt = $this->calculateExpectedDebt($project, $asOf);
                 $balance = $debt - $receivedTotal;
 
                 if ($dryRun) {
                     $this->line(sprintf(
-                        'Project #%d: debt=%.2f, received_total=%.2f, balance=%.2f',
+                        'as-of=%s Project #%d: debt=%.2f, received_total=%.2f, balance=%.2f',
+                        $asOf->toDateString(),
                         $project->id,
                         $debt,
                         $receivedTotal,
@@ -49,11 +53,11 @@ class RecalculateProjectFinancials extends Command
 
                 $project->updateQuietly([
                     'debt' => $debt,
-                    'debt_calculated_at' => $now,
+                    'debt_calculated_at' => $asOf,
                     'received_total' => $receivedTotal,
-                    'received_calculated_at' => $now,
+                    'received_calculated_at' => $asOf,
                     'balance' => $balance,
-                    'balance_calculated_at' => $now,
+                    'balance_calculated_at' => $asOf,
                 ]);
 
                 $updated++;
@@ -63,7 +67,7 @@ class RecalculateProjectFinancials extends Command
         if ($dryRun) {
             $this->info('Dry run completed. No changes were saved.');
         } else {
-            $this->info("Recalculation completed. Updated projects: {$updated}.");
+            $this->info("Recalculation completed as of {$asOf->toDateString()} (end of previous month). Updated projects: {$updated}.");
         }
 
         return Command::SUCCESS;
@@ -116,16 +120,11 @@ class RecalculateProjectFinancials extends Command
         $periodStart = $start->copy();
         $guard = 0;
 
-        // Iterate periods: [periodStart, periodEnd] until end — handle month overflow (e.g., Feb shorter) correctly
+        // Начисление происходит в сам день периода (contract day), а не после полного завершения месяца.
+        // Периоды считаются от даты договора с month overflow (31 -> 28/29) через addMonthNoOverflow.
         while ($periodStart->lte($end) && $guard < 240) {
             $nextStart = $periodStart->copy()->addMonthNoOverflow();
-
-            // If next month's day is smaller (month overflow like Feb), include that last day in current period
-            if ($nextStart->day < $periodStart->day) {
-                $periodEnd = $nextStart->endOfDay();
-            } else {
-                $periodEnd = $nextStart->subSecond();
-            }
+            $periodEnd = $nextStart->copy()->subSecond();
 
             if ($periodEnd->gt($end)) {
                 $periodEnd = $end->copy();
@@ -149,17 +148,17 @@ class RecalculateProjectFinancials extends Command
                 }
             }
 
+            // Каждый начавшийся период даёт либо сумму счетов в периоде, либо — полную сумму контракта
+            // но полную сумму контракта добавляем только если период полностью прошёл (не частичный текущий период).
             if ($sumInvoices > 0) {
                 $expectedSum += $sumInvoices;
             } else {
-                // Only add full contract amount if the period fully passed (not a partial current period)
                 if ($periodEnd->lte($today)) {
                     $expectedSum += $contractAmount;
                 }
             }
 
-            // Start next period immediately after current period end to avoid overlapping/extra short periods
-            $periodStart = $periodEnd->copy()->addSecond();
+            $periodStart = $nextStart;
             $guard++;
         }
 

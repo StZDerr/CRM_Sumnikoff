@@ -177,11 +177,10 @@ class DashboardController extends Controller
 
         $monthLabel = $start->locale('ru')->isoFormat('MMMM YYYY');
 
-        // Expected profit: potential income until end of month
-        // Formula per project: balance + contract_amount
-        // balance > 0 means debt from previous months, so we add it to this month's contract
-        // balance = 0 means no debt, just this month's contract amount
-        // balance < 0 means overpayment — exclude from expected profit entirely
+        // Expected profit: current expected amount from recalculated balance.
+        // balance уже включает начисления по периодам и все полученные оплаты,
+        // поэтому дополнительно contract_amount добавлять нельзя (иначе задвоение).
+        // balance < 0 означает переплату — для ожидаемой прибыли берём 0.
         $expectedBaseQuery = Project::expectedProfitForMonth($start)
             ->where('status', Project::STATUS_IN_PROGRESS)
             ->where('balance', '>=', 0);
@@ -201,10 +200,25 @@ class DashboardController extends Controller
             ->pluck('total', 'project_id');
 
         // Calculate expected income, received and remaining per project
-        $expectedProjects->each(function ($proj) use ($receivedByProject) {
-            $proj->expected_income = (float) $proj->balance + (float) $proj->contract_amount;
+        $expectedProjects->each(function ($proj) use ($receivedByProject, $start, $end) {
+            $balance = (float) $proj->balance;
+            $contract = (float) ($proj->contract_amount ?? 0);
+
+            // Business rules:
+            // - balance < 0 — проект переплатил (выбранные проекты уже исключают такие случаи);
+            // - balance == 0 — считается, что прошлый месяц закрыт: ожидаемая прибыль = сумма контракта;
+            // - balance > 0 — ожидаемая прибыль = balance + contract_amount.
+            if ($balance === 0.0) {
+                $proj->expected_income = $contract;
+            } else {
+                $proj->expected_income = max(0, $balance + $contract);
+            }
+
+            // `Получено` в модальном окне — все платежи проекта за выбранный месяц (с начала месяца по end).
             $proj->received_month = (float) ($receivedByProject[$proj->id] ?? 0);
-            $proj->remaining = (float) ($proj->expected_income - $proj->received_month);
+
+            // Осталось = ожидаемая − получено (не опускаем ниже 0)
+            $proj->remaining = max(0, $proj->expected_income - $proj->received_month);
         });
 
         $expectedProfit = (float) $expectedProjects->sum('expected_income');
