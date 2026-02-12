@@ -93,7 +93,7 @@
                         <label class="block text-sm font-medium text-gray-700">Примечание</label>
                         <textarea name="description" rows="2"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            placeholder="Зарплата за {{ \Carbon\Carbon::parse($report->month)->translatedFormat('F Y') }}"></textarea>
+                            placeholder="Зарплата за {{ \Carbon\Carbon::parse($report->month)->locale('ru')->translatedFormat('F Y') }}"></textarea>
                     </div>
 
                     {{-- Файлы --}}

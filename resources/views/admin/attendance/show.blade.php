@@ -4,7 +4,7 @@
     <div class="max-w-5xl mx-auto px-4 py-6">
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-xl font-semibold">Табель — {{ $report->user->name }} за
-                {{ \Carbon\Carbon::parse($report->month)->translatedFormat('F Y') }}</h1>
+                {{ \Carbon\Carbon::parse($report->month)->locale('ru')->translatedFormat('F Y') }}</h1>
             @if (auth()->user()->isAdmin())
                 <a href="{{ route('attendance.approvals') }}"
                     class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">Назад к согласованию</a>

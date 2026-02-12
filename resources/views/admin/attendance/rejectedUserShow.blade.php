@@ -6,7 +6,7 @@
             <div>
                 <h1 class="text-xl font-semibold">Редактирование табеля — {{ $report->user->name }}</h1>
                 <p class="text-sm text-gray-500 mt-1">
-                    За {{ \Carbon\Carbon::parse($report->month)->translatedFormat('F Y') }} •
+                    За {{ \Carbon\Carbon::parse($report->month)->locale('ru')->translatedFormat('F Y') }} •
                     <span class="text-red-600 font-medium">Статус: Отклонён</span>
                 </p>
             </div>
@@ -188,9 +188,9 @@
 
             <div class="flex justify-end gap-3">
                 <!-- <button type="button" id="calculate-salary"
-                        class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
-                        Рассчитать
-                    </button> -->
+                            class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                            Рассчитать
+                        </button> -->
 
                 <!-- Форма обновления и повторной отправки -->
                 <form id="resubmit-form" method="POST" action="{{ route('attendance.update', $report->id) }}">

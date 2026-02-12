@@ -34,34 +34,34 @@ class SalaryReport extends Model
         'paid_by',            // кто выплатил полную зп
     ];
 
-    // Привязка к пользователю, которому табель
+    // Привязка к пользователю, которому табель (включая soft-deleted)
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
-    // Кто создал табель
+    // Кто создал табель (включая soft-deleted)
     public function creator()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by')->withTrashed();
     }
 
-    // Кто обновил табель
+    // Кто обновил табель (включая soft-deleted)
     public function updater()
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(User::class, 'updated_by')->withTrashed();
     }
 
-    // Кто оставил комментарий
+    // Кто оставил комментарий (включая soft-deleted)
     public function commenter()
     {
-        return $this->belongsTo(User::class, 'commented_by');
+        return $this->belongsTo(User::class, 'commented_by')->withTrashed();
     }
 
-    // Кто одобрил табель
+    // Кто одобрил табель (включая soft-deleted)
     public function approver()
     {
-        return $this->belongsTo(User::class, 'approved_by');
+        return $this->belongsTo(User::class, 'approved_by')->withTrashed();
     }
 
     // Детализация премии по проектам

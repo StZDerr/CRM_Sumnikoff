@@ -18,7 +18,8 @@
                 @foreach ($reports as $report)
                     <tr class="border-b">
                         <td class="p-3">{{ $report->user->name }}</td>
-                        <td class="p-3">{{ \Carbon\Carbon::parse($report->month)->translatedFormat('F Y') }}</td>
+                        <td class="p-3">
+                            {{ \Carbon\Carbon::parse($report->month)->locale('ru')->translatedFormat('F Y') }}</td>
                         <td class="p-3">{{ $report->status_label }}</td>
                         <td class="p-3">{{ number_format($report->total_salary, 0, '', ' ') }} ₽</td>
                         <td class="p-3">
