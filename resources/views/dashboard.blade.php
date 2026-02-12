@@ -242,7 +242,7 @@
                             @else
                                 <div class="overflow-auto">
                                     <table class="min-w-full text-sm">
-                                        <thead class="bg-gray-50">
+                                        <thead class="bg-gray-50 sticky top-0 z-10">
                                             <tr>
                                                 <th
                                                     class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
@@ -304,7 +304,7 @@
                             @else
                                 <div class="overflow-auto">
                                     <table class="min-w-full text-sm">
-                                        <thead class="bg-gray-50">
+                                        <thead class="bg-gray-50 sticky top-0 z-10">
                                             <tr>
                                                 <th
                                                     class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
@@ -439,7 +439,7 @@
                             @else
                                 <div class="overflow-auto">
                                     <table class="min-w-full text-sm">
-                                        <thead class="bg-gray-50">
+                                        <thead class="bg-gray-50 sticky top-0 z-10">
                                             <tr>
                                                 <th
                                                     class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
@@ -504,7 +504,7 @@
                             @else
                                 <div class="overflow-auto">
                                     <table class="min-w-full text-sm">
-                                        <thead class="bg-gray-50">
+                                        <thead class="bg-gray-50 sticky top-0 z-10">
                                             <tr>
                                                 <th
                                                     class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
@@ -855,7 +855,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -948,7 +948,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1000,7 +1000,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1052,7 +1052,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1110,7 +1110,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1168,7 +1168,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1231,7 +1231,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1294,7 +1294,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
