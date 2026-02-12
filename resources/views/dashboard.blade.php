@@ -86,7 +86,7 @@
                     class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
                     <div class="text-xs text-gray-500">Доход за месяц</div>
                     <div class="text-2xl font-bold mt-1 text-indigo-600">
-                        {{ number_format($monthTotal, 2, '.', ' ') }} ₽
+                        {{ number_format($monthTotal, 0, '.', ' ') }} ₽
                     </div>
                 </button>
 
@@ -94,7 +94,7 @@
                     class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
                     <div class="text-xs text-gray-500">Расход за месяц</div>
                     <div class="text-2xl font-bold mt-1 text-red-600">
-                        {{ number_format($monthTotalExpense ?? 0, 2, '.', ' ') }} ₽
+                        {{ number_format($monthTotalExpense ?? 0, 0, '.', ' ') }} ₽
                     </div>
                 </button>
 
@@ -102,7 +102,7 @@
                     <div class="text-xs text-gray-500">Баланс (Доход − Расход)</div>
                     @php $net = $monthTotal - ($monthTotalExpense ?? 0); @endphp
                     <div class="text-2xl font-bold mt-1 {{ $net >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                        {{ number_format($net, 2, '.', ' ') }} ₽
+                        {{ number_format($net, 0, '.', ' ') }} ₽
                     </div>
                 </div>
             </div>
@@ -113,7 +113,7 @@
                     class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
                     <div class="text-xs text-gray-500">Фонд ЗП (категория ЗП)</div>
                     <div class="text-2xl font-bold mt-1 text-indigo-600">
-                        {{ number_format($totalAmount ?? 0, 2, '.', ' ') }} ₽
+                        {{ number_format($totalAmount ?? 0, 0, '.', ' ') }} ₽
                     </div>
                     <div class="text-xs text-gray-500 mt-1">Операции за выбранный месяц</div>
                 </button>
@@ -122,7 +122,7 @@
                     class="bg-white rounded-xl shadow p-4 text-left w-full hover:shadow-md transition">
                     <div class="text-xs text-gray-500">Прогноз ФОТ (ожидаемые выплаты)</div>
                     <div class="text-2xl font-bold mt-1 text-indigo-600">
-                        {{ number_format($salaryForecastTotal ?? 0, 2, '.', ' ') }} ₽
+                        {{ number_format($salaryForecastTotal ?? 0, 0, '.', ' ') }} ₽
                     </div>
                     <div class="text-xs text-gray-500 mt-1">{{ $forecastMonthLabel ?? 'Текущий месяц' }}</div>
                 </button>
@@ -173,15 +173,15 @@
                         <div class="text-xs text-gray-500">Ожидаемая прибыль</div>
                         <div class="text-sm text-gray-400">{{ now()->locale('ru')->isoFormat('MMMM YYYY') }}</div>
                         <div class="text-2xl font-bold mt-2 text-indigo-600">
-                            {{ number_format($expectedProfit ?? 0, 2, '.', ' ') }} ₽
+                            {{ number_format($expectedProfit ?? 0, 0, '.', ' ') }} ₽
                         </div>
 
                         <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-500">
                             <div>Получено:<div class="text-sm text-gray-700 font-semibold">
-                                    {{ number_format($expectedReceivedMonth ?? 0, 2, '.', ' ') }} ₽</div>
+                                    {{ number_format($expectedReceivedMonth ?? 0, 0, '.', ' ') }} ₽</div>
                             </div>
                             <div>Осталось:<div class="text-sm text-gray-700 font-semibold">
-                                    {{ number_format($expectedRemaining ?? 0, 2, '.', ' ') }} ₽</div>
+                                    {{ number_format($expectedRemaining ?? 0, 0, '.', ' ') }} ₽</div>
                             </div>
                         </div>
 
@@ -242,7 +242,7 @@
                             @else
                                 <div class="overflow-auto">
                                     <table class="min-w-full text-sm">
-                                        <thead class="bg-gray-50 sticky top-0 z-10">
+                                        <thead class="bg-gray-50">
                                             <tr>
                                                 <th
                                                     class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
@@ -271,7 +271,7 @@
                                                         {{ $exp->description ?? '—' }}
                                                     </td>
                                                     <td class="px-3 py-2 text-right font-semibold">
-                                                        {{ number_format($exp->amount, 2, '.', ' ') }} ₽
+                                                        {{ number_format($exp->amount, 0, '.', ' ') }} ₽
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -304,7 +304,7 @@
                             @else
                                 <div class="overflow-auto">
                                     <table class="min-w-full text-sm">
-                                        <thead class="bg-gray-50 sticky top-0 z-10">
+                                        <thead class="bg-gray-50">
                                             <tr>
                                                 <th
                                                     class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
@@ -372,13 +372,13 @@
                                                         @endswitch
                                                     </td>
                                                     <td class="px-3 py-2 text-right">
-                                                        {{ number_format($row['base'] ?? 0, 2, '.', ' ') }} ₽
+                                                        {{ number_format($row['base'] ?? 0, 0, '.', ' ') }} ₽
                                                     </td>
                                                     <td class="px-3 py-2 text-right">
-                                                        {{ number_format($row['bonus_total'] ?? 0, 2, '.', ' ') }} ₽
+                                                        {{ number_format($row['bonus_total'] ?? 0, 0, '.', ' ') }} ₽
                                                     </td>
                                                     <td class="px-3 py-2 text-right font-semibold">
-                                                        {{ number_format($row['total'] ?? 0, 2, '.', ' ') }} ₽
+                                                        {{ number_format($row['total'] ?? 0, 0, '.', ' ') }} ₽
                                                     </td>
                                                     <td class="px-3 py-2">
                                                         @if ($source === 'manual')
@@ -397,7 +397,7 @@
                                                                         <span
                                                                             class="font-medium">{{ $p['title'] }}</span>
                                                                         —
-                                                                        {{ number_format($p['bonus_amount'] ?? 0, 2, '.', ' ') }}
+                                                                        {{ number_format($p['bonus_amount'] ?? 0, 0, '.', ' ') }}
                                                                         ₽
                                                                         <span class="text-gray-400">(дней:
                                                                             {{ number_format($p['days_worked'] ?? 0, 1, '.', ' ') }})</span>
@@ -439,7 +439,7 @@
                             @else
                                 <div class="overflow-auto">
                                     <table class="min-w-full text-sm">
-                                        <thead class="bg-gray-50 sticky top-0 z-10">
+                                        <thead class="bg-gray-50">
                                             <tr>
                                                 <th
                                                     class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
@@ -471,7 +471,7 @@
                                                         {{ $op->note ?? '—' }}
                                                     </td>
                                                     <td class="px-3 py-2 text-right font-semibold">
-                                                        {{ number_format($op->amount, 2, '.', ' ') }} ₽
+                                                        {{ number_format($op->amount, 0, '.', ' ') }} ₽
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -504,7 +504,7 @@
                             @else
                                 <div class="overflow-auto">
                                     <table class="min-w-full text-sm">
-                                        <thead class="bg-gray-50 sticky top-0 z-10">
+                                        <thead class="bg-gray-50">
                                             <tr>
                                                 <th
                                                     class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
@@ -536,7 +536,7 @@
                                                         {{ $op->description ?? '—' }}
                                                     </td>
                                                     <td class="px-3 py-2 text-right font-semibold">
-                                                        {{ number_format($op->amount, 2, '.', ' ') }} ₽
+                                                        {{ number_format($op->amount, 0, '.', ' ') }} ₽
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -556,21 +556,21 @@
                     <div class="bg-gray-50 rounded-lg p-4 text-center">
                         <div class="text-xs text-gray-500">НДС (5%)</div>
                         <div class="text-lg font-semibold mt-1 text-indigo-700">
-                            {{ number_format($monthVatTotal ?? 0, 2, '.', ' ') }} ₽
+                            {{ number_format($monthVatTotal ?? 0, 0, '.', ' ') }} ₽
                         </div>
                     </div>
 
                     <div class="bg-gray-50 rounded-lg p-4 text-center">
                         <div class="text-xs text-gray-500">УСН (7%)</div>
                         <div class="text-lg font-semibold mt-1 text-indigo-700">
-                            {{ number_format($monthUsnTotal ?? 0, 2, '.', ' ') }} ₽
+                            {{ number_format($monthUsnTotal ?? 0, 0, '.', ' ') }} ₽
                         </div>
                     </div>
 
                     <div class="bg-gray-50 rounded-lg p-4 text-center">
                         <div class="text-xs text-gray-500">Итого налогов</div>
                         <div class="text-2xl font-bold mt-1 text-indigo-600">
-                            {{ number_format(($monthVatTotal ?? 0) + ($monthUsnTotal ?? 0), 2, '.', ' ') }} ₽
+                            {{ number_format(($monthVatTotal ?? 0) + ($monthUsnTotal ?? 0), 0, '.', ' ') }} ₽
                         </div>
                     </div>
                 </div>
@@ -626,7 +626,7 @@
                                     {{-- Правая часть --}}
                                     <div class="flex items-center gap-3 shrink-0">
                                         <div class="text-sm font-semibold text-gray-900 whitespace-nowrap">
-                                            {{ number_format($me->amount, 2, '.', ' ') }} ₽
+                                            {{ number_format($me->amount, 0, '.', ' ') }} ₽
                                         </div>
 
                                         <span
@@ -660,7 +660,7 @@
                             </div>
                             <div>Итоговая сумма:
                                 <span class="font-semibold">
-                                    {{ number_format($monthlyExpenses->sum('amount'), 2, '.', ' ') }}
+                                    {{ number_format($monthlyExpenses->sum('amount'), 0, '.', ' ') }}
                                     ₽</span>
                             </div>
                         </div>
@@ -855,7 +855,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 sticky top-0 z-10">
+                                <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -881,20 +881,20 @@
                                                 </a>
                                             </td>
                                             <td class="px-3 py-2">
-                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽
+                                                {{ number_format($proj->contract_amount ?? 0, 0, '.', ' ') }} ₽
                                             </td>
                                             <td class="px-3 py-2">
                                                 {{ optional($proj->closed_at)->format('d.m.Y') ?? '—' }}
                                             </td>
                                             <td class="px-3 py-2 font-semibold text-indigo-600">
-                                                {{ number_format($proj->expected_income ?? 0, 2, '.', ' ') }} ₽
+                                                {{ number_format($proj->expected_income ?? 0, 0, '.', ' ') }} ₽
                                             </td>
                                             <td class="px-3 py-2 text-green-600 font-semibold">
-                                                {{ number_format($proj->received_month ?? 0, 2, '.', ' ') }} ₽
+                                                {{ number_format($proj->received_month ?? 0, 0, '.', ' ') }} ₽
                                             </td>
                                             <td
                                                 class="px-3 py-2 font-semibold {{ ($proj->remaining ?? 0) > 0 ? 'text-orange-600' : 'text-green-600' }}">
-                                                {{ number_format($proj->remaining ?? 0, 2, '.', ' ') }} ₽
+                                                {{ number_format($proj->remaining ?? 0, 0, '.', ' ') }} ₽
                                             </td>
                                         </tr>
                                     @endforeach
@@ -907,16 +907,16 @@
                                     <div>Проектов: <span class="font-semibold">{{ $expectedProjects->count() }}</span>
                                     </div>
                                     <div>Сумма контрактов: <span
-                                            class="font-semibold">{{ number_format($expectedProjects->sum('contract_amount') ?? 0, 2, '.', ' ') }}
+                                            class="font-semibold">{{ number_format($expectedProjects->sum('contract_amount') ?? 0, 0, '.', ' ') }}
                                             ₽</span></div>
                                     <div>Ожидаемая прибыль: <span
-                                            class="font-semibold text-indigo-600">{{ number_format($expectedProjects->sum('expected_income') ?? 0, 2, '.', ' ') }}
+                                            class="font-semibold text-indigo-600">{{ number_format($expectedProjects->sum('expected_income') ?? 0, 0, '.', ' ') }}
                                             ₽</span></div>
                                     <div>Получено: <span
-                                            class="font-semibold text-green-600">{{ number_format($expectedProjects->sum('received_month') ?? 0, 2, '.', ' ') }}
+                                            class="font-semibold text-green-600">{{ number_format($expectedProjects->sum('received_month') ?? 0, 0, '.', ' ') }}
                                             ₽</span></div>
                                     <div>Осталось: <span
-                                            class="font-semibold text-orange-600">{{ number_format($expectedProjects->sum(function ($p) {return max(0, $p->remaining);}) ?? 0,2,'.',' ') }}
+                                            class="font-semibold text-orange-600">{{ number_format($expectedProjects->sum(function ($p) {return max(0, $p->remaining);}) ?? 0,0,'.',' ') }}
                                             ₽</span></div>
                                 </div>
                             </div>
@@ -948,7 +948,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 sticky top-0 z-10">
+                                <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -965,7 +965,7 @@
                                                     class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
                                             </td>
                                             <td class="px-3 py-2">
-                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
+                                                {{ number_format($proj->contract_amount ?? 0, 0, '.', ' ') }} ₽</td>
                                             <td class="px-3 py-2">
                                                 {{ optional($proj->created_at)->format('d.m.Y') ?? '—' }}
                                             </td>
@@ -1000,7 +1000,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 sticky top-0 z-10">
+                                <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1017,7 +1017,7 @@
                                                     class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
                                             </td>
                                             <td class="px-3 py-2">
-                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
+                                                {{ number_format($proj->contract_amount ?? 0, 0, '.', ' ') }} ₽</td>
                                             <td class="px-3 py-2">
                                                 {{ optional($proj->created_at)->format('d.m.Y') ?? '—' }}
                                             </td>
@@ -1052,7 +1052,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 sticky top-0 z-10">
+                                <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1069,7 +1069,7 @@
                                                     class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
                                             </td>
                                             <td class="px-3 py-2">
-                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
+                                                {{ number_format($proj->contract_amount ?? 0, 0, '.', ' ') }} ₽</td>
                                             <td class="px-3 py-2">
                                                 {{ optional($proj->created_at)->format('d.m.Y') ?? '—' }}
                                             </td>
@@ -1110,7 +1110,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 sticky top-0 z-10">
+                                <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1127,7 +1127,7 @@
                                                     class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
                                             </td>
                                             <td class="px-3 py-2">
-                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
+                                                {{ number_format($proj->contract_amount ?? 0, 0, '.', ' ') }} ₽</td>
                                             <td class="px-3 py-2">
                                                 {{ optional($proj->organization)->name_short ?? ($proj->city ?? '—') }}
                                             </td>
@@ -1168,7 +1168,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 sticky top-0 z-10">
+                                <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1185,7 +1185,7 @@
                                                     class="text-indigo-600 hover:underline">{{ $proj->title }}</a>
                                             </td>
                                             <td class="px-3 py-2">
-                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
+                                                {{ number_format($proj->contract_amount ?? 0, 0, '.', ' ') }} ₽</td>
                                             <td class="px-3 py-2">
                                                 {{ optional($proj->organization)->name_short ?? ($proj->city ?? '—') }}
                                             </td>
@@ -1231,7 +1231,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 sticky top-0 z-10">
+                                <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1294,7 +1294,7 @@
                     @else
                         <div class="overflow-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 sticky top-0 z-10">
+                                <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-500">
                                             Проект</th>
@@ -1313,7 +1313,7 @@
                                             <td class="px-3 py-2">
                                                 {{ optional($proj->closed_at)->format('d.m.Y') ?? '—' }}</td>
                                             <td class="px-3 py-2">
-                                                {{ number_format($proj->contract_amount ?? 0, 2, '.', ' ') }} ₽</td>
+                                                {{ number_format($proj->contract_amount ?? 0, 0, '.', ' ') }} ₽</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -1426,7 +1426,7 @@
                                         const v = ctx.parsed.y;
                                         return ctx.dataset.label + ': ' + Number(v).toLocaleString(
                                             'ru-RU', {
-                                                minimumFractionDigits: 2
+                                                minimumFractionDigits: 0
                                             }) + ' ₽';
                                     }
                                 }
@@ -1482,7 +1482,7 @@
                                         label: function(ctx) {
                                             const v = ctx.parsed.x;
                                             return Number(v).toLocaleString('ru-RU', {
-                                                minimumFractionDigits: 2
+                                                minimumFractionDigits: 0
                                             }) + ' ₽';
                                         }
                                     }
@@ -1615,7 +1615,7 @@
                                             label: function(ctx) {
                                                 // Show as negative (debtor)
                                                 return '-' + Number(ctx.parsed.y).toLocaleString('ru-RU', {
-                                                    minimumFractionDigits: 2
+                                                    minimumFractionDigits: 0
                                                 }) + ' ₽';
                                             }
                                         }
