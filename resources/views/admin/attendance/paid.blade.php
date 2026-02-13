@@ -10,7 +10,9 @@
                     <th class="p-3 text-left">Сотрудник</th>
                     <th class="p-3 text-left">Месяц</th>
                     <th class="p-3 text-left">Статус</th>
-                    <th class="p-3 text-left">Итоговая ЗП</th>
+                    <th class="p-3 text-left">Аванс</th>
+                    <th class="p-3 text-left">Основная ЗП</th>
+                    <th class="p-3 text-left">Итого</th>
                     <th class="p-3 text-left">Действия</th>
                 </tr>
             </thead>
@@ -49,13 +51,10 @@
                         <td class="p-3">
                             {{ \Carbon\Carbon::parse($report->month)->locale('ru')->translatedFormat('F Y') }}</td>
                         <td class="p-3">{{ $report->status_label }}</td>
-                        <td class="p-3">
-                            {{ number_format(($report->total_salary ?? 0) + ($report->advance_amount ?? 0), 0, '', ' ') }}
-                            ₽
-                            @if (!empty($report->advance_amount) && $report->advance_amount > 0)
-                                <div class="text-xs text-gray-500">(в том числе аванс:
-                                    {{ number_format($report->advance_amount, 0, '', ' ') }} ₽)</div>
-                            @endif
+                        <td class="p-3">{{ number_format($report->advance_amount ?? 0, 0, '', ' ') }} ₽</td>
+                        <td class="p-3">{{ number_format($report->total_salary ?? 0, 0, '', ' ') }} ₽</td>
+                        <td class="p-3 font-semibold">
+                            {{ number_format(($report->total_salary ?? 0) + ($report->advance_amount ?? 0), 0, '', ' ') }} ₽
                         </td>
                         <td class="p-3">
                             @php

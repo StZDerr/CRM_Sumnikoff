@@ -143,7 +143,7 @@
                                 {{ (int) ($lastPaid->remote_days ?? 0) }}</span>
                         </div>
                         <div>
-                            <strong></strong>Итоговая ЗП:</strong> {{ number_format($lastPaid->total_salary, 0, '', ' ') }}
+                            <strong></strong>Расчет:</strong> {{ number_format($lastPaid->total_salary, 0, '', ' ') }}
                             ₽
                             @if (isset($lastPaid->advance_amount) && $lastPaid->advance_amount > 0)
                                 <span class="ml-3 text-sm text-gray-500">+ выданный аванс:
