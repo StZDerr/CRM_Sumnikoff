@@ -97,7 +97,22 @@
                     <div class="text-sm text-gray-700 space-y-2">
                         <div><strong>Месяц:</strong>
                             {{ \Carbon\Carbon::parse($lastPaid->month)->locale('ru')->isoFormat('MMMM YYYY') }}</div>
-                        <div><strong>Итоговая ЗП:</strong> {{ number_format($lastPaid->total_salary, 0, '', ' ') }} ₽</div>
+                        <div>
+                            <strong>Обычные дни:</strong> {{ (int) ($lastPaid->ordinary_days ?? 0) }}
+                            <span class="ml-4"><strong>Удалённые дни:</strong>
+                                {{ (int) ($lastPaid->remote_days ?? 0) }}</span>
+                        </div>
+                        <div>
+                            <strong></strong>Итоговая ЗП:</strong> {{ number_format($lastPaid->total_salary, 0, '', ' ') }}
+                            ₽
+                            @if (isset($lastPaid->advance_amount) && $lastPaid->advance_amount > 0)
+                                <span class="ml-3 text-sm text-gray-500">+ выданный аванс:
+                                    {{ number_format($lastPaid->advance_amount, 0, '', ' ') }} ₽</span>
+                                <span class="ml-3 text-sm text-gray-800 font-semibold">Итого:
+                                    {{ number_format($lastPaid->total_salary + $lastPaid->advance_amount, 0, '', ' ') }}
+                                    ₽</span>
+                            @endif
+                        </div>
                         <a href="{{ route('attendance.show', $lastPaid) }}"
                             class="inline-flex items-center px-3 py-1 rounded bg-indigo-600 text-white text-sm">Открыть</a>
 
@@ -106,8 +121,7 @@
                                 <div>Премии по проектам:</div>
                                 <ul class="mt-1 list-disc list-inside">
                                     @foreach ($lastPaid->projectBonuses as $pb)
-                                        <li>{{ $pb->project?->title ?? 'Проект #' . $pb->project_id }}:
-                                            {{ number_format($pb->bonus_amount, 0, '', ' ') }} ₽</li>
+                                        <li>{{ $pb->project?->title ?? 'Проект #' . $pb->project_id }}</li>
                                     @endforeach
                                 </ul>
                             </div>
