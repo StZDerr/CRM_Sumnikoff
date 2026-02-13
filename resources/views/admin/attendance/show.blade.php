@@ -5,22 +5,28 @@
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-xl font-semibold">Табель — {{ $report->user->name }} за
                 {{ \Carbon\Carbon::parse($report->month)->locale('ru')->translatedFormat('F Y') }}</h1>
-            @if (auth()->user()->isAdmin())
-                <a href="{{ route('attendance.approvals') }}"
-                    class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">Назад к согласованию</a>
-            @else
-                <a href="{{ route('welcome') }}"
-                    class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">Назад</a>
-            @endif
+
+            <div class="flex items-center gap-4">
+                <div class="text-sm text-gray-500">
+                    <div class="text-sm text-gray-500">Статус</div>
+                    <div class="mt-1 font-medium">{{ $report->status_label }}</div>
+                </div>
+
+                @if (auth()->user()->isAdmin())
+                    <a href="{{ route('attendance.approvals') }}"
+                        class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">Назад к
+                        согласованию</a>
+                @else
+                    <a href="{{ route('welcome') }}"
+                        class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">Назад</a>
+                @endif
+            </div>
 
         </div>
 
         <div class="bg-white rounded shadow p-6 space-y-6">
             <div class="grid grid-cols-2 gap-4">
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">Статус</div>
-                    <div class="mt-2 font-medium">{{ $report->status_label }}</div>
-                </div>
+
 
                 @php
                     $wage_days = ($report->base_salary / 22) * $report->ordinary_days;
@@ -36,107 +42,134 @@
                         $wage_days + $wage_remote + $audits + $individual + $custom - $fees - $penalties - $advance;
                 @endphp
 
-                <div class="border rounded p-4">
+
+
+                <div class="col-span-2 border rounded p-4 bg-green-50">
+                    <div class="text-sm text-green-600 font-medium mb-3">Обычные дни — расчёт</div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <div class="text-sm text-gray-500">Обычные дни</div>
+                            <div class="mt-2 font-medium">{{ number_format($report->ordinary_days, 0, '', ' ') }} </div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">Стоимость 1 дня (делим на 22):</div>
+                            <div class="mt-2 font-medium">{{ number_format($report->base_salary / 22, 0, '', ' ') }} ₽
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">ЗП за
+                                {{ number_format($report->ordinary_days, 0, '.', '') }} обычных дней</div>
+                            <div class="mt-2 font-medium">
+                                {{ number_format(($report->base_salary / 22) * $report->ordinary_days, 0, '', ' ') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-2 border rounded p-4 bg-blue-50">
+                    <div class="text-sm text-blue-600 font-medium mb-3">Удалённые дни — расчёт</div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <div class="text-sm text-gray-500">Удалённые дни (половина)</div>
+                            <div class="mt-2 font-medium">{{ number_format($report->remote_days, 0) }}</div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">ЗП за удалённые дни</div>
+                            <div class="mt-2 font-medium">
+                                {{ number_format(($report->base_salary / 22) * ($report->remote_days / 2), 0, '', ' ') }} ₽
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-2 border rounded p-4 bg-indigo-50">
+                    <div class="text-sm text-indigo-600 font-medium mb-3">Премии и аудиты</div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <div class="text-sm text-gray-500">Аудиты </div>
+                            <div class="mt-2 font-medium">{{ number_format($report->audits_count * 300, 0, '', ' ') }} ₽
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">Инд. премия за проекты</div>
+                            <div class="mt-2 font-medium">{{ number_format($report->individual_bonus, 0, '', ' ') }} ₽
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">Произвольная премия</div>
+                            <div class="mt-2 font-medium">{{ number_format($report->custom_bonus, 0, '', ' ') }} ₽</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-2 border rounded p-4 bg-red-50">
+                    <div class="text-sm text-red-600 font-medium mb-3">Минус ЗП</div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <div class="text-sm text-gray-500">Сборы</div>
+                            <div class="mt-2 font-medium text-red-600">-{{ number_format($fees, 0, '', ' ') }} ₽</div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">Штрафы</div>
+                            <div class="mt-2 font-medium text-red-600">-{{ number_format($penalties ?? 0, 0, '', ' ') }} ₽
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">Аванс</div>
+                            <div class="mt-2 font-medium text-red-600">-{{ number_format($advance, 0, '', ' ') }} ₽</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-1 border rounded p-4 bg-gray-50">
                     <div class="text-sm text-gray-500">Итоговая ЗП</div>
                     <div class="mt-2 text-indigo-600 font-semibold">
-                        {{ number_format($wage_days, 0, '', ' ') }} +
-                        {{ number_format($wage_remote, 0, '', ' ') }} +
-                        {{ number_format($audits, 0, '', ' ') }} +
-                        {{ number_format($individual, 0, '', ' ') }} +
-                        {{ number_format($custom, 0, '', ' ') }} -
-                        {{ number_format($fees, 0, '', ' ') }} -
-                        {{ number_format($penalties, 0, '', ' ') }} -
-                        {{ number_format($advance, 0, '', ' ') }}
+                        <span data-tippy
+                            data-tippy-content="ЗП за {{ number_format($report->ordinary_days, 0, '.', '') }} обычных дней"
+                            class="cursor-help">{{ number_format($wage_days, 0, '', ' ') }}</span> +
+                        <span data-tippy data-tippy-content="ЗП за удалённые дни"
+                            class="cursor-help">{{ number_format($wage_remote, 0, '', ' ') }}</span> +
+                        <span data-tippy data-tippy-content="Аудиты"
+                            class="cursor-help">{{ number_format($audits, 0, '', ' ') }}</span> +
+                        <span data-tippy data-tippy-content="Инд. премия за проекты"
+                            class="cursor-help">{{ number_format($individual, 0, '', ' ') }}</span> +
+                        <span data-tippy data-tippy-content="Произвольная премия"
+                            class="cursor-help">{{ number_format($custom, 0, '', ' ') }}</span> -
+                        <span data-tippy data-tippy-content="Сборы"
+                            class="cursor-help">{{ number_format($fees, 0, '', ' ') }}</span> -
+                        <span data-tippy data-tippy-content="Штрафы"
+                            class="cursor-help">{{ number_format($penalties, 0, '', ' ') }}</span>
                         =
-                        {{ number_format($computedTotal, 0, '', ' ') }} ₽
+                        <span data-tippy data-tippy-content="Общая сумма к выплате (без учёта удержания аванса)"
+                            class="cursor-help">{{ number_format($computedTotal + $advance, 0, '', ' ') }}</span> ₽
+                    </div>
+
+                </div>
+                <div class="col-span-1 border rounded p-4 bg-gray-50">
+                    <div class="text-sm text-gray-500">Итоговая ЗП без аванса</div>
+                    <div class="mt-2 text-indigo-600 font-semibold">
+                        -<span data-tippy data-tippy-content="Аванс"
+                            class="cursor-help">{{ number_format($advance, 0, '', ' ') }}</span>
+                        =
+                        <span data-tippy data-tippy-content="Итоговая ЗП без аванса"
+                            class="cursor-help">{{ number_format($computedTotal, 0, '', ' ') }}</span> ₽
                     </div>
 
                     @if (round($computedTotal) != round($report->total_salary))
                         <div class="mt-2 text-sm text-yellow-600">Внимание: сохранённая итоговая ЗП
                             {{ number_format($report->total_salary, 0, '', ' ') }} ₽ отличается от рассчитанной
                             ({{ number_format($computedTotal, 0, '', ' ') }} ₽).</div>
-                    @endif
-                </div>
-
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">Обычные дни</div>
-                    <div class="mt-2 font-medium">{{ $report->ordinary_days }} </div>
-                </div>
-
-
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">Стоимость 1 дня (делим на 22):</div>
-                    <div class="mt-2 font-medium">{{ number_format($report->base_salary / 22, 0, '', ' ') }} ₽</div>
-                </div>
-
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">ЗП за {{ $report->ordinary_days }} обычных дней</div>
-                    <div class="mt-2 font-medium">
-                        {{ number_format(($report->base_salary / 22) * $report->ordinary_days, 0, '', ' ') }} </div>
-                </div>
-
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">Удалённые дни (половина)</div>
-                    <div class="mt-2 font-medium">{{ $report->remote_days }}</div>
-                </div>
-
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">ЗП за удалённые дни</div>
-                    <div class="mt-2 font-medium">
-                        {{ number_format(($report->base_salary / 22) * ($report->remote_days / 2), 0, '', ' ') }} </div>
-                </div>
-
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">Аудиты (по 300 рублей) (x {{ $report->audits_count }})</div>
-                    <div class="mt-2 font-medium">{{ number_format($report->audits_count * 300, 0, '', ' ') }} ₽</div>
-                </div>
-
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">Инд. премия за проекты</div>
-                    <div class="mt-2 font-medium">{{ number_format($report->individual_bonus, 0, '', ' ') }} ₽</div>
-                </div>
-
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">Произвольная премия</div>
-                    <div class="mt-2 font-medium">{{ number_format($report->custom_bonus, 0, '', ' ') }} ₽</div>
-                </div>
-
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">Сборы</div>
-                    <div class="mt-2 font-medium">{{ number_format($report->fees, 0, '.', ' ') }} ₽</div>
-                </div>
-
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">Штрафы</div>
-                    <div class="mt-2 font-medium">{{ number_format($report->penalties ?? 0, 0, '.', ' ') }} ₽</div>
-                </div>
-
-                <div class="border rounded p-4">
-                    <div class="text-sm text-gray-500">Аванс</div>
-                    <div class="mt-2 font-medium">
-                        {{ number_format(abs($report->advance_amount ?? ($advanceTotal ?? 0)), 2, '.', ' ') }} ₽</div>
-
-                    @if (!empty($salaryExpenses) && $salaryExpenses->count() > 0)
-                        <div class="mt-3 text-sm text-gray-600">
-                            <div class="font-medium mb-2">Подробно:</div>
-                            <ul class="space-y-1">
-                                @foreach ($salaryExpenses as $exp)
-                                    <li>
-                                        {{ $exp->expense_date->translatedFormat('d.m.Y') }} — <span
-                                            class="font-medium">{{ number_format($exp->amount, 2, '.', ' ') }} ₽</span>
-                                        @if ($exp->document_number)
-                                            <span class="text-gray-500">(№{{ $exp->document_number }})</span>
-                                        @endif
-                                        @if ($exp->description)
-                                            <div class="text-gray-500">
-                                                {{ \Illuminate\Support\Str::limit($exp->description, 120) }}</div>
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @else
-                        <div class="mt-2 text-sm text-gray-400">Авансы не зарегистрированы</div>
                     @endif
                 </div>
 

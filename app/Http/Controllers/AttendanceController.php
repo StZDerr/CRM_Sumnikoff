@@ -366,7 +366,7 @@ class AttendanceController extends Controller
             'approved_at' => now(),
         ]);
 
-        return redirect()->route('attendance.advance')->with('success', 'Табель помечен как выданный аванс и перенесён в раздел Авансы');
+        return redirect()->back()->with('success', 'Табель помечен как согласованный и перенесён в раздел к выплате');
     }
 
     // Отклонение табеля начальством
