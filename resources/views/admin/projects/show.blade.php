@@ -120,7 +120,7 @@
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Дата отчета</div>
                     <div class="mt-1 font-medium text-gray-900">
-                        {{ $project->report_date?->format('Y-m-d') ?? '-' }}
+                        {{ $project->report_date?->format('d') ?? '-' }} число каждого месяца
                     </div>
                 </div>
 
