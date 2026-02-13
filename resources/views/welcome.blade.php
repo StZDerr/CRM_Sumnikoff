@@ -27,7 +27,8 @@
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <div class="font-semibold">Мои проекты ({{ auth()->user()->projects->count() }})</div>
+                        <div class="font-semibold">Мои проекты
+                            ({{ $projectsTotalCount ?? ($activeProjectsCount ?? auth()->user()->projects->count()) }})</div>
                         <div class="text-sm text-gray-500 mt-1">Список проектов, к которым вы причастны.</div>
                     </div>
                 </div>
@@ -85,6 +86,45 @@
             <h3 class="text-lg font-medium mb-4">История выплат (12 мес.)</h3>
             <div class="w-full h-48">
                 <canvas id="salaryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- User projects (active / already closed) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div class="bg-white rounded-lg border shadow-sm p-6">
+                <h4 class="font-semibold mb-3">Активные проекты</h4>
+                <div class="text-sm text-gray-700">
+                    <ul class="list-disc list-inside">
+                        @forelse($activeProjects as $p)
+                            <li>
+                                <a href="{{ route('projects.show', $p) }}"
+                                    class="text-indigo-600 hover:underline">{{ $p->title }}</a>
+                                @if ($p->status)
+                                    <span class="ml-2 text-xs text-gray-500">({{ $p->status_label }})</span>
+                                @endif
+                            </li>
+                        @empty
+                            <li class="text-gray-500">Нет активных проектов</li>
+                        @endforelse
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg border shadow-sm p-6">
+                <h4 class="font-semibold mb-3">Проекты на паузе</h4>
+                <div class="text-sm text-gray-700">
+                    <ul class="list-disc list-inside">
+                        @forelse($pausedProjects as $p)
+                            <li>
+                                <a href="{{ route('projects.show', $p) }}"
+                                    class="text-indigo-600 hover:underline">{{ $p->title }}</a>
+                                <span class="ml-2 text-xs text-gray-500">({{ $p->status_label }})</span>
+                            </li>
+                        @empty
+                            <li class="text-gray-500">Нет проектов на паузе</li>
+                        @endforelse
+                    </ul>
+                </div>
             </div>
         </div>
 
@@ -182,7 +222,8 @@
                     <button type="button" id="link-card-close" class="text-gray-500 hover:text-gray-700">✕</button>
                 </div>
 
-                <form id="link-card-form" method="POST" action="{{ route('link-cards.store') }}" class="p-5 space-y-4">
+                <form id="link-card-form" method="POST" action="{{ route('link-cards.store') }}"
+                    class="p-5 space-y-4">
                     @csrf
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Название</label>

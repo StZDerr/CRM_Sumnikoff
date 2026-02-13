@@ -685,6 +685,35 @@ class DashboardController extends Controller
             ->orderBy('position')
             ->get();
 
+        // Проекты пользователя — выборки для отображения во view
+        // Активные: исключаем паузу и стоп и не закрыты раньше сегодня
+        $activeProjects = $user->projects()
+            ->whereNotIn('status', [\App\Models\Project::STATUS_PAUSED, \App\Models\Project::STATUS_STOPPED])
+            ->where(function ($q) {
+                $q->whereNull('closed_at')
+                  ->orWhereDate('closed_at', '>=', Carbon::now()->toDateString());
+            })
+            ->get();
+
+        // Проекты со статусом PAUSED (показываем отдельно на странице)
+        $pausedProjects = $user->projects()
+            ->where('status', \App\Models\Project::STATUS_PAUSED)
+            ->get();
+
+        $closedProjects = $user->projects()
+            ->whereNotNull('closed_at')
+            ->whereDate('closed_at', '<', Carbon::now()->toDateString())
+            ->get();
+
+        // Обший счётчик проектов для заголовка — учитываем PAUSED, исключаем только STOPPED и преждевременно закрытые
+        $projectsTotalCount = $user->projects()
+            ->whereNotIn('status', [\App\Models\Project::STATUS_STOPPED])
+            ->where(function ($q) {
+                $q->whereNull('closed_at')
+                  ->orWhereDate('closed_at', '>=', Carbon::now()->toDateString());
+            })
+            ->count();
+
         return view('welcome', [
             'salaryLabels' => $labels,
             'salaryData' => $data,
@@ -698,6 +727,12 @@ class DashboardController extends Controller
                 'projectBonuses' => $expectedProjectBonuses,
                 'total_expected' => $expectedTotal,
             ],
+            // количество проектов, исключая паузу и стоп — используется в view (быстрый подсчёт)
+            'activeProjectsCount' => $activeProjects->count(),
+            'projectsTotalCount' => $projectsTotalCount,
+            'activeProjects' => $activeProjects,
+            'pausedProjects' => $pausedProjects,
+            'closedProjects' => $closedProjects,
             'linkCards' => $linkCards,
         ]);
     }
