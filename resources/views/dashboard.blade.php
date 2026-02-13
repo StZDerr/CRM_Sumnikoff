@@ -115,7 +115,7 @@
                     <div class="text-2xl font-bold mt-1 text-indigo-600">
                         {{ number_format($totalAmount ?? 0, 0, '.', ' ') }} ₽
                     </div>
-                    <div class="text-xs text-gray-500 mt-1">Операции за выбранный месяц</div>
+                    <div class="text-xs text-gray-500 mt-1">Операции: {{ optional($salaryWindowStart)->format('d.m.Y') ?? '—' }} — {{ optional($salaryWindowEnd)->format('d.m.Y') ?? '—' }}</div>
                 </button>
 
                 <button type="button" id="salary-fund-forecast-open"
@@ -230,7 +230,7 @@
                         <div class="flex items-center justify-between px-5 py-4 border-b">
                             <div>
                                 <div class="text-lg font-semibold text-gray-800">Операции по фонду ЗП</div>
-                                <div class="text-xs text-gray-500">{{ $monthLabel }}</div>
+                                <div class="text-xs text-gray-500">{{ optional($salaryWindowStart)->format('d.m.Y') ?? '—' }} — {{ optional($salaryWindowEnd)->format('d.m.Y') ?? '—' }}</div>
                             </div>
                             <button type="button" id="salary-fund-close"
                                 class="text-gray-500 hover:text-gray-700">✕</button>

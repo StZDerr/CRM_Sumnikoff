@@ -461,9 +461,13 @@ class DashboardController extends Controller
 
         $officeExpenseCategories = \App\Models\ExpenseCategory::office()->where('is_salary', false)->ordered()->get();
 
+        // Период расчёта Фонда ЗП: с 15 числа прошлого месяца по 25 число текущего месяца
+        $salaryWindowStart = $start->copy()->subMonth()->day(15)->startOfDay();
+        $salaryWindowEnd = $start->copy()->day(25)->endOfDay();
+
         $salaryFundExpenses = Expense::salary()
             ->with('category')
-            ->whereRaw('DATE(COALESCE(expense_date, expenses.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
+            ->whereRaw('DATE(COALESCE(expense_date, expenses.created_at)) between ? and ?', [$salaryWindowStart->toDateString(), $salaryWindowEnd->toDateString()])
             ->orderByDesc('expense_date')
             ->get();
         $totalAmount = $salaryFundExpenses->sum('amount');
@@ -598,7 +602,7 @@ class DashboardController extends Controller
             'monthVatTotal', 'monthUsnTotal', 'barterCount', 'ownCount', 'commercialCount', 'expectedProfit', 'expectedReceivedMonth', 'expectedRemaining',
             'monthlyExpenses', 'monthlyExpensesMonth', 'expectedProjects', 'showWeeklyExpenses',
             'barterProjects', 'ownProjects', 'commercialProjects', 'linkCards', 'officeExpenseCategories', 'totalAmount', 'salaryFundExpenses',
-            'salaryForecastTotal', 'salaryForecastUsers', 'forecastMonthLabel',
+            'salaryWindowStart', 'salaryWindowEnd', 'salaryForecastTotal', 'salaryForecastUsers', 'forecastMonthLabel',
             'incomeOperations', 'expenseOperations'
         ));
     }
