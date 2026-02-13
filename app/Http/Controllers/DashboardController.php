@@ -638,7 +638,14 @@ class DashboardController extends Controller
 
         $data = [];
         foreach ($periodKeys as $key) {
-            $data[] = isset($reports[$key]) ? $reports[$key]->sum('total_salary') : 0;
+            if (isset($reports[$key])) {
+                $sumWithAdvance = $reports[$key]->sum(function ($r) {
+                    return (float) (($r->total_salary ?? 0) + ($r->advance_amount ?? 0));
+                });
+                $data[] = $sumWithAdvance;
+            } else {
+                $data[] = 0;
+            }
         }
 
         // Последний оплаченный табель
