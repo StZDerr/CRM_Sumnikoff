@@ -45,8 +45,6 @@
                 <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Название</th>
                 <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Логин</th>
                 <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Пароль</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Организация</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Статус</th>
                 <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Действия</th>
             </tr>
         </thead>
@@ -54,7 +52,21 @@
             @foreach ($credentials as $cred)
                 <tr>
                     <td class="px-4 py-2 capitalize">{{ str_replace('_', ' ', $cred->type) }}</td>
-                    <td class="px-4 py-2">{{ $cred->name }}</td>
+                    @php
+                        $__name = $cred->name;
+                        preg_match('/\bhttps?:\/\/[^\s\"]+/i', $__name, $__m);
+                        $__href = $__m[0] ?? null;
+                    @endphp
+                    <td class="px-4 py-2" title="{{ $__name }}">
+                        @if ($__href)
+                            <a href="{{ $__href }}" target="_blank" rel="noopener noreferrer"
+                                class="text-indigo-600 hover:underline">
+                                {{ \Illuminate\Support\Str::limit($__name, 20) }}
+                            </a>
+                        @else
+                            {{ \Illuminate\Support\Str::limit($__name, 20) }}
+                        @endif
+                    </td>
                     <td class="px-4 py-2">
                         <button type="button" class="text-gray-800 hover:text-indigo-700 underline"
                             data-copy-text="{{ $cred->login }}">
@@ -67,8 +79,6 @@
                             ••••••••
                         </button>
                     </td>
-                    <td class="px-4 py-2">{{ $cred->organization->name_full ?? '-' }}</td>
-                    <td class="px-4 py-2">{{ $cred->status == 'active' ? 'Действующий' : 'Stop List' }}</td>
                     <td class="px-4 py-2 space-x-1">
                         <a href="{{ route('account-credentials.show', $cred) }}"
                             class="text-blue-600 hover:underline">Просмотр</a>

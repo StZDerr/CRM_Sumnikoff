@@ -116,7 +116,6 @@
                         </div>
                     </div>
                 @endif
-
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Дата отчета</div>
                     <div class="mt-1 font-medium text-gray-900">
