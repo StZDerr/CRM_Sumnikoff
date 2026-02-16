@@ -111,6 +111,72 @@
         </table>
     </div>
 
+    {{-- Новый табель: График посещаемости (показывает отработанное время HH:MM) --}}
+    <div class="mt-6 mb-4 text-sm font-semibold text-gray-700">График посещаемости</div>
+
+    <div id="work-hours-table" class="bg-white shadow rounded-lg overflow-x-auto max-w-full">
+        <table class="divide-y divide-gray-200 text-sm">
+            <thead>
+                <tr>
+                    <th class="sticky left-0 bg-gray-50 border-r p-3 z-20 text-left font-medium text-gray-700 min-w-[200px]">Сотрудник</th>
+                    @foreach ($days as $day)
+                        @php $isToday = $day->isToday(); @endphp
+                        <th @if ($isToday) id="today-column-hours" @endif class="px-2 py-3 text-center w-20 {{ $isToday ? 'bg-yellow-100' : 'bg-white' }}">
+                            <div class="text-xs text-gray-600">{{ $day->format('d.m') }}</div>
+                        </th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($users as $user)
+                    <tr class="group hover:bg-gray-50 transition-colors">
+                        <td class="sticky left-0 bg-white group-hover:bg-gray-50 border-r px-3 py-2 font-medium text-gray-800 whitespace-nowrap z-10 min-w-[200px]">
+                            {{ $user->name_without_middle }}</td>
+
+                        @foreach ($days as $day)
+                            @php
+                                $key = $user->id . '_' . $day->toDateString();
+                                $wd = $workDays[$key] ?? null;
+                                $minutes = $wd?->total_work_minutes ?? 0;
+                                $display = $minutes > 0 ? sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60) : '';
+                                $isToday = $day->isToday();
+                            @endphp
+
+                            <td class="text-center border w-20 h-6 text-xs" style="background-color: {{ $isToday ? '#fef3c7' : 'transparent' }};">
+                                {{ $display }}
+                            </td>
+                        @endforeach
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Центрируем оба табеля по сегодняшней колонке
+        document.addEventListener('DOMContentLoaded', () => {
+            const todayColumn = document.getElementById('today-column');
+            const tableContainer = document.getElementById('attendance-table');
+            if (todayColumn && tableContainer) {
+                const columnLeft = todayColumn.offsetLeft;
+                const columnWidth = todayColumn.offsetWidth;
+                const containerWidth = tableContainer.clientWidth;
+                const scrollPosition = columnLeft - (containerWidth / 2) + (columnWidth / 2);
+                tableContainer.scrollLeft = Math.max(0, scrollPosition);
+            }
+
+            const todayColumnHours = document.getElementById('today-column-hours');
+            const hoursContainer = document.getElementById('work-hours-table');
+            if (todayColumnHours && hoursContainer) {
+                const columnLeft = todayColumnHours.offsetLeft;
+                const columnWidth = todayColumnHours.offsetWidth;
+                const containerWidth = hoursContainer.clientWidth;
+                const scrollPosition = columnLeft - (containerWidth / 2) + (columnWidth / 2);
+                hoursContainer.scrollLeft = Math.max(0, scrollPosition);
+            }
+        });
+    </script>
+
     <script>
         // Флаг: может ли текущий пользователь менять табель (только admin)
         const ATTENDANCE_CAN_EDIT = @json(auth()->user()->isAdmin());

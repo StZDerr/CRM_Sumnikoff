@@ -7,6 +7,7 @@ use App\Models\AttendanceStatus;
 use App\Models\SalaryReport;
 use App\Models\SalaryReportAdjustment;
 use App\Models\User;
+use App\Models\WorkDay;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Yasumi\Yasumi;
@@ -63,6 +64,12 @@ class AttendanceController extends Controller
             ->get()
             ->keyBy(fn ($item) => $item->user_id.'_'.$item->date->toDateString());
 
+        // Данные по отработанным минутам (WorkDay) — для нового "Графика посещаемости"
+        $workDays = WorkDay::whereYear('work_date', $year)
+            ->whereIn('user_id', $userIds)
+            ->get()
+            ->keyBy(fn ($item) => $item->user_id.'_'.$item->work_date->toDateString());
+
         // Статусы
         $statuses = AttendanceStatus::all()->keyBy('code');
 
@@ -70,6 +77,7 @@ class AttendanceController extends Controller
             'users',
             'days',
             'attendance',
+            'workDays',
             'statuses',
             'year'
         ));
