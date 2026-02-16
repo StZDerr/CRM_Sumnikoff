@@ -35,6 +35,10 @@
                                 class="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">
                                 Выдать ЗП
                             </button>
+                            <button type="button" id="openPartialModal-{{ $report->id }}"
+                                class="ml-2 px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+                                Частичная выдача
+                            </button>
                         </td>
                     </tr>
                 @endforeach

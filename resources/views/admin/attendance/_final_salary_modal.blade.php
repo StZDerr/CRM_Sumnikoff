@@ -23,6 +23,7 @@
                 @csrf
                 <input type="hidden" name="salary_report_id" value="{{ $report->id }}">
                 <input type="hidden" name="salary_recipient" value="{{ $report->user_id }}">
+                <input type="hidden" name="is_partial" value="0">
 
                 <div class="space-y-4 px-6 py-4">
                     {{-- Сотрудник (readonly) --}}
@@ -46,7 +47,7 @@
                         <label class="block text-sm font-medium text-gray-700">Сумма зарплаты</label>
                         <input name="amount" type="number" step="0.01" min="0.01" required
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            placeholder="0.00" value="{{ $report->total_salary ?? '' }}" />
+                            placeholder="0.00" value="{{ $report->remaining_amount ?? ($report->total_salary ?? '') }}" />
                     </div>
 
                     {{-- Зарплатная категория --}}
@@ -127,10 +128,23 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Открытие модального окна
         const openBtn = document.getElementById('openAdvanceModal-{{ $report->id }}');
+        const partialBtn = document.getElementById('openPartialModal-{{ $report->id }}');
         const modal = document.getElementById('finalSalaryModal-{{ $report->id }}');
 
         if (openBtn && modal) {
             openBtn.addEventListener('click', function() {
+                // Ensure default (full) mode
+                const isPartialInput = modal.querySelector('input[name="is_partial"]');
+                if (isPartialInput) isPartialInput.value = '0';
+                modal.classList.remove('hidden');
+            });
+        }
+
+        if (partialBtn && modal) {
+            partialBtn.addEventListener('click', function() {
+                // Mark modal as partial payout without changing visual layout
+                const isPartialInput = modal.querySelector('input[name="is_partial"]');
+                if (isPartialInput) isPartialInput.value = '1';
                 modal.classList.remove('hidden');
             });
         }
@@ -140,7 +154,11 @@
         closeButtons.forEach(btn => {
             btn.addEventListener('click', function() {
                 const modalId = this.getAttribute('data-modal-id');
-                document.getElementById(modalId).classList.add('hidden');
+                const m = document.getElementById(modalId);
+                // reset partial flag when closing
+                const isPartialInput = m.querySelector('input[name="is_partial"]');
+                if (isPartialInput) isPartialInput.value = '0';
+                m.classList.add('hidden');
             });
         });
 
@@ -168,7 +186,7 @@
                     const data = await response.json();
 
                     if (response.ok && data.success) {
-                        alert('Зарплата успешно выплачена!');
+                        alert(data.message || 'Успешно!');
                         window.location.reload();
                     } else {
                         alert(data.message || 'Ошибка при сохранении');

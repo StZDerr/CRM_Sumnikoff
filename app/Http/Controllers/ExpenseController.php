@@ -148,6 +148,9 @@ class ExpenseController extends Controller
             'documents.*' => 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx|max:5120',
         ]);
 
+        // Флаг частичной выплаты (устанавливается при нажатии кнопки "Частичная выдача")
+        $isPartial = $request->boolean('is_partial');
+
         // Проверяем, что категория действительно помечена как is_salary
         $category = ExpenseCategory::find($data['expense_category_id']);
         if (! $category || ! $category->is_salary || $category->is_office) {
@@ -177,14 +180,25 @@ class ExpenseController extends Controller
             ]);
         }
 
-        // Обновляем статус табеля на 'paid' (полная оплата)
+        // Обновляем статус/остаток табеля — если частичная выплата, статус НЕ меняем,
+        // но уменьшаем remaining_amount; при полной выплате поведение прежнее.
         $salaryReport = \App\Models\SalaryReport::find($data['salary_report_id']);
         if ($salaryReport) {
-            $salaryReport->status = 'paid';
-            // Если был аванс, добавляем к нему текущую выплату, иначе записываем полную сумму
-            $salaryReport->remaining_amount = 0; // Остаток = 0 при полной оплате
-            $salaryReport->paid_by = auth()->id();
-            $salaryReport->save();
+            if ($isPartial) {
+                $paid = $data['amount'];
+                if (is_null($salaryReport->remaining_amount)) {
+                    $salaryReport->remaining_amount = max(0, $salaryReport->total_salary - $paid);
+                } else {
+                    $salaryReport->remaining_amount = max(0, $salaryReport->remaining_amount - $paid);
+                }
+                // Статус оставляем без изменений при частичной выплате
+                $salaryReport->save();
+            } else {
+                $salaryReport->status = 'paid';
+                $salaryReport->remaining_amount = 0; // Остаток = 0 при полной оплате
+                $salaryReport->paid_by = auth()->id();
+                $salaryReport->save();
+            }
         }
 
         // Пересчитываем балансы счетов
@@ -192,9 +206,13 @@ class ExpenseController extends Controller
             $this->recalcBankBalance($data['bank_account_id']);
         }
 
+        $message = $isPartial
+            ? 'Частичная выплата сохранена, статус табеля не изменён.'
+            : 'Зарплата успешно выплачена, статус табеля обновлён на "Оплачено".';
+
         return response()->json([
             'success' => true,
-            'message' => 'Зарплата успешно выплачена, статус табеля обновлён на "Оплачено".',
+            'message' => $message,
             'expense_id' => $expense->id,
         ]);
     }
