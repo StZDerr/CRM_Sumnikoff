@@ -295,6 +295,7 @@ class ExpenseController extends Controller
         $categories = ExpenseCategory::ordered()
             ->where('is_salary', false)
             ->where('is_domains_hosting', false)
+            ->where('exclude_from_totals', false)
             ->get();
         $organizations = Organization::ordered()->get();
         $paymentMethods = PaymentMethod::orderBy('title')->get();
@@ -312,7 +313,12 @@ class ExpenseController extends Controller
         // If request is AJAX, return only the form wrapper for offcanvas (без офисных категорий)
         if ($request->ajax()) {
             // Для offcanvas формы исключаем зарплатные категории
-            $categories = ExpenseCategory::notOffice()->where('is_salary', false)->where('is_domains_hosting', false)->ordered()->get();
+            $categories = ExpenseCategory::notOffice()
+                ->where('is_salary', false)
+                ->where('is_domains_hosting', false)
+                ->where('exclude_from_totals', false)
+                ->ordered()
+                ->get();
 
             return view('admin.expenses._form_offcanvas', compact('expense', 'categories', 'organizations', 'paymentMethods', 'bankAccounts', 'projects'));
         }
@@ -348,12 +354,12 @@ class ExpenseController extends Controller
         // Проверяем, чтобы зарплатные категории нельзя было создать через общую форму
         if (! empty($data['expense_category_id'])) {
             $catCheck = ExpenseCategory::find($data['expense_category_id']);
-            if ($catCheck && $catCheck->is_salary) {
+            if ($catCheck && ($catCheck->is_salary || $catCheck->exclude_from_totals)) {
                 if ($request->ajax()) {
-                    return response()->json(['success' => false, 'error' => 'Нельзя создавать зарплатные расходы через эту форму. Используйте раздел ЗП.'], 422);
+                    return response()->json(['success' => false, 'error' => 'Категория недоступна в обычной форме расходов.'], 422);
                 }
 
-                return redirect()->back()->with('error', 'Нельзя создавать зарплатные расходы через эту форму.');
+                return redirect()->back()->with('error', 'Категория недоступна в обычной форме расходов.');
             }
         }
 
