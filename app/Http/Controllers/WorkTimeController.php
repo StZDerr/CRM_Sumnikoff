@@ -409,11 +409,11 @@ class WorkTimeController extends Controller
 
         $workSeconds = (int) $day->sessions
             ->filter(fn ($s) => $s->ended_at)
-            ->sum(fn ($s) => ((int) $s->minutes) * 60);
+            ->sum(fn ($s) => $s->started_at && $s->ended_at ? $s->started_at->diffInSeconds($s->ended_at) : 0);
 
         $breakSeconds = (int) $day->breaks
             ->filter(fn ($b) => $b->ended_at)
-            ->sum(fn ($b) => ((int) $b->minutes) * 60);
+            ->sum(fn ($b) => $b->started_at && $b->ended_at ? $b->started_at->diffInSeconds($b->ended_at) : 0);
 
         if ($openSession && $openSession->started_at) {
             $workSeconds += $openSession->started_at->diffInSeconds(now());
