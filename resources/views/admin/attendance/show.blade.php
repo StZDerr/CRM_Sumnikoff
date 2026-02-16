@@ -302,19 +302,21 @@
                 </div>
             @endif
 
-            <div class="border rounded p-4 bg-gray-50">
-                <div class="text-sm text-gray-500">Комментарий</div>
+            @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
+                <div class="border rounded p-4 bg-gray-50">
+                    <div class="text-sm text-gray-500">Комментарий</div>
 
-                <form action="{{ route('attendance.comment', $report->id) }}" method="POST" class="mt-2">
-                    @csrf
-                    <textarea name="comment" rows="3" class="w-full border rounded p-2 text-sm" placeholder="Комментарий">{{ old('comment', $report->comment) }}</textarea>
+                    <form action="{{ route('attendance.comment', $report->id) }}" method="POST" class="mt-2">
+                        @csrf
+                        <textarea name="comment" rows="3" class="w-full border rounded p-2 text-sm" placeholder="Комментарий">{{ old('comment', $report->comment) }}</textarea>
 
-                    <div class="flex items-center justify-end mt-2 gap-2">
-                        <button type="submit"
-                            class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">Сохранить</button>
-                    </div>
-                </form>
-            </div>
+                        <div class="flex items-center justify-end mt-2 gap-2">
+                            <button type="submit"
+                                class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            @endif
 
             <div class="flex items-center justify-end gap-3">
                 @if ($report->status === 'submitted')

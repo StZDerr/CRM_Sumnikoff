@@ -393,7 +393,7 @@ class AttendanceController extends Controller
     // Сохраняем/обновляем только комментарий табеля
     public function updateComment(Request $request, SalaryReport $report)
     {
-        if (! auth()->user()->isAdmin()) {
+        if (! auth()->user()->isAdmin() && ! auth()->user()->isProjectManager()) {
             return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
         }
 
@@ -403,6 +403,7 @@ class AttendanceController extends Controller
 
         $report->update([
             'comment' => $request->comment,
+            'commented_by' => auth()->id(),
             'updated_by' => auth()->id(),
         ]);
 
