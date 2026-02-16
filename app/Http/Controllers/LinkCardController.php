@@ -47,7 +47,7 @@ class LinkCardController extends Controller
         $project = null;
         if ($projectId) {
             $project = Project::findOrFail($projectId);
-            Gate::authorize('update', $project);
+            Gate::authorize('view', $project);
         }
 
         $position = $request->position;
@@ -106,7 +106,7 @@ class LinkCardController extends Controller
     {
         if ($linkCard->project_id) {
             $project = Project::findOrFail($linkCard->project_id);
-            Gate::authorize('update', $project);
+            Gate::authorize('view', $project);
         } else {
             if (auth()->id() !== $linkCard->user_id) {
                 abort(403);
@@ -151,7 +151,7 @@ class LinkCardController extends Controller
     {
         if ($linkCard->project_id) {
             $project = Project::findOrFail($linkCard->project_id);
-            Gate::authorize('update', $project);
+            Gate::authorize('view', $project);
         } else {
             if (auth()->id() !== $linkCard->user_id) {
                 abort(403);
@@ -176,7 +176,7 @@ class LinkCardController extends Controller
 
         if ($projectId) {
             $project = Project::findOrFail($projectId);
-            Gate::authorize('update', $project);
+            Gate::authorize('view', $project);
 
             $ownedCount = LinkCard::where('project_id', $projectId)
                 ->whereIn('id', $ids)
