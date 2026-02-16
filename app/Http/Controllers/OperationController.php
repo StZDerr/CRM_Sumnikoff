@@ -254,10 +254,28 @@ class OperationController extends Controller
 
         // Категории для Домена и Хостинга
         $domainHostingCategories = ExpenseCategory::where('is_domains_hosting', true)->ordered()->get();
+        // Категории для "не наших" расходов (обычные)
+        $notOurExpenseCategories = ExpenseCategory::notOffice()
+            ->where('is_salary', false)
+            ->where('is_domains_hosting', false)
+            ->where('exclude_from_totals', true)
+            ->ordered()
+            ->get();
         $domains = \App\Models\Domain::where('provider', 'manual')->orderBy('name')->get();
         $paymentMethods = PaymentMethod::orderBy('title')->get();
         $bankAccounts = BankAccount::orderBy('title')->get();
         $users = \App\Models\User::orderBy('name')->get();
+
+        // Проекты для модалки "не наши":
+        // - маркетолог видит только назначенные ему
+        // - admin и project_manager видят все
+        if ($currentUser->isMarketer()) {
+            $notOurProjects = \App\Models\Project::where('marketer_id', $currentUser->id)
+                ->orderBy('title')
+                ->get();
+        } else {
+            $notOurProjects = \App\Models\Project::orderBy('title')->get();
+        }
 
         // Доп. фильтровые справочники
         $projects = \App\Models\Project::orderBy('title')->get();
@@ -300,6 +318,8 @@ class OperationController extends Controller
             'sumIncome',
             'sumExpense',
             'domainHostingCategories',
+            'notOurExpenseCategories',
+            'notOurProjects',
             'domains'
             , 'availableMonths'
         ));

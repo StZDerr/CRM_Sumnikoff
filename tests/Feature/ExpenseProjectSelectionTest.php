@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,7 +24,18 @@ class ExpenseProjectSelectionTest extends TestCase
             ->assertSeeText('own-project')
             ->assertDontSeeText('other-project');
     }
+    public function test_create_form_preset_not_our_preselects_excluded_category()
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $cat = ExpenseCategory::create(['title' => 'Not our', 'slug' => 'not-our', 'exclude_from_totals' => true]);
 
+        $res = $this->actingAs($admin)
+            ->get(route('expenses.create', ['preset' => 'not_our']), ['X-Requested-With' => 'XMLHttpRequest']);
+
+        $res->assertStatus(200)
+            ->assertSee('Not our')
+            ->assertSee('selected');
+    }
     public function test_marketer_cannot_store_expense_for_other_project()
     {
         $marketer = User::factory()->create(['role' => User::ROLE_MARKETER]);

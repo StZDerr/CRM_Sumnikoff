@@ -235,6 +235,9 @@ Route::middleware('auth')->group(function () {
     // Быстрое создание расхода домены/хостинг
     Route::post('expenses/store-domain-hosting', [ExpenseController::class, 'storeDomainHosting'])->name('expenses.store-domain-hosting');
 
+    // Быстрое создание расхода "не наши" (без метода оплаты и банковского счёта)
+    Route::post('expenses/store-not-our', [ExpenseController::class, 'storeNotOur'])->name('expenses.store-not-our');
+
     Route::post('monthly-expenses/{monthlyExpense}/pay', [MonthlyExpenseController::class, 'pay'])
         ->name('monthly-expenses.pay');
 

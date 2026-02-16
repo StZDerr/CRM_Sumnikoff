@@ -30,6 +30,20 @@
                     Расход
                 </a>
 
+                {{-- Расходы не наши --}}
+                @if (isset($notOurExpenseCategories) && $notOurExpenseCategories->count())
+                    <button type="button" id="openNotOurExpenseBtn"
+                        class="inline-flex items-center gap-2 rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white
+            hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" />
+                        </svg>
+                        Расходы не наши
+                    </button>
+                @endif
+
                 @if (auth()->user()->isAdmin())
                     {{-- Расход (Офис) --}}
                     @if (isset($officeCategories) && $officeCategories->count())
@@ -973,5 +987,10 @@
     {{-- Модальное окно для доменов/хостинга --}}
     @if (isset($domainHostingCategories) && $domainHostingCategories->count())
         @include('admin.expenses._domain_hosting_modal')
+    @endif
+
+    {{-- Модальное окно для не наших расходов --}}
+    @if (isset($notOurExpenseCategories) && $notOurExpenseCategories->count())
+        @include('admin.expenses._not_our_modal')
     @endif
 @endsection

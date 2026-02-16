@@ -19,7 +19,7 @@ class ExpenseController extends Controller
     {
         $this->middleware('auth');
         // все методы — только admin, кроме create и store (чтобы маркетолог мог открыть форму и отправить её)
-        $this->middleware('admin')->except(['create', 'store', 'show']);
+        $this->middleware('admin')->except(['create', 'store', 'show', 'storeNotOur']);
     }
 
     public function index(Request $request)
@@ -539,6 +539,79 @@ class ExpenseController extends Controller
         }
 
         return redirect()->route('expenses.index')->with('success', 'Расход на домены/хостинг сохранён.');
+    }
+
+    /**
+     * Создание расхода "не наши" (быстрая форма).
+     * Поля payment_method_id и bank_account_id всегда сохраняются как null.
+     */
+    public function storeNotOur(Request $request)
+    {
+        $currentUser = auth()->user();
+        if (! $currentUser->isAdmin() && ! $currentUser->isProjectManager() && ! $currentUser->isMarketer()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Доступ запрещён'], 403);
+            }
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'expense_date' => 'required|date',
+            'amount' => 'required|numeric|min:0.01',
+            'expense_category_id' => 'required|exists:expense_categories,id',
+            'project_id' => 'nullable|exists:projects,id',
+            'description' => 'nullable|string',
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx|max:5120',
+        ]);
+
+        // Для этого сценария допускаем только категории с пометкой exclude_from_totals = 1
+        $category = ExpenseCategory::find($data['expense_category_id']);
+        if (! $category || ! $category->exclude_from_totals || $category->is_salary || $category->is_office || $category->is_domains_hosting) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Категория должна иметь пометку "exclude_from_totals" и быть не офис/не ЗП/не домены.',
+            ], 422);
+        }
+
+        // Для маркетолога: можно выбрать только проект, где он назначен
+        if (! empty($data['project_id']) && $currentUser->isMarketer()) {
+            $project = Project::find($data['project_id']);
+            if (! $project || $project->marketer_id !== $currentUser->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Для маркетолога доступен выбор только назначенных ему проектов.',
+                ], 403);
+            }
+        }
+
+        // Явно фиксируем значения, которые должны быть пустыми в БД
+        $data['payment_method_id'] = null;
+        $data['bank_account_id'] = null;
+        $data['organization_id'] = null;
+        $data['status'] = 'paid';
+
+        $expense = Expense::create($data);
+
+        foreach ($request->file('documents', []) as $file) {
+            $path = $file->store('documents', 'public');
+            $expense->documents()->create([
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+            ]);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'expense_id' => $expense->id,
+                'message' => 'Расход "не наши" сохранён.',
+            ], 201);
+        }
+
+        return redirect()->route('expenses.index')->with('success', 'Расход "не наши" сохранён.');
     }
 
     public function show(Expense $expense)
