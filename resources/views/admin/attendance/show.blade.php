@@ -128,8 +128,8 @@
                     </div>
                 </div>
 
-                <div class="col-span-2 border rounded p-4 bg-red-50">
-                    <div class="text-sm text-red-600 font-medium mb-3">Минус ЗП</div>
+                <div class="col-span-2 border rounded p-4 bg-gray-50">
+                    <div class="text-sm text-gray-600 font-medium mb-3">Выплаты и Сборы</div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
