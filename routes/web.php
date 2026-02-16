@@ -29,6 +29,7 @@ use App\Http\Controllers\SpecialtyController;
 use App\Http\Controllers\StageController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VacationController;
+use App\Http\Controllers\WorkTimeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -45,6 +46,21 @@ Route::get('/welcome', [\App\Http\Controllers\DashboardController::class, 'welco
     ->name('welcome');
 
 Route::middleware('auth')->group(function () {
+    Route::prefix('work-time')->name('work-time.')->group(function () {
+        Route::get('state', [WorkTimeController::class, 'state'])->name('state');
+        Route::post('start-day', [WorkTimeController::class, 'startDay'])->name('start-day');
+        Route::post('start-break', [WorkTimeController::class, 'startBreak'])->name('start-break');
+        Route::post('end-break', [WorkTimeController::class, 'endBreak'])->name('end-break');
+        Route::post('save-report', [WorkTimeController::class, 'saveReport'])->name('save-report');
+        Route::post('end-day', [WorkTimeController::class, 'endDay'])->name('end-day');
+
+        Route::patch('work-days/{workDay}/end-time', [WorkTimeController::class, 'editDayEnd'])->name('work-days.end-time');
+        Route::post('work-days/{workDay}/breaks', [WorkTimeController::class, 'addBreak'])->name('work-days.breaks.store');
+
+        Route::patch('breaks/{workBreak}', [WorkTimeController::class, 'updateBreak'])->name('breaks.update');
+        Route::delete('breaks/{workBreak}', [WorkTimeController::class, 'deleteBreak'])->name('breaks.delete');
+    });
+
     Route::get('projects/arrears', [ProjectController::class, 'arrears'])->name('projects.arrears');
     Route::get('projects/debtors', [ProjectController::class, 'debtors'])->name('projects.debtors');
 

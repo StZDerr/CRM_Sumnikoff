@@ -243,6 +243,16 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\AttendanceDay::class);
     }
 
+    public function workDays()
+    {
+        return $this->hasMany(\App\Models\WorkDay::class);
+    }
+
+    public function workTimeEdits()
+    {
+        return $this->hasMany(\App\Models\WorkTimeEdit::class);
+    }
+
     // История назначений на проекты как маркетолог
     public function marketerProjectHistory()
     {

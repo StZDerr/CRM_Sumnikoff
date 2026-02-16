@@ -28,7 +28,7 @@
     <div class="min-h-screen bg-gray-100">
         <div class="flex min-h-screen">
             <aside
-                class="hidden sm:flex sm:w-64 sm:flex-col sm:fixed sm:inset-y-0 bg-gray-900 text-white sm:h-screen sm:overflow-auto">
+                class="hidden sm:flex sm:w-64 sm:flex-col sm:fixed sm:inset-y-0 sm:z-[1500] bg-gray-900 text-white sm:h-screen sm:overflow-auto">
                 @include('layouts.navigation')
             </aside>
 
