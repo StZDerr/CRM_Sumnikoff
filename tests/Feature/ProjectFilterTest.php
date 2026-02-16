@@ -58,4 +58,26 @@ class ProjectFilterTest extends TestCase
         $this->assertNotFalse($pos3);
         $this->assertTrue($pos1 < $pos2 && $pos2 < $pos3, 'Projects are not ordered by payment_due_day asc for marketer');
     }
+
+    public function test_paid_projects_rows_are_highlighted()
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+        $paid = Project::factory()->create(['title' => 'Commercial-1', 'payment_type' => Project::PAYMENT_TYPE_PAID]);
+        $barter = Project::factory()->create(['title' => 'Barter-1', 'payment_type' => Project::PAYMENT_TYPE_BARTER]);
+
+        $res = $this->actingAs($admin)->get(route('projects.index'));
+        $res->assertSeeText('Commercial-1')
+            ->assertSeeText('Barter-1');
+
+        $body = $res->getContent();
+
+        // paid row should contain the highlight class and data attribute
+        $this->assertStringContainsString('data-payment-type="paid"', $body);
+        $this->assertStringContainsString('bg-emerald-50', $body);
+
+        // barter project row must NOT have the paid data attribute
+        $this->assertStringNotContainsString('data-payment-type="barter" bg-emerald-50', $body);
+    }
 }
+

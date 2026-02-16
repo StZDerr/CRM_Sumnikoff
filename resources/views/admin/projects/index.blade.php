@@ -185,7 +185,8 @@
             <div id="projects-list-container">
                 <div id="projects-list" class="divide-y">
                     @forelse($projects as $project)
-                        <div class="flex items-center gap-4 px-4 py-3 hover:bg-gray-50">
+                        <div class="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 {{ $project->payment_type === \App\Models\Project::PAYMENT_TYPE_PAID ? 'bg-emerald-50' : '' }}"
+                            data-payment-type="{{ $project->payment_type ?? '' }}">
                             <div class="w-36 text-center">
                                 @if (auth()->user()->isAdmin())
                                     <div class="text-xs text-gray-500">День оплаты</div>
