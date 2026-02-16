@@ -187,6 +187,148 @@
             </div>
         </div>
 
+        {{-- Доступы проекта — таблица (вставлено из account_credentials.index) --}}
+        <div class="mt-6 bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-semibold mb-4">Доступы проекта <span class="text-sm text-gray-400 font-normal">({{ $project->accountCredentials->count() }})</span></h2>
+
+            @if ($project->accountCredentials->count())
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 border">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Тип</th>
+                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Название</th>
+                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Логин</th>
+                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Пароль</th>
+                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach ($project->accountCredentials as $cred)
+                                <tr>
+                                    <td class="px-4 py-2 capitalize">{{ str_replace('_', ' ', $cred->type) }}</td>
+                                    @php
+                                        $__credName = $cred->name ?? '';
+                                        // попробуем найти полный URL (https?://...) — более простой и надёжный вариант
+                                        if (filter_var($__credName, FILTER_VALIDATE_URL)) {
+                                            $__url = $__credName;
+                                        } else {
+                                            preg_match('/^[\\w\\.-]+\\.[a-z]{2,}([:\\/].*)?$/i', trim($__credName), $__mTmp);
+                                            $__url = !empty($__mTmp) ? (strpos(trim($__credName), 'http') === 0 ? trim($__credName) : 'http://' . trim($__credName)) : null;
+                                        }
+
+
+
+                                        // хост для отображения
+                                        $__host = $__url ? parse_url($__url, PHP_URL_HOST) : null;
+                                        if (! $__host) {
+                                            preg_match('/\\bhttps?:\\/\\/([^\\/\\s]+)/i', $__credName, $__m);
+                                            $__host =
+                                                $__m[1] ??
+                                                (strpos($__credName, ' ') === false
+                                                    ? parse_url('http://' . trim($__credName), PHP_URL_HOST)
+                                                    : null);
+                                        }
+                                        $__display =
+                                            $__host ?: \Illuminate\Support\Str::limit($__credName, 40);
+                                    @endphp
+                                    <td class="px-4 py-2" title="{{ $__credName }}">
+                                        @if ($__url)
+                                            <a href="{{ $__url }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">{{ $__display }}</a>
+                                        @else
+                                            {{ $__display }}
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <button type="button" class="text-gray-800 hover:text-indigo-700 underline" data-copy-text="{{ $cred->login }}">
+                                            {{ $cred->login ?: '—' }}
+                                        </button>
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <button type="button" class="text-gray-500 hover:text-gray-800 underline" data-password-toggle data-password="{{ $cred->password }}">
+                                            ••••••••
+                                        </button>
+                                    </td>
+                                    <td class="px-4 py-2 space-x-1">
+                                        <a href="{{ route('account-credentials.show', $cred) }}" class="text-blue-600 hover:underline">Просмотр</a>
+                                        <a href="{{ route('account-credentials.edit', $cred) }}" class="text-indigo-600 hover:underline">Редактировать</a>
+                                        <form action="{{ route('account-credentials.destroy', $cred) }}" method="POST" class="inline-block">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-600 hover:underline" onclick="return confirm('Удалить доступ?')">Удалить</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="text-sm text-gray-500">Доступы не заданы.</div>
+            @endif
+
+            <div id="copyToast" class="fixed bottom-4 right-4 z-50 hidden rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white shadow-lg">Скопировано</div>
+
+            <script>
+                const toast = document.getElementById('copyToast');
+
+                function showToast(text) {
+                    if (!toast) return;
+                    toast.textContent = text || 'Скопировано';
+                    toast.classList.remove('hidden');
+                    clearTimeout(window.__copyToastTimer);
+                    window.__copyToastTimer = setTimeout(() => {
+                        toast.classList.add('hidden');
+                    }, 1500);
+                }
+
+                async function copyText(value) {
+                    if (!value) return;
+                    try {
+                        await navigator.clipboard.writeText(value);
+                        showToast('Скопировано');
+                    } catch (e) {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = value;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        try {
+                            document.execCommand('copy');
+                            showToast('Скопировано');
+                        } finally {
+                            document.body.removeChild(textarea);
+                        }
+                    }
+                }
+
+                document.querySelectorAll('[data-copy-text]').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const val = btn.dataset.copyText || '';
+                        if (!val) return;
+                        copyText(val);
+                    });
+                });
+
+                document.querySelectorAll('[data-password-toggle]').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        if (btn.dataset.revealed === '1') {
+                            const val = btn.dataset.password || '';
+                            if (!val) return;
+                            copyText(val);
+                            return;
+                        }
+                        if (!confirm('Открыть пароль?')) return;
+                        btn.textContent = btn.dataset.password || '—';
+                        btn.classList.remove('text-gray-500');
+                        btn.classList.add('text-gray-900');
+                        btn.dataset.revealed = '1';
+                    });
+                });
+            </script>
+        </div>
+
         {{-- Comments card --}}
         <div class="mt-6 bg-white shadow rounded-lg p-6">
             <h2 class="text-lg font-semibold mb-4">Комментарии</h2>
@@ -345,7 +487,8 @@
             </section>
 
             {{-- Доступы проекта --}}
-            <section class="mt-8 bg-gray-50 rounded-2xl border p-6">
+            <!-- duplicated credentials block removed (replaced by table above) -->
+            <!--
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">
                     Доступы проекта
                     <span class="text-sm text-gray-400 font-normal">
@@ -431,7 +574,7 @@
                         </div>
                     @endif
                 </div>
-            </section>
+            -->
 
         </div>
     </div>
