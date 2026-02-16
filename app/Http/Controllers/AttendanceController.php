@@ -65,10 +65,80 @@ class AttendanceController extends Controller
             ->keyBy(fn ($item) => $item->user_id.'_'.$item->date->toDateString());
 
         // Данные по отработанным минутам (WorkDay) — для нового "Графика посещаемости"
-        $workDays = WorkDay::whereYear('work_date', $year)
+        $workDaysCollection = WorkDay::with([
+            'sessions' => fn ($q) => $q->orderBy('started_at'),
+            'breaks' => fn ($q) => $q->orderBy('started_at')->with([
+                'edits' => fn ($e) => $e->latest('id'),
+            ]),
+        ])
+            ->whereYear('work_date', $year)
+            ->whereIn('user_id', $userIds)
+            ->get();
+
+        $workDays = $workDaysCollection
+            ->keyBy(fn ($item) => $item->user_id.'_'.$item->work_date->toDateString());
+
+        $workDayDetails = $workDaysCollection
+            ->mapWithKeys(function (WorkDay $day) {
+                $firstSession = $day->sessions->first();
+                $lastEndedSession = $day->sessions
+                    ->pluck('ended_at')
+                    ->filter()
+                    ->sortBy(fn ($value) => $value)
+                    ->last();
+
+                $breaks = $day->breaks->map(function ($break) {
+                    $comment = $break->edits
+                        ->pluck('comment')
+                        ->filter(fn ($value) => is_string($value) && trim($value) !== '')
+                        ->unique()
+                        ->values()
+                        ->implode(' | ');
+
+                    return [
+                        'started_at' => optional($break->started_at)->format('H:i'),
+                        'ended_at' => optional($break->ended_at)->format('H:i'),
+                        'comment' => $comment,
+                    ];
+                })->values();
+
+                $key = $day->user_id.'_'.$day->work_date->toDateString();
+
+                return [
+                    $key => [
+                        'started_at' => optional($firstSession?->started_at)->format('H:i'),
+                        'ended_at' => optional($lastEndedSession)->format('H:i'),
+                        'breaks' => $breaks,
+                        'report' => (string) $day->report,
+                        'total_work_minutes' => (int) $day->total_work_minutes,
+                        'is_closed' => (bool) $day->is_closed,
+                    ],
+                ];
+            })
+            ->all();
+
+        $today = now()->toDateString();
+        $todayWorkDays = WorkDay::query()
+            ->whereDate('work_date', $today)
             ->whereIn('user_id', $userIds)
             ->get()
-            ->keyBy(fn ($item) => $item->user_id.'_'.$item->work_date->toDateString());
+            ->keyBy('user_id');
+
+        $workTodayStatuses = $users
+            ->mapWithKeys(function ($user) use ($todayWorkDays) {
+                $todayWorkDay = $todayWorkDays->get($user->id);
+
+                if (! $todayWorkDay) {
+                    return [$user->id => ''];
+                }
+
+                if ($todayWorkDay->is_closed) {
+                    return [$user->id => 'finished'];
+                }
+
+                return [$user->id => 'working'];
+            })
+            ->all();
 
         // Статусы
         $statuses = AttendanceStatus::all()->keyBy('code');
@@ -78,6 +148,8 @@ class AttendanceController extends Controller
             'days',
             'attendance',
             'workDays',
+            'workDayDetails',
+            'workTodayStatuses',
             'statuses',
             'year'
         ));

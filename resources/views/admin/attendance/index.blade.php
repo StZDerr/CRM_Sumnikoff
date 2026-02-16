@@ -118,10 +118,13 @@
         <table class="divide-y divide-gray-200 text-sm">
             <thead>
                 <tr>
-                    <th class="sticky left-0 bg-gray-50 border-r p-3 z-20 text-left font-medium text-gray-700 min-w-[200px]">Сотрудник</th>
+                    <th
+                        class="sticky left-0 bg-gray-50 border-r p-3 z-20 text-left font-medium text-gray-700 min-w-[200px]">
+                        Сотрудник</th>
                     @foreach ($days as $day)
                         @php $isToday = $day->isToday(); @endphp
-                        <th @if ($isToday) id="today-column-hours" @endif class="px-2 py-3 text-center w-20 {{ $isToday ? 'bg-yellow-100' : 'bg-white' }}">
+                        <th @if ($isToday) id="today-column-hours" @endif
+                            class="px-2 py-3 text-center w-20 {{ $isToday ? 'bg-yellow-100' : 'bg-white' }}">
                             <div class="text-xs text-gray-600">{{ $day->format('d.m') }}</div>
                         </th>
                     @endforeach
@@ -130,19 +133,39 @@
             <tbody>
                 @foreach ($users as $user)
                     <tr class="group hover:bg-gray-50 transition-colors">
-                        <td class="sticky left-0 bg-white group-hover:bg-gray-50 border-r px-3 py-2 font-medium text-gray-800 whitespace-nowrap z-10 min-w-[200px]">
-                            {{ $user->name_without_middle }}</td>
+                        <td
+                            class="sticky left-0 bg-white group-hover:bg-gray-50 border-r px-3 py-2 font-medium text-gray-800 whitespace-nowrap z-10 min-w-[200px]">
+                            <div class="flex items-center gap-2">
+                                <span>{{ $user->name_without_middle }}</span>
+
+                                @if (($workTodayStatuses[$user->id] ?? '') === 'working')
+                                    <span
+                                        class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">Работают</span>
+                                @elseif (($workTodayStatuses[$user->id] ?? '') === 'finished')
+                                    <span
+                                        class="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-700">Закончил
+                                        работать</span>
+                                @endif
+                            </div>
+                        </td>
 
                         @foreach ($days as $day)
                             @php
                                 $key = $user->id . '_' . $day->toDateString();
                                 $wd = $workDays[$key] ?? null;
                                 $minutes = $wd?->total_work_minutes ?? 0;
-                                $display = $minutes > 0 ? sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60) : '';
+                                $display =
+                                    $minutes > 0 ? sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60) : '';
+                                $isClickable = $minutes > 0;
                                 $isToday = $day->isToday();
                             @endphp
 
-                            <td class="text-center border w-20 h-6 text-xs" style="background-color: {{ $isToday ? '#fef3c7' : 'transparent' }};">
+                            <td class="text-center border w-20 h-6 text-xs {{ $isClickable ? 'cursor-pointer hover:bg-indigo-50' : 'cursor-default' }}"
+                                @if ($isClickable) data-workday-cell="1"
+                                    data-user-id="{{ $user->id }}"
+                                    data-user-name="{{ $user->name_without_middle }}"
+                                    data-date="{{ $day->toDateString() }}" @endif
+                                style="background-color: {{ $isToday ? '#fef3c7' : 'transparent' }};">
                                 {{ $display }}
                             </td>
                         @endforeach
@@ -152,7 +175,125 @@
         </table>
     </div>
 
+    <div id="workday-detail-modal" class="fixed inset-0 z-[1000] hidden">
+        <div class="absolute inset-0 bg-black/60" data-close-workday-modal="1"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="w-full max-w-2xl rounded-xl bg-white p-5 text-gray-900 shadow-xl max-h-[90vh] overflow-y-auto">
+                <div class="mb-4 flex items-start justify-between gap-4">
+                    <div>
+                        <div class="text-lg font-semibold">Детали рабочего дня</div>
+                        <div id="wd-modal-subtitle" class="mt-1 text-sm text-gray-600"></div>
+                    </div>
+                    <button type="button" data-close-workday-modal="1"
+                        class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">Закрыть</button>
+                </div>
+
+                <div id="wd-modal-empty" class="hidden rounded-lg border border-dashed p-4 text-sm text-gray-600">
+                    Нет данных по рабочему времени за выбранный день.
+                </div>
+
+                <div id="wd-modal-content" class="space-y-4">
+                    <div class="grid gap-3 md:grid-cols-3">
+                        <div class="rounded-lg border p-3">
+                            <div class="text-xs text-gray-500">Начал работать</div>
+                            <div id="wd-modal-start" class="mt-1 text-sm font-semibold">—</div>
+                        </div>
+                        <div class="rounded-lg border p-3">
+                            <div class="text-xs text-gray-500">Закончил работать</div>
+                            <div id="wd-modal-end" class="mt-1 text-sm font-semibold">—</div>
+                        </div>
+                        <div class="rounded-lg border p-3">
+                            <div class="text-xs text-gray-500">Отработано</div>
+                            <div id="wd-modal-total" class="mt-1 text-sm font-semibold">—</div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-lg border p-4">
+                        <div class="mb-2 text-sm font-semibold">Паузы</div>
+                        <div id="wd-modal-breaks" class="space-y-2 text-sm"></div>
+                    </div>
+
+                    <div class="rounded-lg border p-4">
+                        <div class="mb-2 text-sm font-semibold">Что сделал за день</div>
+                        <div id="wd-modal-report" class="text-sm text-gray-700 whitespace-pre-wrap">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        const WORK_DAY_DETAILS = @json($workDayDetails);
+
+        function formatMinutesToHours(minutes) {
+            const total = Number(minutes || 0);
+            const hours = Math.floor(total / 60);
+            const mins = total % 60;
+            return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+        }
+
+        function openWorkDayModal(userId, userName, date) {
+            const modal = document.getElementById('workday-detail-modal');
+            const subtitle = document.getElementById('wd-modal-subtitle');
+            const empty = document.getElementById('wd-modal-empty');
+            const content = document.getElementById('wd-modal-content');
+            const start = document.getElementById('wd-modal-start');
+            const end = document.getElementById('wd-modal-end');
+            const total = document.getElementById('wd-modal-total');
+            const breaks = document.getElementById('wd-modal-breaks');
+            const report = document.getElementById('wd-modal-report');
+
+            subtitle.textContent = `${userName} · ${date}`;
+
+            const key = `${userId}_${date}`;
+            const details = WORK_DAY_DETAILS[key] || null;
+
+            if (!details) {
+                empty.classList.remove('hidden');
+                content.classList.add('hidden');
+            } else {
+                empty.classList.add('hidden');
+                content.classList.remove('hidden');
+
+                start.textContent = details.started_at || '—';
+                end.textContent = details.ended_at || '—';
+                total.textContent = formatMinutesToHours(details.total_work_minutes || 0);
+                report.textContent = details.report || '—';
+
+                breaks.innerHTML = '';
+                if (!Array.isArray(details.breaks) || !details.breaks.length) {
+                    breaks.innerHTML = '<div class="text-gray-500">Паузы отсутствуют.</div>';
+                } else {
+                    details.breaks.forEach((item, index) => {
+                        const row = document.createElement('div');
+                        row.className = 'rounded border p-2';
+                        row.innerHTML = `
+                            <div><span class="font-medium">Пауза ${index + 1}:</span> ${item.started_at || '—'} — ${item.ended_at || '—'}</div>
+                            <div class="text-gray-600">Комментарий: ${item.comment || '—'}</div>
+                        `;
+                        breaks.appendChild(row);
+                    });
+                }
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeWorkDayModal() {
+            const modal = document.getElementById('workday-detail-modal');
+            modal.classList.add('hidden');
+        }
+
+        document.querySelectorAll('[data-workday-cell="1"]').forEach((cell) => {
+            cell.addEventListener('click', () => {
+                openWorkDayModal(cell.dataset.userId, cell.dataset.userName, cell.dataset.date);
+            });
+        });
+
+        document.querySelectorAll('[data-close-workday-modal="1"]').forEach((btn) => {
+            btn.addEventListener('click', closeWorkDayModal);
+        });
+
         // Центрируем оба табеля по сегодняшней колонке
         document.addEventListener('DOMContentLoaded', () => {
             const todayColumn = document.getElementById('today-column');

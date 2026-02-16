@@ -23,13 +23,41 @@ class WorkTimeController extends Controller
     public function startDay(Request $request)
     {
         $user = $request->user();
+        $today = now()->toDateString();
+
         $day = $this->getOpenDay($user->id);
+
+        if ($day) {
+            $day->loadMissing([
+                'sessions' => fn ($q) => $q->orderBy('started_at'),
+                'breaks' => fn ($q) => $q->orderBy('started_at'),
+            ]);
+        }
+
+        if (! $day) {
+            $day = WorkDay::query()
+                ->where('user_id', $user->id)
+                ->whereDate('work_date', $today)
+                ->with([
+                    'sessions' => fn ($q) => $q->orderBy('started_at'),
+                    'breaks' => fn ($q) => $q->orderBy('started_at'),
+                ])
+                ->first();
+        }
 
         if (! $day) {
             $day = WorkDay::create([
                 'user_id' => $user->id,
-                'work_date' => now()->toDateString(),
+                'work_date' => $today,
                 'report' => '',
+                'is_closed' => false,
+            ]);
+            $day->load([
+                'sessions' => fn ($q) => $q->orderBy('started_at'),
+                'breaks' => fn ($q) => $q->orderBy('started_at'),
+            ]);
+        } elseif ($day->is_closed) {
+            $day->update([
                 'is_closed' => false,
             ]);
         }

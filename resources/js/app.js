@@ -26,12 +26,19 @@ function loadProjectCommentsIfNeeded() {
     }
 }
 
+function loadWorkTimeIfNeeded() {
+    if (document.getElementById("work-time-widget")) {
+        import("./work-time");
+    }
+}
+
 if (document.readyState === "loading") {
     document.addEventListener(
         "DOMContentLoaded",
         () => {
             loadSortableIfNeeded();
             loadProjectCommentsIfNeeded();
+            loadWorkTimeIfNeeded();
         },
         {
             once: true,
@@ -40,6 +47,7 @@ if (document.readyState === "loading") {
 } else {
     loadSortableIfNeeded();
     loadProjectCommentsIfNeeded();
+    loadWorkTimeIfNeeded();
 }
 
 // Функция инициализации Tom Select (для использования после AJAX-загрузки)

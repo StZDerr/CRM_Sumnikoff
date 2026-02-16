@@ -15,6 +15,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         \App\Console\Commands\UpdateProjectDebts::class,
         \App\Console\Commands\PauseProjectsOnCloseDate::class,
+        \App\Console\Commands\AutoCloseWorkDays::class,
     ];
 
     /**
@@ -32,6 +33,12 @@ class Kernel extends ConsoleKernel
         $schedule->command('projects:pause-on-close-date')
             ->dailyAt('00:00')
             ->appendOutputTo(storage_path('logs/pause_projects_on_close_date.log'));
+
+        // Авто закрытие незавершённых рабочих дней (выполняется в 00:00)
+        $schedule->command('worktime:auto-close')
+            ->dailyAt('00:00')
+            ->appendOutputTo(storage_path('logs/auto_close_work_days.log'));
+
     }
 
     /**
