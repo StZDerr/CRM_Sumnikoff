@@ -285,7 +285,7 @@
                             <div>
                                 <label class="text-xs text-gray-500">Проект</label>
                                 <select name="project_id"
-                                    class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                    class="js-project-select w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                                     <option value="">— все —</option>
                                     @foreach ($projects as $project)
                                         <option value="{{ $project->id }}" @selected((string) request('project_id') === (string) $project->id)>
