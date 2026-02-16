@@ -5,7 +5,7 @@
     <div class="flex min-h-full items-center justify-center p-4">
         <div class="relative w-full max-w-lg transform rounded-lg bg-white shadow-xl transition-all">
             <div class="flex items-center justify-between border-b px-6 py-4">
-                <h3 class="text-lg font-semibold text-gray-900">Новый расход (Расходы не наши)</h3>
+                <h3 class="text-lg font-semibold text-gray-900">Новый расход (Клиентские расходы)</h3>
                 <button type="button" id="closeNotOurExpenseModal" class="text-gray-400 hover:text-gray-600">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">

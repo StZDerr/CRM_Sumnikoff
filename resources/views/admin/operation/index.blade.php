@@ -40,7 +40,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" />
                         </svg>
-                        Расходы не наши
+                        Клиентские расходы
                     </button>
                 @endif
 
