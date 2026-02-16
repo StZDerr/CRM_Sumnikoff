@@ -224,7 +224,7 @@
         <div class="flex flex-col space-y-1">
             <a href="https://disk.360.yandex.ru/d/qruYSh-6HXnx7g" target="_blank" rel="noopener noreferrer"
                 class="flex items-center gap-2 text-sm text-white/90 hover:bg-white/10 rounded px-2 py-1">
-                Главный документ ГК
+                Документы
             </a>
             <a href="https://itsgpro.ru/" target="_blank" rel="noopener noreferrer"
                 class="flex items-center gap-2 text-sm text-white/90 hover:bg-white/10 rounded px-2 py-1">
