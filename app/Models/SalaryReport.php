@@ -17,6 +17,7 @@ class SalaryReport extends Model
         'ordinary_days',
         'remote_days',
         'audits_count',
+        'audits_count_success',
         'individual_bonus',
         'fees',           // сборы (например, на ДР)
         'penalties',       // штрафы (опоздания, нарушения и т.п.)
@@ -70,6 +71,11 @@ class SalaryReport extends Model
         return $this->hasMany(SalaryReportProjectBonus::class);
     }
 
+    public function adjustments()
+    {
+        return $this->hasMany(SalaryReportAdjustment::class)->orderBy('sort_order');
+    }
+
     /**
      * Приведения типов
      */
@@ -78,6 +84,7 @@ class SalaryReport extends Model
         'ordinary_days' => 'decimal:2',
         'remote_days' => 'decimal:2',
         'audits_count' => 'integer',
+        'audits_count_success' => 'integer',
         'individual_bonus' => 'decimal:2',
         'custom_bonus' => 'decimal:2',
         'total_salary' => 'decimal:2',

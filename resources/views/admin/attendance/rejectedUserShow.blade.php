@@ -62,6 +62,17 @@
                 </div>
             </div>
 
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>Успешные аудиты:</div>
+                <div>
+                    <input type="number" name="audits_count_success" value="{{ $report->audits_count_success ?? 0 }}"
+                        class="w-20 border rounded p-1 text-center" />
+                    x 1 000 ₽ = <span id="audits-success-pay"
+                        class="font-medium">{{ number_format(($report->audits_count_success ?? 0) * 1000, 0, '', ' ') }}
+                        ₽</span>
+                </div>
+            </div>
+
             <!-- Индивидуальная премия по проектам -->
             <div class="border-b pb-3">
                 <div class="flex justify-between items-center mb-2">
@@ -148,23 +159,71 @@
                 </div>
             </div>
 
-            <!-- Сборы -->
-            <div class="flex justify-between items-center border-b pb-3">
-                <div>Сборы (вводите число без знака — оно автоматически будет вычитаться):</div>
-                <div>
-                    <input type="number" name="fees" step="0.01" value="{{ abs($report->fees) }}"
-                        class="w-28 border rounded p-1 text-center" />
-                    ₽
+            @php
+                $feeItems = $report->adjustments
+                    ->where('type', 'fee')
+                    ->map(fn($item) => ['amount' => (float) $item->amount, 'comment' => $item->comment])
+                    ->values()
+                    ->all();
+                if (empty($feeItems) && abs($report->fees) > 0) {
+                    $feeItems[] = ['amount' => abs($report->fees), 'comment' => ''];
+                }
+                if (empty($feeItems)) {
+                    $feeItems[] = ['amount' => 0, 'comment' => ''];
+                }
+
+                $penaltyItems = $report->adjustments
+                    ->where('type', 'penalty')
+                    ->map(fn($item) => ['amount' => (float) $item->amount, 'comment' => $item->comment])
+                    ->values()
+                    ->all();
+                if (empty($penaltyItems) && abs($report->penalties) > 0) {
+                    $penaltyItems[] = ['amount' => abs($report->penalties), 'comment' => ''];
+                }
+                if (empty($penaltyItems)) {
+                    $penaltyItems[] = ['amount' => 0, 'comment' => ''];
+                }
+            @endphp
+
+            <div class="border-b pb-3">
+                <div class="flex items-center justify-between mb-2">
+                    <div>Сборы (каждая строка вычитается из ЗП):</div>
+                    <button type="button" id="add-fee-item"
+                        class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">+ Добавить
+                        сбор</button>
+                </div>
+                <div id="fees-items" class="space-y-2">
+                    @foreach ($feeItems as $item)
+                        <div class="fee-item-row flex items-center gap-2">
+                            <input type="number" step="0.01" min="0" value="{{ $item['amount'] ?? 0 }}"
+                                class="fee-item-amount w-32 border rounded p-1 text-center" placeholder="Сумма" />
+                            <input type="text" value="{{ $item['comment'] ?? '' }}"
+                                class="fee-item-comment flex-1 border rounded p-1" placeholder="Комментарий" />
+                            <button type="button"
+                                class="remove-adjustment px-2 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition">✕</button>
+                        </div>
+                    @endforeach
                 </div>
             </div>
 
-            <!-- Штрафы -->
-            <div class="flex justify-between items-center border-b pb-3">
-                <div>Штрафы (вводите число без знака — оно автоматически будет вычитаться):</div>
-                <div>
-                    <input id="penalties-input" type="number" name="penalties" step="0.01"
-                        value="{{ abs($report->penalties) }}" class="w-28 border rounded p-1 text-center" />
-                    ₽
+            <div class="border-b pb-3">
+                <div class="flex items-center justify-between mb-2">
+                    <div>Штрафы (каждая строка вычитается из ЗП):</div>
+                    <button type="button" id="add-penalty-item"
+                        class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">+ Добавить
+                        штраф</button>
+                </div>
+                <div id="penalties-items" class="space-y-2">
+                    @foreach ($penaltyItems as $item)
+                        <div class="penalty-item-row flex items-center gap-2">
+                            <input type="number" step="0.01" min="0" value="{{ $item['amount'] ?? 0 }}"
+                                class="penalty-item-amount w-32 border rounded p-1 text-center" placeholder="Сумма" />
+                            <input type="text" value="{{ $item['comment'] ?? '' }}"
+                                class="penalty-item-comment flex-1 border rounded p-1" placeholder="Комментарий" />
+                            <button type="button"
+                                class="remove-adjustment px-2 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition">✕</button>
+                        </div>
+                    @endforeach
                 </div>
             </div>
 
@@ -188,9 +247,9 @@
 
             <div class="flex justify-end gap-3">
                 <!-- <button type="button" id="calculate-salary"
-                            class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
-                            Рассчитать
-                        </button> -->
+                                class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                                Рассчитать
+                            </button> -->
 
                 <!-- Форма обновления и повторной отправки -->
                 <form id="resubmit-form" method="POST" action="{{ route('attendance.update', $report->id) }}">
@@ -204,12 +263,15 @@
                         value="{{ $report->remote_days }}">
                     <input type="hidden" name="audits_count" id="hidden-audits-count"
                         value="{{ $report->audits_count }}">
+                    <input type="hidden" name="audits_count_success" id="hidden-audits-count-success"
+                        value="{{ $report->audits_count_success ?? 0 }}">
                     <input type="hidden" name="individual_bonus" id="hidden-individual-bonus"
                         value="{{ $report->individual_bonus }}">
                     <input type="hidden" name="custom_bonus" id="hidden-custom-bonus"
                         value="{{ $report->custom_bonus }}">
                     <input type="hidden" name="fees" id="hidden-fees" value="{{ $report->fees }}">
                     <input type="hidden" name="penalties" id="hidden-penalties" value="{{ $report->penalties }}">
+                    <div id="adjustments-hidden-container"></div>
                     <input type="hidden" name="advance_amount" id="hidden-advance-amount"
                         value="{{ $report->advance_amount ?? 0 }}">
                     <input type="hidden" name="total_salary" id="hidden-total-salary"
@@ -245,67 +307,165 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const calcButton = document.getElementById('calculate-salary');
-
             const ordinaryDaysInput = document.querySelector('input[name="ordinary_days"]');
             const remoteDaysInput = document.querySelector('input[name="remote_days"]');
             const auditsInput = document.querySelector('input[name="audits_count"]');
+            const auditsSuccessInput = document.querySelector('input[name="audits_count_success"]');
             const customBonusInput = document.querySelector('input[name="custom_bonus"]');
-            const feesInput = document.querySelector('input[name="fees"]');
-            const penaltiesInput = document.getElementById('penalties-input');
             const advanceInput = document.getElementById('advance-input');
 
             const auditsPrice = 300;
+            const auditsSuccessPrice = 1000;
             const baseSalary = {{ $report->base_salary }};
-
-            // Текущее значение индивидуальной премии (из БД, может меняться при редактировании проектов)
             let calculatedIndividualBonus = {{ $report->individual_bonus }};
 
             const individualBonusSpan = document.getElementById('individual-bonus');
             const totalSalarySpan = document.getElementById('total-salary');
             const auditsPaySpan = document.getElementById('audits-pay');
+            const auditsSuccessPaySpan = document.getElementById('audits-success-pay');
+
+            function buildAdjustmentRow(type, amount = 0, comment = '') {
+                const row = document.createElement('div');
+                row.className = `${type}-item-row flex items-center gap-2`;
+                row.innerHTML = `
+                    <input type="number" step="0.01" min="0" value="${amount}" class="${type}-item-amount w-32 border rounded p-1 text-center" placeholder="Сумма" />
+                    <input type="text" value="${comment}" class="${type}-item-comment flex-1 border rounded p-1" placeholder="Комментарий" />
+                    <button type="button" class="remove-adjustment px-2 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition">✕</button>
+                `;
+
+                row.querySelectorAll('input').forEach(input => {
+                    input.addEventListener('input', () => {
+                        calculateSalary();
+                        syncHiddenFields();
+                    });
+                });
+
+                row.querySelector('.remove-adjustment')?.addEventListener('click', () => {
+                    row.remove();
+                    calculateSalary();
+                    syncHiddenFields();
+                });
+
+                return row;
+            }
+
+            function getAdjustmentItems(type) {
+                const amounts = document.querySelectorAll(`.${type}-item-amount`);
+                const comments = document.querySelectorAll(`.${type}-item-comment`);
+                const items = [];
+
+                amounts.forEach((amountInput, index) => {
+                    const amount = parseFloat(amountInput.value) || 0;
+                    const comment = (comments[index]?.value || '').trim();
+                    if (amount > 0 || comment !== '') {
+                        items.push({
+                            amount: amount > 0 ? amount : 0,
+                            comment,
+                        });
+                    }
+                });
+
+                return items;
+            }
+
+            function getAdjustmentTotal(type) {
+                return getAdjustmentItems(type).reduce((sum, item) => sum + (item.amount || 0), 0);
+            }
+
+            function syncAdjustmentHiddenInputs() {
+                const container = document.getElementById('adjustments-hidden-container');
+                if (!container) return;
+
+                container.innerHTML = '';
+
+                const feeItems = getAdjustmentItems('fee');
+                const penaltyItems = getAdjustmentItems('penalty');
+
+                feeItems.forEach((item, index) => {
+                    const amountInput = document.createElement('input');
+                    amountInput.type = 'hidden';
+                    amountInput.name = `fee_items[${index}][amount]`;
+                    amountInput.value = item.amount;
+                    container.appendChild(amountInput);
+
+                    const commentInput = document.createElement('input');
+                    commentInput.type = 'hidden';
+                    commentInput.name = `fee_items[${index}][comment]`;
+                    commentInput.value = item.comment;
+                    container.appendChild(commentInput);
+                });
+
+                penaltyItems.forEach((item, index) => {
+                    const amountInput = document.createElement('input');
+                    amountInput.type = 'hidden';
+                    amountInput.name = `penalty_items[${index}][amount]`;
+                    amountInput.value = item.amount;
+                    container.appendChild(amountInput);
+
+                    const commentInput = document.createElement('input');
+                    commentInput.type = 'hidden';
+                    commentInput.name = `penalty_items[${index}][comment]`;
+                    commentInput.value = item.comment;
+                    container.appendChild(commentInput);
+                });
+            }
 
             function calculateSalary() {
                 const ordinaryDays = parseFloat(ordinaryDaysInput.value) || 0;
                 const remoteDays = parseFloat(remoteDaysInput.value) || 0;
                 const audits = parseInt(auditsInput.value) || 0;
+                const auditsSuccess = parseInt(auditsSuccessInput?.value) || 0;
                 const customBonus = parseFloat(customBonusInput.value) || 0;
-                const feesRaw = parseFloat(feesInput.value) || 0;
-                const fees = feesRaw > 0 ? -Math.abs(feesRaw) : feesRaw;
-                const penaltiesRaw = parseFloat(penaltiesInput?.value) || 0;
-                const penalties = penaltiesRaw > 0 ? -Math.abs(penaltiesRaw) : penaltiesRaw;
+                const fees = -Math.abs(getAdjustmentTotal('fee'));
+                const penalties = -Math.abs(getAdjustmentTotal('penalty'));
                 const advanceRaw = parseFloat(advanceInput?.value) || 0;
 
                 const salaryPerDay = baseSalary / 22;
                 const ordinaryPay = ordinaryDays * salaryPerDay;
                 const remotePay = remoteDays * (salaryPerDay * 0.5);
                 const auditsPay = audits * auditsPrice;
+                const auditsSuccessPay = auditsSuccess * auditsSuccessPrice;
                 const individualBonusPay = calculatedIndividualBonus;
 
-                const totalSalary = ordinaryPay + remotePay + auditsPay + individualBonusPay + customBonus + fees +
-                    penalties - advanceRaw;
+                const totalSalary = ordinaryPay + remotePay + auditsPay + auditsSuccessPay + individualBonusPay +
+                    customBonus + fees + penalties - advanceRaw;
 
                 individualBonusSpan.textContent = Math.round(individualBonusPay).toLocaleString('ru-RU');
                 totalSalarySpan.textContent = Math.round(totalSalary).toLocaleString('ru-RU');
                 auditsPaySpan.textContent = auditsPay.toLocaleString('ru-RU') + ' ₽';
+                if (auditsSuccessPaySpan) {
+                    auditsSuccessPaySpan.textContent = auditsSuccessPay.toLocaleString('ru-RU') + ' ₽';
+                }
 
-                // Синхронизируем скрытые поля
-                syncHiddenFields(ordinaryDays, remoteDays, audits, customBonus, fees, penalties, totalSalary);
+                syncHiddenFields();
             }
 
-            function syncHiddenFields(ordinary, remote, audits, customBonus, fees, penalties, totalSalary) {
+            function syncHiddenFields() {
+                const ordinary = parseFloat(ordinaryDaysInput.value) || 0;
+                const remote = parseFloat(remoteDaysInput.value) || 0;
+                const audits = parseInt(auditsInput.value) || 0;
+                const auditsSuccess = parseInt(auditsSuccessInput?.value) || 0;
+                const customBonus = parseFloat(customBonusInput.value) || 0;
+                const fees = -Math.abs(getAdjustmentTotal('fee'));
+                const penalties = -Math.abs(getAdjustmentTotal('penalty'));
+                const advanceRaw = parseFloat(advanceInput?.value) || 0;
+                const totalSalary = (ordinary * (baseSalary / 22)) + (remote * (baseSalary / 22) * 0.5) +
+                    (audits * auditsPrice) + (auditsSuccess * auditsSuccessPrice) + calculatedIndividualBonus +
+                    customBonus + fees + penalties - advanceRaw;
+
                 document.getElementById('hidden-ordinary-days').value = ordinary;
                 document.getElementById('hidden-remote-days').value = remote;
                 document.getElementById('hidden-audits-count').value = audits;
+                document.getElementById('hidden-audits-count-success').value = auditsSuccess;
                 document.getElementById('hidden-custom-bonus').value = customBonus;
                 document.getElementById('hidden-fees').value = fees;
                 document.getElementById('hidden-penalties').value = penalties;
-                const advanceRaw = parseFloat(advanceInput?.value) || 0;
                 document.getElementById('hidden-advance-amount').value = Math.abs(advanceRaw);
                 document.getElementById('hidden-individual-bonus').value = calculatedIndividualBonus;
                 document.getElementById('hidden-total-salary').value = Math.round(totalSalary);
 
-                // Синхронизируем проектные данные
+                syncAdjustmentHiddenInputs();
+
                 syncProjectBonusFields();
             }
 
@@ -384,16 +544,7 @@
                 });
             });
 
-            // Рассчитываем при клике на кнопку (если кнопка присутствует)
-            if (calcButton) {
-                calcButton.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    calculateSalary();
-                });
-            }
-
-            // Авто-пересчёт при изменении полей
-            [ordinaryDaysInput, remoteDaysInput, auditsInput, customBonusInput, feesInput, penaltiesInput,
+            [ordinaryDaysInput, remoteDaysInput, auditsInput, auditsSuccessInput, customBonusInput,
                 advanceInput
             ]
             .filter(Boolean)
@@ -401,16 +552,43 @@
                     input.addEventListener('input', calculateSalary);
                 });
 
-            // При сабмите формы — синхронизируем
+            document.getElementById('add-fee-item')?.addEventListener('click', () => {
+                const container = document.getElementById('fees-items');
+                if (!container) return;
+                container.appendChild(buildAdjustmentRow('fee'));
+            });
+
+            document.getElementById('add-penalty-item')?.addEventListener('click', () => {
+                const container = document.getElementById('penalties-items');
+                if (!container) return;
+                container.appendChild(buildAdjustmentRow('penalty'));
+            });
+
+            document.querySelectorAll('.fee-item-row, .penalty-item-row').forEach(row => {
+                row.querySelectorAll('input').forEach(input => {
+                    input.addEventListener('input', () => {
+                        calculateSalary();
+                        syncHiddenFields();
+                    });
+                });
+
+                row.querySelector('.remove-adjustment')?.addEventListener('click', () => {
+                    row.remove();
+                    calculateSalary();
+                    syncHiddenFields();
+                });
+            });
+
             const resubmitForm = document.getElementById('resubmit-form');
             if (resubmitForm) {
-                resubmitForm.addEventListener('submit', (e) => {
+                resubmitForm.addEventListener('submit', () => {
                     calculateSalary();
+                    syncHiddenFields();
                 });
             }
 
-            // Рассчитываем сразу при загрузке страницы
             calculateSalary();
+            syncHiddenFields();
         });
     </script>
 @endsection

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AttendanceDay;
 use App\Models\AttendanceStatus;
 use App\Models\SalaryReport;
+use App\Models\SalaryReportAdjustment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -256,23 +257,57 @@ class AttendanceController extends Controller
             'ordinary_days' => 'required|numeric|min:0',
             'remote_days' => 'required|numeric|min:0',
             'audits_count' => 'nullable|numeric|min:0',
+            'audits_count_success' => 'nullable|integer|min:0',
             'individual_bonus' => 'nullable|numeric|min:0',
             'custom_bonus' => 'nullable|numeric|min:0',
             'fees' => 'nullable|numeric',
             'penalties' => 'nullable|numeric',
+            'fee_items' => 'nullable|array',
+            'fee_items.*.amount' => 'nullable|numeric|min:0',
+            'fee_items.*.comment' => 'nullable|string|max:255',
+            'penalty_items' => 'nullable|array',
+            'penalty_items.*.amount' => 'nullable|numeric|min:0',
+            'penalty_items.*.comment' => 'nullable|string|max:255',
             'advance_amount' => 'nullable|numeric',
             'total_salary' => 'required|numeric|min:0',
             'comment' => 'nullable|string|max:255',
             'project_bonuses' => 'nullable|array',
         ]);
+
+        $feeItems = $this->normalizeAdjustmentItems($request->input('fee_items', []));
+        $penaltyItems = $this->normalizeAdjustmentItems($request->input('penalty_items', []));
+        $feesTotal = collect($feeItems)->sum('amount');
+        $penaltiesTotal = collect($penaltyItems)->sum('amount');
+
+        if ($feesTotal <= 0) {
+            $feesTotal = abs((float) ($request->input('fees') ?? 0));
+            if ($feesTotal > 0) {
+                $feeItems = [[
+                    'amount' => $feesTotal,
+                    'comment' => null,
+                ]];
+            }
+        }
+
+        if ($penaltiesTotal <= 0) {
+            $penaltiesTotal = abs((float) ($request->input('penalties') ?? 0));
+            if ($penaltiesTotal > 0) {
+                $penaltyItems = [[
+                    'amount' => $penaltiesTotal,
+                    'comment' => null,
+                ]];
+            }
+        }
+
         $data = [
             'ordinary_days' => $request->input('ordinary_days'),
             'remote_days' => $request->input('remote_days'),
             'audits_count' => $request->input('audits_count') ?? 0,
+            'audits_count_success' => $request->input('audits_count_success') ?? 0,
             'individual_bonus' => $request->input('individual_bonus') ?? 0,
             'custom_bonus' => $request->input('custom_bonus') ?? 0,
-            'fees' => $request->input('fees') ?? 0,
-            'penalties' => $request->input('penalties') ?? 0,
+            'fees' => -abs($feesTotal),
+            'penalties' => -abs($penaltiesTotal),
             'advance_amount' => $request->input('advance_amount') ?? 0,
             'total_salary' => $request->input('total_salary'),
             'comment' => $request->input('comment') ?? $report->comment,
@@ -287,6 +322,9 @@ class AttendanceController extends Controller
         }
 
         $report->fill($data)->save();
+
+        $this->syncAdjustments($report, 'fee', $feeItems);
+        $this->syncAdjustments($report, 'penalty', $penaltyItems);
 
         // Обновляем детализацию по проектам
         if ($request->has('project_bonuses')) {
@@ -315,7 +353,7 @@ class AttendanceController extends Controller
     public function show(SalaryReport $report)
     {
         // Подгружаем связанные данные
-        $report->load(['projectBonuses.project', 'user']);
+        $report->load(['projectBonuses.project', 'adjustments', 'user']);
 
         // Период месяца табеля
         $month = \Illuminate\Support\Carbon::parse($report->month);
@@ -410,7 +448,7 @@ class AttendanceController extends Controller
             return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
         }
         // Загружаем связанные данные
-        $report->load(['user.specialty', 'projectBonuses.project']);
+        $report->load(['user.specialty', 'projectBonuses.project', 'adjustments']);
 
         $user = $report->user;
         $month = Carbon::parse($report->month);
@@ -522,7 +560,7 @@ class AttendanceController extends Controller
         // Проверяем, есть ли уже табель за месяц
         $existingReport = SalaryReport::where('user_id', $user->id)
             ->where('month', $monthStart->format('Y-m-01'))
-            ->with('projectBonuses')
+            ->with(['projectBonuses', 'adjustments'])
             ->first();
 
         $savedProjectBonuses = $existingReport?->projectBonuses?->keyBy('project_id') ?? collect();
@@ -627,16 +665,48 @@ class AttendanceController extends Controller
             'ordinary_days' => 'nullable|numeric|min:0',
             'remote_days' => 'nullable|numeric|min:0',
             'audits_count' => 'nullable|integer|min:0',
+            'audits_count_success' => 'nullable|integer|min:0',
             'individual_bonus' => 'nullable|numeric|min:0',
             'custom_bonus' => 'nullable|numeric|min:0',
             'fees' => 'nullable|numeric',
             'penalties' => 'nullable|numeric',
+            'fee_items' => 'nullable|array',
+            'fee_items.*.amount' => 'nullable|numeric|min:0',
+            'fee_items.*.comment' => 'nullable|string|max:255',
+            'penalty_items' => 'nullable|array',
+            'penalty_items.*.amount' => 'nullable|numeric|min:0',
+            'penalty_items.*.comment' => 'nullable|string|max:255',
             'advance_amount' => 'nullable|numeric|min:0',
             'total_salary' => 'required|numeric|min:0',
             'status' => 'nullable|in:draft,save,submitted,approved,rejected',
             'comment' => 'nullable|string|max:255',
             'project_bonuses' => 'nullable|array',
         ]);
+
+        $feeItems = $this->normalizeAdjustmentItems($request->input('fee_items', []));
+        $penaltyItems = $this->normalizeAdjustmentItems($request->input('penalty_items', []));
+        $feesTotal = collect($feeItems)->sum('amount');
+        $penaltiesTotal = collect($penaltyItems)->sum('amount');
+
+        if ($feesTotal <= 0) {
+            $feesTotal = abs((float) ($request->input('fees') ?? 0));
+            if ($feesTotal > 0) {
+                $feeItems = [[
+                    'amount' => $feesTotal,
+                    'comment' => null,
+                ]];
+            }
+        }
+
+        if ($penaltiesTotal <= 0) {
+            $penaltiesTotal = abs((float) ($request->input('penalties') ?? 0));
+            if ($penaltiesTotal > 0) {
+                $penaltyItems = [[
+                    'amount' => $penaltiesTotal,
+                    'comment' => null,
+                ]];
+            }
+        }
 
         // Сохраняем переданные значения без дополнительного пересчёта
         $salaryReport = SalaryReport::updateOrCreate(
@@ -649,10 +719,11 @@ class AttendanceController extends Controller
                 'ordinary_days' => $request->ordinary_days ?? 0,
                 'remote_days' => $request->remote_days ?? 0,
                 'audits_count' => $request->audits_count ?? 0,
+                'audits_count_success' => $request->audits_count_success ?? 0,
                 'individual_bonus' => $request->individual_bonus ?? 0,
                 'custom_bonus' => $request->custom_bonus ?? 0,
-                'fees' => $request->fees ?? 0,
-                'penalties' => $request->penalties ?? 0,
+                'fees' => -abs($feesTotal),
+                'penalties' => -abs($penaltiesTotal),
                 'advance_amount' => $request->advance_amount ?? 0,
                 'total_salary' => $request->total_salary,
                 'status' => $request->status ?? 'submitted',
@@ -661,6 +732,9 @@ class AttendanceController extends Controller
                 'updated_by' => auth()->id(),
             ]
         );
+
+        $this->syncAdjustments($salaryReport, 'fee', $feeItems);
+        $this->syncAdjustments($salaryReport, 'penalty', $penaltyItems);
 
         // Сохраняем детализацию по проектам
         if ($request->has('project_bonuses')) {
@@ -686,5 +760,50 @@ class AttendanceController extends Controller
 
         // Перенаправляем на страницу просмотра созданного/обновлённого табеля
         return redirect()->route('attendance.show', $salaryReport->id)->with('success', 'Табель сохранён!');
+    }
+
+    private function normalizeAdjustmentItems(array $items): array
+    {
+        $result = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $amount = (float) ($item['amount'] ?? 0);
+            $comment = trim((string) ($item['comment'] ?? ''));
+
+            if ($amount <= 0 && $comment === '') {
+                continue;
+            }
+
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $result[] = [
+                'amount' => round($amount, 2),
+                'comment' => $comment !== '' ? $comment : null,
+            ];
+        }
+
+        return $result;
+    }
+
+    private function syncAdjustments(SalaryReport $report, string $type, array $items): void
+    {
+        $report->adjustments()->where('type', $type)->delete();
+
+        foreach ($items as $index => $item) {
+            SalaryReportAdjustment::create([
+                'salary_report_id' => $report->id,
+                'type' => $type,
+                'amount' => $item['amount'],
+                'comment' => $item['comment'] ?? null,
+                'sort_order' => $index,
+                'created_by' => auth()->id(),
+            ]);
+        }
     }
 }

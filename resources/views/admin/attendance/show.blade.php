@@ -32,14 +32,25 @@
                     $wage_days = ($report->base_salary / 22) * $report->ordinary_days;
                     $wage_remote = ($report->base_salary / 22) * ($report->remote_days / 2);
                     $audits = $report->audits_count * 300;
+                    $auditsSuccess = ($report->audits_count_success ?? 0) * 1000;
                     $individual = $report->individual_bonus;
                     $custom = $report->custom_bonus;
                     $fees = abs($report->fees ?? 0);
                     $penalties = abs($report->penalties ?? 0);
+                    $feeItems = $report->adjustments->where('type', 'fee')->values();
+                    $penaltyItems = $report->adjustments->where('type', 'penalty')->values();
                     // Приоритет: явно сохранённый advance_amount, иначе сумма найденных расходов
                     $advance = abs($report->advance_amount ?? ($advanceTotal ?? 0));
                     $computedTotal =
-                        $wage_days + $wage_remote + $audits + $individual + $custom - $fees - $penalties - $advance;
+                        $wage_days +
+                        $wage_remote +
+                        $audits +
+                        $auditsSuccess +
+                        $individual +
+                        $custom -
+                        $fees -
+                        $penalties -
+                        $advance;
                 @endphp
 
 
@@ -90,10 +101,17 @@
                 <div class="col-span-2 border rounded p-4 bg-indigo-50">
                     <div class="text-sm text-indigo-600 font-medium mb-3">Премии и аудиты</div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div>
-                            <div class="text-sm text-gray-500">Аудиты </div>
+                            <div class="text-sm text-gray-500">Аудиты (обычные)</div>
                             <div class="mt-2 font-medium">{{ number_format($report->audits_count * 300, 0, '', ' ') }} ₽
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">Аудиты (успешные)</div>
+                            <div class="mt-2 font-medium">
+                                {{ number_format(($report->audits_count_success ?? 0) * 1000, 0, '', ' ') }} ₽
                             </div>
                         </div>
 
@@ -117,12 +135,34 @@
                         <div>
                             <div class="text-sm text-gray-500">Сборы</div>
                             <div class="mt-2 font-medium text-red-600">-{{ number_format($fees, 0, '', ' ') }} ₽</div>
+                            @if ($feeItems->count() > 0)
+                                <ul class="mt-2 text-xs text-gray-600 space-y-1">
+                                    @foreach ($feeItems as $item)
+                                        <li>• {{ number_format($item->amount, 0, '', ' ') }} ₽
+                                            @if ($item->comment)
+                                                — {{ $item->comment }}
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
                         </div>
 
                         <div>
                             <div class="text-sm text-gray-500">Штрафы</div>
                             <div class="mt-2 font-medium text-red-600">-{{ number_format($penalties ?? 0, 0, '', ' ') }} ₽
                             </div>
+                            @if ($penaltyItems->count() > 0)
+                                <ul class="mt-2 text-xs text-gray-600 space-y-1">
+                                    @foreach ($penaltyItems as $item)
+                                        <li>• {{ number_format($item->amount, 0, '', ' ') }} ₽
+                                            @if ($item->comment)
+                                                — {{ $item->comment }}
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
                         </div>
 
                         <div>
@@ -142,6 +182,8 @@
                             class="cursor-help">{{ number_format($wage_remote, 0, '', ' ') }}</span> +
                         <span data-tippy data-tippy-content="Аудиты"
                             class="cursor-help">{{ number_format($audits, 0, '', ' ') }}</span> +
+                        <span data-tippy data-tippy-content="Успешные аудиты"
+                            class="cursor-help">{{ number_format($auditsSuccess, 0, '', ' ') }}</span> +
                         <span data-tippy data-tippy-content="Инд. премия за проекты"
                             class="cursor-help">{{ number_format($individual, 0, '', ' ') }}</span> +
                         <span data-tippy data-tippy-content="Произвольная премия"
