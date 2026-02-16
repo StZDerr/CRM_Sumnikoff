@@ -189,7 +189,8 @@
 
         {{-- Доступы проекта — таблица (вставлено из account_credentials.index) --}}
         <div class="mt-6 bg-white shadow rounded-lg p-6">
-            <h2 class="text-lg font-semibold mb-4">Доступы проекта <span class="text-sm text-gray-400 font-normal">({{ $project->accountCredentials->count() }})</span></h2>
+            <h2 class="text-lg font-semibold mb-4">Доступы проекта <span
+                    class="text-sm text-gray-400 font-normal">({{ $project->accountCredentials->count() }})</span></h2>
 
             @if ($project->accountCredentials->count())
                 <div class="overflow-x-auto">
@@ -200,7 +201,6 @@
                                 <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Название</th>
                                 <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Логин</th>
                                 <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Пароль</th>
-                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Действия</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -210,53 +210,52 @@
                                     @php
                                         $__credName = $cred->name ?? '';
                                         // попробуем найти полный URL (https?://...) — более простой и надёжный вариант
-                                        if (filter_var($__credName, FILTER_VALIDATE_URL)) {
+                                        if (preg_match('/^\\s*https?:\\/\\//iu', $__credName)) {
                                             $__url = $__credName;
                                         } else {
-                                            preg_match('/^[\\w\\.-]+\\.[a-z]{2,}([:\\/].*)?$/i', trim($__credName), $__mTmp);
-                                            $__url = !empty($__mTmp) ? (strpos(trim($__credName), 'http') === 0 ? trim($__credName) : 'http://' . trim($__credName)) : null;
+                                            preg_match(
+                                                '/^[\\w\\.-]+\\.[a-z]{2,}([:\\/].*)?$/i',
+                                                trim($__credName),
+                                                $__mTmp,
+                                            );
+                                            $__url = !empty($__mTmp)
+                                                ? (strpos(trim($__credName), 'http') === 0
+                                                    ? trim($__credName)
+                                                    : 'http://' . trim($__credName))
+                                                : null;
                                         }
-
-
 
                                         // хост для отображения
                                         $__host = $__url ? parse_url($__url, PHP_URL_HOST) : null;
-                                        if (! $__host) {
-                                            preg_match('/\\bhttps?:\\/\\/([^\\/\\s]+)/i', $__credName, $__m);
+                                        if (!$__host) {
+                                            preg_match('/\\bhttps?:\\/\\/([^\\/\\s]+)/iu', $__url ?? $__credName, $__m);
                                             $__host =
                                                 $__m[1] ??
                                                 (strpos($__credName, ' ') === false
                                                     ? parse_url('http://' . trim($__credName), PHP_URL_HOST)
                                                     : null);
                                         }
-                                        $__display =
-                                            $__host ?: \Illuminate\Support\Str::limit($__credName, 40);
+                                        $__display = $__host ?: \Illuminate\Support\Str::limit($__credName, 40);
                                     @endphp
                                     <td class="px-4 py-2" title="{{ $__credName }}">
                                         @if ($__url)
-                                            <a href="{{ $__url }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">{{ $__display }}</a>
+                                            <a href="{{ $__url }}" target="_blank" rel="noopener noreferrer"
+                                                class="text-indigo-600 hover:underline">{{ $__display }}</a>
                                         @else
                                             {{ $__display }}
                                         @endif
                                     </td>
                                     <td class="px-4 py-2">
-                                        <button type="button" class="text-gray-800 hover:text-indigo-700 underline" data-copy-text="{{ $cred->login }}">
+                                        <button type="button" class="text-gray-800 hover:text-indigo-700 underline"
+                                            data-copy-text="{{ $cred->login }}">
                                             {{ $cred->login ?: '—' }}
                                         </button>
                                     </td>
                                     <td class="px-4 py-2">
-                                        <button type="button" class="text-gray-500 hover:text-gray-800 underline" data-password-toggle data-password="{{ $cred->password }}">
+                                        <button type="button" class="text-gray-500 hover:text-gray-800 underline"
+                                            data-password-toggle data-password="{{ $cred->password }}">
                                             ••••••••
                                         </button>
-                                    </td>
-                                    <td class="px-4 py-2 space-x-1">
-                                        <a href="{{ route('account-credentials.show', $cred) }}" class="text-blue-600 hover:underline">Просмотр</a>
-                                        <a href="{{ route('account-credentials.edit', $cred) }}" class="text-indigo-600 hover:underline">Редактировать</a>
-                                        <form action="{{ route('account-credentials.destroy', $cred) }}" method="POST" class="inline-block">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:underline" onclick="return confirm('Удалить доступ?')">Удалить</button>
-                                        </form>
                                     </td>
                                 </tr>
                             @endforeach
@@ -267,7 +266,9 @@
                 <div class="text-sm text-gray-500">Доступы не заданы.</div>
             @endif
 
-            <div id="copyToast" class="fixed bottom-4 right-4 z-50 hidden rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white shadow-lg">Скопировано</div>
+            <div id="copyToast"
+                class="fixed bottom-4 right-4 z-50 hidden rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white shadow-lg">
+                Скопировано</div>
 
             <script>
                 const toast = document.getElementById('copyToast');
@@ -489,92 +490,100 @@
             {{-- Доступы проекта --}}
             <!-- duplicated credentials block removed (replaced by table above) -->
             <!--
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                    Доступы проекта
-                    <span class="text-sm text-gray-400 font-normal">
-                        ({{ $project->accountCredentials->count() }})
-                    </span>
-                </h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            Доступы проекта
+                            <span class="text-sm text-gray-400 font-normal">
+                                ({{ $project->accountCredentials->count() }})
+                            </span>
+                        </h3>
 
-                <div id="credentials-list">
-                    @if ($project->accountCredentials->count())
-                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            @foreach ($project->accountCredentials as $cred)
-                                <div class="border rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition">
-                                    <div class="flex items-start justify-between gap-2">
-                                        <div>
-                                            <div class="flex items-center gap-2">
-                                                @php
-                                                    $__credName = $cred->name ?? '';
-                                                    // попробуем найти полный URL (https?://...)
-                                                    preg_match('/\bhttps?:\/\/[^\s\"]+/i', $__credName, $__u);
-                                                    $__url = $__u[0] ?? null;
+                        <div id="credentials-list">
+                            @if ($project->accountCredentials->count())
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    @foreach ($project->accountCredentials as $cred)
+    <div class="border rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <div class="flex items-center gap-2">
+                                                        @php
+                                                            $__credName = $cred->name ?? '';
+                                                            // попробуем найти полный URL (https?://...)
+                                                            preg_match('/\bhttps?:\/\/[^\s\"]+/i', $__credName, $__u);
+                                                            $__url = $__u[0] ?? null;
 
-                                                    // если нет полного URL, но строка выглядит как домен, добавим http://
-                                                    if (
-                                                        !$__url &&
-                                                        preg_match(
-                                                            '/^[\w\.-]+\.[a-z]{2,}([:\/].*)?$/i',
-                                                            trim($__credName),
-                                                        )
-                                                    ) {
-                                                        $__url =
-                                                            strpos(trim($__credName), 'http') === 0
-                                                                ? trim($__credName)
-                                                                : 'http://' . trim($__credName);
-                                                    }
+                                                            // если нет полного URL, но строка выглядит как домен, добавим http://
+                                                            if (
+                                                                !$__url &&
+                                                                preg_match(
+                                                                    '/^[\w\.-]+\.[a-z]{2,}([:\/].*)?$/i',
+                                                                    trim($__credName),
+                                                                )
+                                                            ) {
+                                                                $__url =
+                                                                    strpos(trim($__credName), 'http') === 0
+                                                                        ? trim($__credName)
+                                                                        : 'http://' . trim($__credName);
+                                                            }
 
-                                                    // хост для отображения
-                                                    $__host = $__url ? parse_url($__url, PHP_URL_HOST) : null;
-                                                    if (!$__host) {
-                                                        preg_match('/\bhttps?:\/\/([^\/\s]+)/i', $__credName, $__m);
-                                                        $__host =
-                                                            $__m[1] ??
-                                                            (strpos($__credName, ' ') === false
-                                                                ? parse_url('http://' . trim($__credName), PHP_URL_HOST)
-                                                                : null);
-                                                    }
-                                                    $__display =
-                                                        $__host ?: \Illuminate\Support\Str::limit($__credName, 40);
-                                                @endphp
+                                                            // хост для отображения
+                                                            $__host = $__url ? parse_url($__url, PHP_URL_HOST) : null;
+                                                            if (!$__host) {
+                                                                preg_match(
+                                                                    '/\bhttps?:\/\/([^\/\s]+)/i',
+                                                                    $__credName,
+                                                                    $__m,
+                                                                );
+                                                                $__host =
+                                                                    $__m[1] ??
+                                                                    (strpos($__credName, ' ') === false
+                                                                        ? parse_url(
+                                                                            'http://' . trim($__credName),
+                                                                            PHP_URL_HOST,
+                                                                        )
+                                                                        : null);
+                                                            }
+                                                            $__display =
+                                                                $__host ?:
+                                                                \Illuminate\Support\Str::limit($__credName, 40);
+                                                        @endphp
 
-                                                <a href="{{ $__url ?? route('account-credentials.show', $cred) }}"
-                                                    @if ($__url) target="_blank" rel="noopener noreferrer" @endif
-                                                    class="text-blue-600 font-semibold hover:underline break-all">
-                                                    {{ $__display }}
-                                                </a>
+                                                        <a href="{{ $__url ?? route('account-credentials.show', $cred) }}"
+                                                            @if ($__url) target="_blank" rel="noopener noreferrer" @endif
+                                                            class="text-blue-600 font-semibold hover:underline break-all">
+                                                            {{ $__display }}
+                                                        </a>
 
-                                                <div class="ml-2 text-xs text-gray-500 capitalize">
-                                                    {{ str_replace('_', ' ', $cred->type) }}</div>
+                                                        <div class="ml-2 text-xs text-gray-500 capitalize">
+                                                            {{ str_replace('_', ' ', $cred->type) }}</div>
+                                                    </div>
+
+                                                    <div class="mt-1 text-xs text-gray-500">
+                                                        Добавлен {{ $cred->created_at->diffForHumans() }}
+                                                    </div>
+                                                </div>
+
+                                                <span
+                                                    class="text-xs px-2 py-1 rounded-full font-medium {{ $cred->status == 'active' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300' }}">
+                                                    {{ $cred->status == 'active' ? 'Действующий' : 'Stop List' }}
+                                                </span>
                                             </div>
 
-                                            <div class="mt-1 text-xs text-gray-500">
-                                                Добавлен {{ $cred->created_at->diffForHumans() }}
+                                            <div class="mt-4 flex justify-end">
+                                                <a href="{{ route('account-credentials.show', $cred) }}"
+                                                    class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                                                    Просмотр
+                                                </a>
                                             </div>
                                         </div>
-
-                                        <span
-                                            class="text-xs px-2 py-1 rounded-full font-medium {{ $cred->status == 'active' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300' }}">
-                                            {{ $cred->status == 'active' ? 'Действующий' : 'Stop List' }}
-                                        </span>
-                                    </div>
-
-                                    <div class="mt-4 flex justify-end">
-                                        <a href="{{ route('account-credentials.show', $cred) }}"
-                                            class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
-                                            Просмотр
-                                        </a>
-                                    </div>
+    @endforeach
                                 </div>
-                            @endforeach
+@else
+    <div class="text-sm text-gray-500">
+                                    Доступы не заданы.
+                                </div>
+    @endif
                         </div>
-                    @else
-                        <div class="text-sm text-gray-500">
-                            Доступы не заданы.
-                        </div>
-                    @endif
-                </div>
-            -->
+                    -->
 
         </div>
     </div>
