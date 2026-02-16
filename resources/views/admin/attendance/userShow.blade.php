@@ -381,10 +381,16 @@
                                 class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
                                 Сохранить
                             </button>
-                            <button type="submit" id="submit-for-approval-button" name="status" value="submitted"
-                                class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                                Отправить на согласование
-                            </button>
+
+                            @if (isset($canSubmitNow) && $canSubmitNow)
+                                <button type="submit" id="submit-for-approval-button" name="status" value="submitted"
+                                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                                    Отправить на согласование
+                                </button>
+                            @else
+                                <span class="text-sm text-gray-500">Отправка на согласование доступна с
+                                    {{ $lastMonth->copy()->addMonth()->startOfMonth()->translatedFormat('d.m.Y') }}.</span>
+                            @endif
                         </div>
                     </form>
                 @else

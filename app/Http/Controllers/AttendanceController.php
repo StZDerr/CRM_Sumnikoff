@@ -482,9 +482,27 @@ class AttendanceController extends Controller
             return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
         }
 
-        $lastMonth = Carbon::now()->subMonth();
+        // По умолчанию — прошлый месяц
+        $defaultLastMonth = Carbon::now()->subMonth();
+
+        // Если табель за прошлый месяц уже существует и не в состоянии "save" (например, "submitted"),
+        // показываем текущий месяц (пользователь может сохранять черновики, но отправить на согласование
+        // можно лишь с 1-го числа следующего месяца).
+        $previousReport = SalaryReport::where('user_id', $user->id)
+            ->where('month', $defaultLastMonth->copy()->startOfMonth()->format('Y-m-01'))
+            ->first();
+
+        if ($previousReport && $previousReport->status !== 'save') {
+            $lastMonth = Carbon::now();
+        } else {
+            $lastMonth = $defaultLastMonth;
+        }
+
         $monthStart = $lastMonth->copy()->startOfMonth();
         $monthEnd = $lastMonth->copy()->endOfMonth();
+
+        // Флаг — доступна ли сейчас отправка на согласование для отображаемого месяца
+        $canSubmitNow = now()->gte($lastMonth->copy()->addMonth()->startOfMonth());
 
         // Получаем дни посещаемости пользователя за прошлый месяц
         $attendanceDays = $user->attendanceDays()
@@ -645,7 +663,8 @@ class AttendanceController extends Controller
             'baseSalary',
             'existingReport',
             'advanceTotal',
-            'salaryExpenses'
+            'salaryExpenses',
+            'canSubmitNow'
         ));
     }
 
@@ -733,6 +752,18 @@ class AttendanceController extends Controller
         }
 
         // Сохраняем переданные значения без дополнительного пересчёта
+        // Принудительно переводим попытку отправки в "save", если сейчас ещё нельзя отправлять
+        $requestedStatus = $request->input('status') ?? 'submitted';
+        $reportMonth = Carbon::parse($request->month);
+        $submitAllowedFrom = $reportMonth->copy()->addMonth()->startOfMonth();
+
+        if ($requestedStatus === 'submitted' && now()->lt($submitAllowedFrom)) {
+            $requestedStatus = 'save';
+            $willBeSavedButNotSubmitted = true;
+        } else {
+            $willBeSavedButNotSubmitted = false;
+        }
+
         $salaryReport = SalaryReport::updateOrCreate(
             [
                 'user_id' => $user->id,
@@ -750,7 +781,7 @@ class AttendanceController extends Controller
                 'penalties' => -abs($penaltiesTotal),
                 'advance_amount' => $request->advance_amount ?? 0,
                 'total_salary' => $request->total_salary,
-                'status' => $request->status ?? 'submitted',
+                'status' => $requestedStatus,
                 'comment' => $request->comment,
                 'created_by' => auth()->id(),
                 'updated_by' => auth()->id(),
@@ -779,7 +810,12 @@ class AttendanceController extends Controller
         }
 
         if ($salaryReport->status === 'save') {
-            return redirect()->back()->with('success', 'Черновик табеля сохранён.');
+            $msg = 'Черновик табеля сохранён.';
+            if (! empty($willBeSavedButNotSubmitted)) {
+                $msg .= ' Отправка на согласование будет доступна с ' . $submitAllowedFrom->translatedFormat('d.m.Y') . '.';
+            }
+
+            return redirect()->back()->with('success', $msg);
         }
 
         // Перенаправляем на страницу просмотра созданного/обновлённого табеля
