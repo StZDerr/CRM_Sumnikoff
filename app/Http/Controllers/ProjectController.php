@@ -285,7 +285,7 @@ class ProjectController extends Controller
 
         \Illuminate\Support\Facades\Gate::authorize('view', $project);
 
-        $project->load(['organization', 'marketer', 'paymentMethod', 'stages', 'importance', 'comments.user', 'marketerHistory.marketer', 'marketerHistory.assignedBy', 'domains']);
+        $project->load(['organization', 'marketer', 'paymentMethod', 'stages', 'importance', 'comments.user', 'marketerHistory.marketer', 'marketerHistory.assignedBy', 'domains', 'accountCredentials']);
 
         return view('admin.projects.show', compact('project'));
     }

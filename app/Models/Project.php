@@ -130,6 +130,14 @@ class Project extends Model
         return $this->hasMany(Domain::class);
     }
 
+    /**
+     * Доступы проекта (AccountCredential)
+     */
+    public function accountCredentials()
+    {
+        return $this->hasMany(\App\Models\AccountCredential::class);
+    }
+
     // Organization
     public function organization()
     {

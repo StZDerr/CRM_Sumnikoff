@@ -3,7 +3,11 @@
 @section('content')
     <div class="max-w-3xl mx-auto px-4 py-8">
         {{-- Заголовок --}}
-        <h1 class="text-2xl font-bold text-gray-800 mb-6">Доступ: {{ $accountCredential->name }}</h1>
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">
+            Доступ:
+            <span
+                title="{{ $accountCredential->name }}">{{ \Illuminate\Support\Str::limit($accountCredential->name, 30) }}</span>
+        </h1>
 
         {{-- Карточка с информацией --}}
         <div class="bg-white shadow rounded-lg border border-gray-200 p-6 space-y-6">
