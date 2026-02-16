@@ -29,6 +29,7 @@ class DashboardController extends Controller
         $isAll = ($period === 'all');
 
         $linkCards = LinkCard::where('user_id', $user->id)
+            ->whereNull('project_id')
             ->orderBy('position')
             ->get();
 
@@ -695,6 +696,7 @@ class DashboardController extends Controller
         $expectedTotal = $baseSalary + $calculatedTotalBonus;
 
         $linkCards = LinkCard::where('user_id', $user->id)
+            ->whereNull('project_id')
             ->orderBy('position')
             ->get();
 

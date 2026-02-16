@@ -1,15 +1,22 @@
 {{-- Part: Link Cards (grid + modal)
      Variables expected: $linkCards
 --}}
+@php
+    $linkCardsTitle = $linkCardsTitle ?? 'Карточки ссылок';
+    $linkCardsHint = $linkCardsHint ?? 'Перетаскивайте карточки для изменения порядка';
+    $linkCardProjectId = $linkCardProjectId ?? null;
+@endphp
+
 <div class="bg-white rounded-xl shadow p-6">
     <div class="mb-4">
-        <div class="text-sm font-medium text-gray-800">Карточки ссылок</div>
-        <div class="text-xs text-gray-500">Перетаскивайте карточки для изменения порядка</div>
+        <div class="text-sm font-medium text-gray-800">{{ $linkCardsTitle }}</div>
+        <div class="text-xs text-gray-500">{{ $linkCardsHint }}</div>
     </div>
 
     <div class="text-xs text-gray-500 mb-4">Добавьте ссылку через карточку «+».</div>
 
-    <div id="link-cards-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div id="link-cards-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4"
+        data-reorder-url="{{ route('link-cards.reorder') }}" data-project-id="{{ $linkCardProjectId ?? '' }}">
         <button type="button" id="link-card-add"
             class="link-card-add bg-white rounded-xl p-4 border border-dashed border-gray-300 shadow-sm hover:shadow-lg transition duration-200 transform hover:-translate-y-0.5 flex flex-col items-center justify-center text-center">
             <div class="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center">
@@ -100,8 +107,13 @@
                 <button type="button" id="link-card-close" class="text-gray-500 hover:text-gray-700">✕</button>
             </div>
 
-            <form id="link-card-form" method="POST" action="{{ route('link-cards.store') }}" class="p-5 space-y-4">
+            <form id="link-card-form" method="POST" action="{{ route('link-cards.store') }}" class="p-5 space-y-4"
+                data-store-action="{{ route('link-cards.store') }}" data-update-base="{{ url('link-cards') }}"
+                data-project-id="{{ $linkCardProjectId ?? '' }}">
                 @csrf
+                @if ($linkCardProjectId)
+                    <input type="hidden" name="project_id" value="{{ $linkCardProjectId }}" />
+                @endif
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Название</label>
                     <input type="text" name="title" required placeholder="Название"

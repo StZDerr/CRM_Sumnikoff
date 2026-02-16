@@ -138,6 +138,11 @@ class Project extends Model
         return $this->hasMany(\App\Models\AccountCredential::class);
     }
 
+    public function linkCards()
+    {
+        return $this->hasMany(\App\Models\LinkCard::class)->orderBy('position');
+    }
+
     // Organization
     public function organization()
     {

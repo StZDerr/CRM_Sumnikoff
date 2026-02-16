@@ -7,11 +7,13 @@ const linkOverlay = document.getElementById('link-card-overlay');
 const linkForm = document.getElementById('link-card-form');
 const linkModalTitle = document.getElementById('link-card-modal-title');
 const linkModalSubmit = document.getElementById('link-card-submit');
+const linkStoreAction = (linkForm?.dataset.storeAction || "{{ route('link-cards.store') }}");
+const linkUpdateBase = (linkForm?.dataset.updateBase || "{{ url('link-cards') }}").replace(/\/$/, '');
 
 function openLinkModal() {
 if (!linkModal) return;
 // default to create
-linkForm.action = "{{ route('link-cards.store') }}";
+linkForm.action = linkStoreAction;
 linkForm.querySelector('input[name="title"]').value = '';
 linkForm.querySelector('input[name="url"]').value = '';
 linkForm.querySelector('input[name="icon"]').value = '';
@@ -47,7 +49,7 @@ if (typeof window.openEditModal === 'function') {
 window.openEditModal(id, title, url, icon);
 } else {
 // fallback: populate form and show modal
-linkForm.action = `/link-cards/${id}`;
+linkForm.action = `${linkUpdateBase}/${id}`;
 linkForm.querySelector('input[name="title"]').value = title;
 linkForm.querySelector('input[name="url"]').value = url;
 linkForm.querySelector('input[name="icon"]').value = icon;
@@ -69,7 +71,7 @@ linkModal.classList.remove('hidden');
 window.openEditModal = function(id, title, url, icon) {
 if (!linkModal) return;
 
-linkForm.action = `/link-cards/${id}`; // URL обновления
+linkForm.action = `${linkUpdateBase}/${id}`; // URL обновления
 linkForm.querySelector('input[name="title"]').value = title;
 linkForm.querySelector('input[name="url"]').value = url;
 linkForm.querySelector('input[name="icon"]').value = icon;
@@ -93,7 +95,8 @@ linkModal.classList.remove('hidden');
 const grid = document.getElementById('link-cards-grid');
 if (grid) {
 const csrfToken = '{{ csrf_token() }}';
-const reorderUrl = '{{ route('link-cards.reorder') }}';
+const reorderUrl = grid.dataset.reorderUrl || '{{ route('link-cards.reorder') }}';
+const projectId = grid.dataset.projectId || '';
 let dragSrc = null;
 
 function persistOrder() {
@@ -108,7 +111,8 @@ headers: {
 'X-CSRF-TOKEN': csrfToken
 },
 body: JSON.stringify({
-order: order
+order: order,
+project_id: projectId || null
 })
 }).catch(err => console.error('Reorder error', err));
 }

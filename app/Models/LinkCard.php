@@ -15,11 +15,17 @@ class LinkCard extends Model
         'icon',
         'position',
         'user_id',
+        'project_id',
     ];
 
     // Связь с пользователем
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
     }
 }
