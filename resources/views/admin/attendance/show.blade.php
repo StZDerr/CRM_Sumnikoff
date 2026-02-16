@@ -83,10 +83,16 @@
                 <div class="col-span-2 border rounded p-4 bg-blue-50">
                     <div class="text-sm text-blue-600 font-medium mb-3">Удалённые дни — расчёт</div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <div class="text-sm text-gray-500">Удалённые дни (половина)</div>
                             <div class="mt-2 font-medium">{{ number_format($report->remote_days, 0) }}</div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">Стоимость Удалённого дня (половина)</div>
+                            <div class="mt-2 font-medium">{{ number_format($report->base_salary / 22 / 2, 0, '', ' ') }} ₽
+                            </div>
                         </div>
 
                         <div>
