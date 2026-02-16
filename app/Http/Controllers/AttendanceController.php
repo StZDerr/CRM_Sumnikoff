@@ -352,6 +352,24 @@ class AttendanceController extends Controller
 
     public function show(SalaryReport $report)
     {
+        // Доступ:
+        // - admin — всегда
+        // - marketer — только свой табель со статусом 'paid' (иначе 403)
+        // - остальные роли — только владелец табеля
+        $user = auth()->user();
+
+        if ($user->isAdmin()) {
+            // allowed
+        } elseif ($user->isMarketer()) {
+            if ($user->id !== $report->user_id || $report->status !== 'paid') {
+                abort(403);
+            }
+        } else {
+            if ($user->id !== $report->user_id) {
+                return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+            }
+        }
+
         // Подгружаем связанные данные
         $report->load(['projectBonuses.project', 'adjustments', 'user']);
 
@@ -458,8 +476,8 @@ class AttendanceController extends Controller
 
     public function userShow(User $user)
     {
-        // Только admin может просматривать табели других пользователей
-        if (! auth()->user()->isAdmin() && auth()->id() !== $user->id) {
+        // Доступ к этой странице — только для admin и project manager
+        if (! auth()->user()->isAdmin() && ! auth()->user()->isProjectManager()) {
             return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
         }
 
@@ -659,6 +677,11 @@ class AttendanceController extends Controller
 
     public function submitForApproval(Request $request, User $user)
     {
+        // Маркетологи не могут сохранять/изменять/удалять табели
+        if (auth()->user()->isMarketer()) {
+            return redirect()->route('attendance.index')->with('error', 'Доступ запрещён');
+        }
+
         $request->validate([
             'month' => 'required|date',
             'base_salary' => 'required|numeric|min:0',

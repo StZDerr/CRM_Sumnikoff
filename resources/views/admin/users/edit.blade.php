@@ -263,6 +263,28 @@
                             </button>
                         </div>
                     </div>
+
+                    {{-- Только для пользователя с ID = 1: сброс и показ пароля --}}
+                    @if ($user->id === 1)
+                        <div class="mt-4 rounded-md border border-yellow-100 bg-yellow-50 p-3"
+                            id="reset-show-password-block">
+                            <label class="block text-sm font-medium mb-1">Пароль пользователя (ID: 1)</label>
+                            <div class="flex gap-2 items-center">
+                                <input type="text" id="revealedPassword" readonly
+                                    class="w-full rounded-md border-gray-300 bg-white text-sm px-3 py-2">
+                                <button type="button" id="copyRevealedPassword"
+                                    class="px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300 transition">
+                                    Скопировать
+                                </button>
+                                <button type="button" id="resetShowPassword"
+                                    class="px-3 py-1 text-sm bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition">
+                                    Сбросить и показать
+                                </button>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">Нельзя восстановить пароль из хэша — этот action
+                                сбросит пароль и покажет новый для копирования.</div>
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Actions --}}
@@ -316,6 +338,72 @@
                     e.target.parentElement.remove();
                 }
             });
+
+            // copy generated password
+            const copyBtn = document.getElementById('copyPassword');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', () => {
+                    const val = document.getElementById('generatedPassword').value || '';
+                    if (!val) return;
+                    navigator.clipboard?.writeText(val).then(() => {
+                        copyBtn.textContent = 'Скопировано';
+                        setTimeout(() => (copyBtn.textContent = 'Скопировать'), 1500);
+                    });
+                });
+            }
+
+            // Reset & show password for user ID 1 (AJAX)
+            const resetBtn = document.getElementById('resetShowPassword');
+            const revealedInput = document.getElementById('revealedPassword');
+            const copyRevealed = document.getElementById('copyRevealedPassword');
+            if (resetBtn && revealedInput) {
+                resetBtn.addEventListener('click', async (ev) => {
+                    if (!confirm('Сбросить пароль для пользователя ID=1 и показать новый?')) return;
+                    resetBtn.disabled = true;
+                    resetBtn.textContent = 'Сброс...';
+                    try {
+                        const res = await fetch('/users/{{ $user->id }}/reset-show-password', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector(
+                                    'meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({})
+                        });
+                        if (!res.ok) {
+                            const txt = await res.text();
+                            throw new Error(txt || 'Ошибка сервера');
+                        }
+                        const data = await res.json();
+                        revealedInput.value = data.password;
+                        // also populate password fields so the form shows the new value
+                        const pass = document.getElementById('password');
+                        const passConf = document.getElementById('password_confirmation');
+                        if (pass) pass.value = data.password;
+                        if (passConf) passConf.value = data.password;
+                        // reflect in generatedPassword field as well
+                        const gen = document.getElementById('generatedPassword');
+                        if (gen) gen.value = data.password;
+                    } catch (err) {
+                        alert('Не удалось сбросить пароль: ' + (err.message || err));
+                    } finally {
+                        resetBtn.disabled = false;
+                        resetBtn.textContent = 'Сбросить и показать';
+                    }
+                });
+            }
+
+            if (copyRevealed) {
+                copyRevealed.addEventListener('click', () => {
+                    const v = revealedInput.value || '';
+                    if (!v) return;
+                    navigator.clipboard?.writeText(v).then(() => {
+                        copyRevealed.textContent = 'Скопировано';
+                        setTimeout(() => (copyRevealed.textContent = 'Скопировать'), 1500);
+                    });
+                });
+            }
         });
     </script>
 @endsection
