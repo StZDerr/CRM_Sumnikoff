@@ -161,10 +161,13 @@
                     </span>
                 </div>
 
-                <div class="md:col-span-2">
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Комментарий</div>
-                    <div class="mt-1 font-medium text-gray-900 whitespace-pre-line">{{ $project->comment ?? '-' }}</div>
-                </div>
+                @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
+                    <div class="md:col-span-2">
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Комментарий</div>
+                        <div class="mt-1 font-medium text-gray-900 whitespace-pre-line">{{ $project->comment ?? '-' }}
+                        </div>
+                    </div>
+                @endif
             </div>
 
             {{-- Stages --}}

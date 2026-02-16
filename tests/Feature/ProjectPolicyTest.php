@@ -47,15 +47,17 @@ class ProjectPolicyTest extends TestCase
         $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
         $pm = User::factory()->create(['role' => User::ROLE_PROJECT_MANAGER]);
 
-        $project = Project::factory()->create();
+        $project = Project::factory()->create(['comment' => 'secret-comment']);
 
         $this->actingAs($admin)
             ->get(route('projects.show', $project))
-            ->assertStatus(200);
+            ->assertStatus(200)
+            ->assertSeeText('secret-comment');
 
         $this->actingAs($pm)
             ->get(route('projects.show', $project))
-            ->assertStatus(200);
+            ->assertStatus(200)
+            ->assertSeeText('secret-comment');
 
         // Admin can access edit
         $this->actingAs($admin)
@@ -66,5 +68,34 @@ class ProjectPolicyTest extends TestCase
         $this->actingAs($pm)
             ->get(route('projects.edit', $project))
             ->assertStatus(200);
+    }
+
+    public function test_project_comment_hidden_from_marketer_and_lawyer()
+    {
+        $pm = User::factory()->create(['role' => User::ROLE_PROJECT_MANAGER]);
+        $marketer = User::factory()->create(['role' => User::ROLE_MARKETER]);
+        $lawyer = User::factory()->create(['role' => User::ROLE_LAWYER]);
+
+        $project = Project::factory()->create(['marketer_id' => $marketer->id, 'comment' => 'secret-comment']);
+
+        // Marketer (owner) can view project but must NOT see admin-only comment
+        $this->actingAs($marketer)
+            ->get(route('projects.show', $project))
+            ->assertStatus(200)
+            ->assertDontSeeText('secret-comment');
+
+        // Create ProjectLawyer assignment for lawyer and ensure lawyer view also hides comment
+        $pl = \App\Models\ProjectLawyer::create([
+            'project_id' => $project->id,
+            'user_id' => $lawyer->id,
+            'sent_by' => $pm->id,
+            'sent_at' => now(),
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($lawyer)
+            ->get(route('lawyer.projects.project', $pl))
+            ->assertStatus(200)
+            ->assertDontSeeText('secret-comment');
     }
 }
