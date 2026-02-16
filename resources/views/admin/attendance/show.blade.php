@@ -245,36 +245,56 @@
                             <thead>
                                 <tr class="border-b text-left text-gray-500">
                                     <th class="pb-2">Проект</th>
-                                    <th class="pb-2 text-center">%</th>
-                                    <th class="pb-2 text-right">Макс. премия</th>
+                                    @if (auth()->user()->isAdmin())
+                                        <th class="pb-2 text-center">%</th>
+                                        <th class="pb-2 text-right">Макс. премия</th>
+                                    @endif
                                     <th class="pb-2 text-center">Дней</th>
-                                    <th class="pb-2 text-right">Премия</th>
+                                    @if (auth()->user()->isAdmin())
+                                        <th class="pb-2 text-right">Премия</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($report->projectBonuses as $bonus)
                                     <tr class="border-b border-gray-100">
                                         <td class="py-2">{{ $bonus->project->title ?? 'Проект удалён' }}</td>
-                                        <td class="py-2 text-center">{{ $bonus->bonus_percent }}%</td>
-                                        <td class="py-2 text-right text-gray-400">
-                                            {{ number_format($bonus->max_bonus, 0, '', ' ') }} ₽</td>
+
+                                        @if (auth()->user()->isAdmin())
+                                            <td class="py-2 text-center">{{ $bonus->bonus_percent }}%</td>
+                                            <td class="py-2 text-right text-gray-400">
+                                                {{ number_format($bonus->max_bonus, 0, '', ' ') }} ₽</td>
+                                        @endif
+
                                         <td
                                             class="py-2 text-center {{ $bonus->days_worked > 0 ? 'text-green-600 font-medium' : 'text-red-400' }}">
                                             {{ $bonus->days_worked == intval($bonus->days_worked) ? intval($bonus->days_worked) : number_format($bonus->days_worked, 1, ',', '') }}
                                         </td>
-                                        <td class="py-2 text-right font-medium">
-                                            {{ number_format($bonus->bonus_amount, 0, '', ' ') }} ₽</td>
+
+                                        @if (auth()->user()->isAdmin())
+                                            <td class="py-2 text-right font-medium">
+                                                {{ number_format($bonus->bonus_amount, 0, '', ' ') }} ₽</td>
+                                        @endif
                                     </tr>
                                 @endforeach
                             </tbody>
                             <tfoot>
                                 <tr class="border-t-2 border-gray-300 bg-gray-50">
-                                    <td colspan="4" class="py-2 font-medium text-right">
-                                        Итого премия:
-                                    </td>
-                                    <td class="py-2 text-right font-semibold text-indigo-600">
-                                        {{ number_format($report->projectBonuses->sum('bonus_amount'), 0, '', ' ') }} ₽
-                                    </td>
+                                    @if (auth()->user()->isAdmin())
+                                        <td colspan="4" class="py-2 font-medium text-right">
+                                            Итого премия:
+                                        </td>
+                                        <td class="py-2 text-right font-semibold text-indigo-600">
+                                            {{ number_format($report->projectBonuses->sum('bonus_amount'), 0, '', ' ') }} ₽
+                                        </td>
+                                    @else
+                                        <td class="py-2 font-medium text-right">
+                                            Итого премия:
+                                        </td>
+                                        <td class="py-2 text-right font-semibold text-indigo-600">
+                                            {{ number_format($report->projectBonuses->sum('bonus_amount'), 0, '', ' ') }} ₽
+                                        </td>
+                                    @endif
                                 </tr>
                             </tfoot>
                         </table>

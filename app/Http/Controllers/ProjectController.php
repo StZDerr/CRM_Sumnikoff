@@ -12,6 +12,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ProjectController extends Controller
@@ -44,8 +45,14 @@ class ProjectController extends Controller
         $importance = $request->query('importance');
         $contract_date = $request->query('contract_date'); // <- фильтр по дате
         $sort_due = $request->query('sort_due'); // сортировка по дню оплаты (asc|desc)
+        $payment_type = $request->query('payment_type'); // фильтр: paid|barter|own
 
         $balance_status = $request->query('balance_status');
+
+        // Для маркетологов — сортировка по дню оплаты по‑умолчанию (1 → 31), если не задана явно
+        if (empty($sort_due) && auth()->user()?->isMarketer()) {
+            $sort_due = 'asc';
+        }
 
         $query = Project::with(['organization', 'marketer', 'paymentMethod', 'stages', 'importance']);
 
@@ -82,6 +89,10 @@ class ProjectController extends Controller
             $query->whereDate('contract_date', $contract_date);
         }
 
+        if ($payment_type) {
+            $query->where('payment_type', $payment_type);
+        }
+
         if ($balance_status === 'debt') {
             // Долг: сумма счетов > суммы платежей (т.е. платежи - счета < 0)
             $query->whereRaw('(
@@ -114,7 +125,14 @@ class ProjectController extends Controller
 
         if (in_array($sort_due, ['asc', 'desc'])) {
             // Сортировка по дню оплаты (payment_due_day, иначе день из contract_date)
-            $orderExpr = 'COALESCE(payment_due_day, DAY(contract_date))';
+            // Используем выражение, совместимое с SQLite и MySQL
+            $driver = DB::getDriverName();
+            if ($driver === 'sqlite') {
+                $orderExpr = "COALESCE(payment_due_day, CAST(strftime('%d', contract_date) AS INTEGER))";
+            } else {
+                $orderExpr = 'COALESCE(payment_due_day, DAY(contract_date))';
+            }
+
             $dir = $sort_due === 'asc' ? 'ASC' : 'DESC';
             $projects = $query
                 ->orderByRaw("{$orderExpr} {$dir}")
@@ -139,7 +157,7 @@ class ProjectController extends Controller
         $importancesList = Importance::ordered()->get(['id', 'name', 'color']);
 
         return view('admin.projects.index', compact(
-            'projects', 'q', 'organizations', 'marketers', 'org', 'marketer', 'importances', 'importancesList', 'importance', 'contract_date', 'sort_due', 'balance_status'
+            'projects', 'q', 'organizations', 'marketers', 'org', 'marketer', 'importances', 'importancesList', 'importance', 'contract_date', 'sort_due', 'balance_status', 'payment_type'
         ));
     }
 

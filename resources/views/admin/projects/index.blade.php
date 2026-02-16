@@ -114,6 +114,17 @@
                                             </div>
                                         @endif
 
+                                        <div>
+                                            <label class="text-xs text-gray-500">Тип проекта</label>
+                                            <select name="payment_type"
+                                                class="w-full border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                                                <option value="">— все —</option>
+                                                <option value="paid" @selected((string) ($payment_type ?? '') === 'paid')>Коммерческие</option>
+                                                <option value="barter" @selected((string) ($payment_type ?? '') === 'barter')>Бартерные</option>
+                                                <option value="own" @selected((string) ($payment_type ?? '') === 'own')>Свои</option>
+                                            </select>
+                                        </div>
+
                                         @if (auth()->user()->isAdmin())
                                             <div>
                                                 <label class="text-xs text-gray-500">Статус баланса</label>
