@@ -437,18 +437,20 @@
                 <div class="mt-3 flex items-center gap-2">
                     <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded text-sm">Применить</button>
                     <a href="{{ route('operation.index') }}" class="px-4 py-2 border rounded text-sm">Сброс</a>
-
-                    <div class="ml-auto text-sm text-gray-700">
-                        <span class="font-semibold">Доход:</span> {{ number_format($sumIncome ?? 0, 2, '.', ' ') }} ₽
-                        &nbsp;•&nbsp;
-                        <span class="font-semibold">Расход:</span> {{ number_format($sumExpense ?? 0, 2, '.', ' ') }} ₽
-                        &nbsp;•&nbsp;
-                        <span class="font-semibold">Баланс:</span>
-                        {{ number_format(($sumIncome ?? 0) - ($sumExpense ?? 0), 2, '.', ' ') }} ₽
-                    </div>
                 </div>
             </form>
         </details>
+
+        <div class="mb-4 flex items-center">
+            <div class="ml-auto text-sm text-gray-700">
+                <span class="font-semibold">Доход:</span> {{ number_format($sumIncome ?? 0, 2, '.', ' ') }} ₽
+                &nbsp;•&nbsp;
+                <span class="font-semibold">Расход:</span> {{ number_format($sumExpense ?? 0, 2, '.', ' ') }} ₽
+                &nbsp;•&nbsp;
+                <span class="font-semibold">Баланс:</span>
+                {{ number_format(($sumIncome ?? 0) - ($sumExpense ?? 0), 2, '.', ' ') }} ₽
+            </div>
+        </div>
 
         <script>
             function setPreset(preset) {
