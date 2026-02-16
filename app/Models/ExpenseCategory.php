@@ -18,6 +18,7 @@ class ExpenseCategory extends Model
         'is_office',
         'is_salary',
         'is_domains_hosting',
+        'exclude_from_totals',
     ];
 
     /** Приведения типов */
@@ -26,6 +27,7 @@ class ExpenseCategory extends Model
         'is_office' => 'boolean',
         'is_salary' => 'boolean',
         'is_domains_hosting' => 'boolean',
+        'exclude_from_totals' => 'boolean',
     ];
 
     /** Значения по умолчанию */
@@ -34,6 +36,7 @@ class ExpenseCategory extends Model
         'is_office' => false,
         'is_salary' => false,
         'is_domains_hosting' => false,
+        'exclude_from_totals' => false,
     ];
 
     /** При создании устанавливаем sort_order = max + 1 (если не указан) */

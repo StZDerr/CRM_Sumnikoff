@@ -44,6 +44,14 @@
             class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
         <label for="is_domains_hosting" class="text-sm text-gray-700">Отнести к расходам на домены и хостинг</label>
     </div>
+
+    <div class="flex items-center gap-2">
+        <input type="hidden" name="exclude_from_totals" value="0">
+        <input type="checkbox" name="exclude_from_totals" id="exclude_from_totals" value="1"
+            {{ old('exclude_from_totals', $expenseCategory->exclude_from_totals ?? false) ? 'checked' : '' }}
+            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+        <label for="exclude_from_totals" class="text-sm text-gray-700">Исключать из общей суммы на дашборде</label>
+    </div>
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', () => {

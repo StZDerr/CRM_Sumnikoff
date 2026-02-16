@@ -69,6 +69,7 @@ class DashboardController extends Controller
                         ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
                         ->orWhere('expense_categories.is_domains_hosting', true);
                 })
+                ->where('expense_categories.exclude_from_totals', false)
                 ->groupBy('ym')->orderBy('ym')->get()->pluck('total', 'ym')->toArray();
 
             // Build per-month arrays
@@ -121,6 +122,7 @@ class DashboardController extends Controller
                         ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
                         ->orWhere('expense_categories.is_domains_hosting', true);
                 })
+                ->where('expense_categories.exclude_from_totals', false)
                 ->whereRaw('DATE(COALESCE(expense_date, expenses.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
                 ->groupBy('day')->orderBy('day')->get()->pluck('total', 'day')->toArray();
 

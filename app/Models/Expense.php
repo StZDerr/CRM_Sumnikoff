@@ -68,6 +68,16 @@ class Expense extends Model
         });
     }
 
+    /**
+     * Scope: расходы, которые участвуют в сводных отчётах (dashboard totals)
+     */
+    public function scopeReportable($query)
+    {
+        return $query->whereHas('category', function ($q) {
+            $q->where('exclude_from_totals', false);
+        });
+    }
+
     public function organization(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Organization::class);

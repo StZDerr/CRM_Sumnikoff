@@ -34,6 +34,7 @@ class ExpenseCategoryController extends Controller
             'is_office' => 'nullable|boolean',
             'is_salary' => 'nullable|boolean',
             'is_domains_hosting' => 'nullable|boolean',
+            'exclude_from_totals' => 'nullable|boolean',
         ]);
 
         if (empty($data['slug'])) {
@@ -65,6 +66,7 @@ class ExpenseCategoryController extends Controller
             'is_office' => 'nullable|boolean',
             'is_salary' => 'nullable|boolean',
             'is_domains_hosting' => 'nullable|boolean',
+            'exclude_from_totals' => 'nullable|boolean',
         ]);
 
         if (empty($data['slug'])) {
