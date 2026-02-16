@@ -55,8 +55,8 @@
                         </thead>
                         <tbody class="text-gray-800">
                             @foreach ($domains as $domain)
-                                <tr class="border-b last:border-b-0">
-                                    <td class="py-2 pr-4 font-medium">
+                                <tr class="border-b last:border-b-0 {{ $domain->project ? '' : 'bg-red-50' }}">
+                                    <td class="py-2 pr-4 font-medium {{ $domain->project ? '' : 'text-red-600' }}">
                                         {{ $domain->name ?? '—' }}
                                     </td>
                                     <td class="py-2 pr-4">
@@ -80,7 +80,7 @@
                                         @endphp
                                         {{ $domain->renew_price !== null ? number_format((float) $domain->renew_price, 0, '.', ' ') . ' ' . $currencySymbol : '—' }}
                                     </td>
-                                    <td class="py-2 pr-4">
+                                    <td class="py-2 pr-4 {{ $domain->project ? '' : 'text-red-600' }}">
                                         {{ $domain->project?->title ?? '—' }}
                                     </td>
                                     <td class="py-2 pr-4">
