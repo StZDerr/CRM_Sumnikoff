@@ -86,4 +86,13 @@ class AccountCredential extends Model
     {
         return $query->where('type', $type);
     }
+
+    /**
+     * Логи доступа (просмотры/копирования/раскрытия пароля)
+     */
+    public function logs()
+    {
+        return $this->hasMany(\App\Models\AccountCredentialLog::class);
+    }
 }
+

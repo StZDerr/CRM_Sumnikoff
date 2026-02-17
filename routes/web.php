@@ -176,6 +176,10 @@ Route::middleware('auth')->group(function () {
     Route::get('account-credentials/{accountCredential}', [AccountCredentialController::class, 'show'])
         ->name('account-credentials.show');
 
+    // Запись действий с доступом (просмотр/раскрытие/копирование)
+    Route::post('account-credentials/{accountCredential}/access-log', [AccountCredentialController::class, 'accessLog'])
+        ->name('account-credentials.accessLog');
+
     Route::get('account-credentials/{accountCredential}/edit', [AccountCredentialController::class, 'edit'])
         ->name('account-credentials.edit');
     Route::put('account-credentials/{accountCredential}', [AccountCredentialController::class, 'update'])

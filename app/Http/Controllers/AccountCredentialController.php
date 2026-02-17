@@ -207,7 +207,47 @@ class AccountCredentialController extends Controller
 
     public function show(AccountCredential $accountCredential)
     {
+        // Логируем факт просмотра (пользователь увидел пароль на странице show)
+        try {
+            $accountCredential->logs()->create([
+                'user_id' => auth()->id(),
+                'action' => 'view',
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            // не ломаем отображение страницы при ошибке логирования
+            \Log::warning('AccountCredential::show - failed to write access log', ['id' => $accountCredential->id, 'error' => $e->getMessage()]);
+        }
+
+        $accountCredential->load(['logs.user']);
+
         return view('admin.account_credentials.show', compact('accountCredential'));
+    }
+
+    /**
+     * Записать действие с доступом (AJAX)
+     */
+    public function accessLog(AccountCredential $accountCredential, Request $request)
+    {
+        $request->validate([
+            'action' => 'required|string|in:view,reveal,copy_login,copy_password',
+        ]);
+
+        try {
+            $accountCredential->logs()->create([
+                'user_id' => auth()->id(),
+                'action' => $request->action,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'context' => $request->input('context', null),
+            ]);
+        } catch (\Exception $e) {
+            \Log::warning('AccountCredential::accessLog - failed to write access log', ['id' => $accountCredential->id, 'action' => $request->action, 'error' => $e->getMessage()]);
+            return response()->json(['ok' => false], 500);
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     public function edit(AccountCredential $accountCredential)

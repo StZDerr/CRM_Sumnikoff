@@ -60,6 +60,37 @@
                 </div>
             @endif
 
+            {{-- Журнал доступа --}}
+            <div>
+                <span class="block text-gray-500 text-sm mb-1">Журнал доступа (последние записи)</span>
+                <div class="bg-white border border-gray-200 rounded p-3 text-sm text-gray-800">
+                    @if ($accountCredential->logs && $accountCredential->logs->count())
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr>
+                                    <th class="pb-2">Пользователь</th>
+                                    <th class="pb-2">Действие</th>
+                                    <th class="pb-2">IP</th>
+                                    <th class="pb-2">Время</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($accountCredential->logs->sortByDesc('created_at')->take(10) as $log)
+                                    <tr class="border-t">
+                                        <td class="py-2">{{ $log->user->name ?? ($log->user->login ?? '—') }}</td>
+                                        <td class="py-2">{{ $log->action }}</td>
+                                        <td class="py-2">{{ $log->ip ?? '—' }}</td>
+                                        <td class="py-2">{{ $log->created_at->format('Y-m-d H:i') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @else
+                        <div class="text-gray-500">Записей нет</div>
+                    @endif
+                </div>
+            </div>
+
             {{-- Кнопки --}}
             <div class="flex space-x-2 mt-4">
                 <a href="{{ route('account-credentials.index', ['project' => $accountCredential->project_id]) }}"
