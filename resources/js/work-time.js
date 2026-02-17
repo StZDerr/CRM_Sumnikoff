@@ -163,6 +163,15 @@
             statusEl.className = "mt-1 text-sm font-semibold text-white/80";
         }
 
+        document.dispatchEvent(
+            new CustomEvent("work-time:state-changed", {
+                detail: {
+                    mode,
+                    hasWorkDay: Boolean(state?.work_day),
+                },
+            }),
+        );
+
         setButtonVisibility(mode, Boolean(state?.work_day));
 
         endAtInput.value = state?.work_day?.suggested_end_at || "";

@@ -361,7 +361,7 @@
             </button>
 
             <button id="user-avatar-btn" type="button" title="Профиль"
-                class="w-1/3 flex items-center justify-center p-2 hover:bg-white/10 rounded">
+                class="w-1/3 flex items-center justify-center p-2 hover:bg-white/10 rounded ring-2 ring-red-500 ring-offset-1 ring-offset-gray-900 transition">
                 @if (Auth::user()->avatar)
                     <img src="{{ asset('storage/' . Auth::user()->avatar) }}" alt="{{ Auth::user()->name }}"
                         class="h-8 w-8 rounded-full object-cover" />
@@ -458,6 +458,28 @@
                     const popup = document.getElementById('user-popup');
                     if (!btn || !popup) return;
 
+                    function applyAvatarState(mode, hasWorkDay) {
+                        btn.classList.remove('ring-red-500', 'ring-emerald-500', 'ring-yellow-400');
+
+                        if (mode === 'paused') {
+                            btn.classList.add('ring-yellow-400');
+                            return;
+                        }
+
+                        if (mode === 'working' || hasWorkDay) {
+                            btn.classList.add('ring-emerald-500');
+                            return;
+                        }
+
+                        btn.classList.add('ring-red-500');
+                    }
+
+                    document.addEventListener('work-time:state-changed', function(e) {
+                        const mode = e?.detail?.mode || 'idle';
+                        const hasWorkDay = Boolean(e?.detail?.hasWorkDay);
+                        applyAvatarState(mode, hasWorkDay);
+                    });
+
                     function placePopup() {
                         const gap = 12;
                         const pad = 12;
@@ -511,6 +533,8 @@
                             placePopup();
                         }
                     }, true);
+
+                    applyAvatarState('idle', false);
                 })();
             </script>
 
