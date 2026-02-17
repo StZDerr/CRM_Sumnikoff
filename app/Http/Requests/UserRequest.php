@@ -73,6 +73,12 @@ class UserRequest extends FormRequest
             ],
             'individual_bonus_percent' => 'nullable|integer|min:0|max:100',
             'forecast_amount' => 'nullable|numeric|min:0',
+            // Новые поля
+            'position' => ['nullable', 'string', 'max:255'],
+            'work_type' => ['nullable', 'string', 'max:255'],
+            'avatar' => ['nullable', 'image', 'max:2048'], // max 2MB
+            'remove_avatar' => ['nullable', 'boolean'],
+
             'socials' => ['nullable', 'array'],
             'socials.*.platform' => ['nullable', Rule::in(['vk', 'telegram', 'maks'])],
             'socials.*.url' => ['nullable', 'string', 'max:255'],

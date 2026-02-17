@@ -44,7 +44,10 @@ class User extends Authenticatable
         'salary_override',
         'is_department_head',
         'forecast_amount',
-        'individual_bonus_percent', // новое поле
+        'individual_bonus_percent',
+        'position', // Должность
+        'work_type', // Вид работы
+        'avatar', // Аватар
     ];
 
     protected $hidden = [
@@ -64,6 +67,9 @@ class User extends Authenticatable
             'individual_bonus_percent' => 'integer', // новое поле
             'forecast_amount' => 'decimal:2',
             'birth_date' => 'date',
+            'position' => 'string', // Должность
+            'work_type' => 'string', // Вид работы
+            'avatar' => 'string', // Аватар
         ];
     }
 

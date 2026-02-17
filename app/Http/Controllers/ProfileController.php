@@ -7,6 +7,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -27,6 +29,47 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $data = $request->validated();
+
+        // Avatar handling: upload new or remove existing
+        $user = $request->user();
+
+        // handle avatar upload (validate + create dir)
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+
+            Log::info('ProfileController: avatar upload detected', ['user_id' => $user->id, 'error' => $file->getError()]);
+
+            if (! $file->isValid()) {
+                Log::warning('ProfileController: uploaded avatar is invalid', ['user_id' => $user->id, 'error' => $file->getError()]);
+                return Redirect::back()->withErrors(['avatar' => 'Ошибка загрузки файла. Попробуйте другой файл.']);
+            }
+
+            // ensure directory exists
+            if (! Storage::disk('public')->exists('avatars')) {
+                Storage::disk('public')->makeDirectory('avatars');
+            }
+
+            $path = $file->store('avatars', 'public');
+
+            if (! $path) {
+                Log::error('ProfileController: failed to store avatar', ['user_id' => $user->id]);
+                return Redirect::back()->withErrors(['avatar' => 'Не удалось сохранить файл.']);
+            }
+
+            // delete previous avatar after successful store
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $data['avatar'] = $path;
+        }
+
+        if (! empty($data['remove_avatar'])) {
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $data['avatar'] = null;
+        }
 
         $request->user()->fill($data);
 

@@ -30,7 +30,8 @@
 
         {{-- Card --}}
         <div class="bg-white rounded-xl shadow-sm border">
-            <form action="{{ route('users.update', $user) }}" method="POST" class="p-6 space-y-6">
+            <form action="{{ route('users.update', $user) }}" method="POST" enctype="multipart/form-data"
+                class="p-6 space-y-6">
                 @csrf
                 @method('PUT')
 
@@ -105,6 +106,45 @@
                                 value="{{ old('birth_date', $user->birth_date ? $user->birth_date->format('Y-m-d') : '') }}"
                                 class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Должность</label>
+                            <input type="text" name="position" value="{{ old('position', $user->position) }}"
+                                placeholder="Например: Старший маркетолог"
+                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Вид работы</label>
+                            <input type="text" name="work_type" value="{{ old('work_type', $user->work_type) }}"
+                                placeholder="Офис / Удалённо / Гибрид"
+                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Аватар (изображение)</label>
+
+                            @if ($user->avatar)
+                                <div class="mb-2">
+                                    <img src="{{ asset('storage/' . $user->avatar) }}" alt="Аватар"
+                                        class="h-20 w-20 rounded-full object-cover border" />
+                                </div>
+                            @endif
+
+                            <input type="file" name="avatar" accept="image/*"
+                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+
+                            @if ($user->avatar)
+                                <label class="mt-2 inline-flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="remove_avatar" value="1"
+                                        class="rounded border-gray-300 text-red-600">
+                                    <span class="text-sm text-gray-600">Удалить текущий аватар</span>
+                                </label>
+                            @endif
+
+                            <div class="text-xs text-gray-500 mt-1">Файл будет сохранён в папке
+                                <code>storage/app/public/avatars</code>.</div>
+                        </div>
                     </div>
                 </div>
 
@@ -168,7 +208,8 @@
                         <div class="mt-4">
                             <label class="block text-sm font-medium mb-1">Прогноз ФОТ (руб)</label>
                             <input type="number" name="forecast_amount"
-                                value="{{ old('forecast_amount', $user->forecast_amount) }}" min="0" step="100"
+                                value="{{ old('forecast_amount', $user->forecast_amount) }}" min="0"
+                                step="100"
                                 class="w-48 rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                             <div class="text-xs text-gray-500 mt-1">При заполнении значение будет использовано в отчёте
                                 прогнозного ФОТ вместо авт. расчёта.</div>

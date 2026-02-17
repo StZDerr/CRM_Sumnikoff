@@ -11,48 +11,7 @@
 
     <!-- Links -->
     <nav class="flex-1 px-2 py-4 overflow-y-auto space-y-1">
-        <div id="work-time-widget" class="mx-1 mb-3 rounded-lg border border-white/10 bg-white/5 p-3"
-            data-state-url="{{ route('work-time.state') }}" data-start-day-url="{{ route('work-time.start-day') }}"
-            data-start-break-url="{{ route('work-time.start-break') }}"
-            data-end-break-url="{{ route('work-time.end-break') }}"
-            data-save-report-url="{{ route('work-time.save-report') }}"
-            data-end-day-url="{{ route('work-time.end-day') }}" data-edit-day-url="{{ url('work-time/work-days') }}"
-            data-add-break-url="{{ url('work-time/work-days') }}" data-update-break-url="{{ url('work-time/breaks') }}"
-            data-delete-break-url="{{ url('work-time/breaks') }}">
-            <div class="text-xs text-white/70">Рабочий день</div>
-            <div id="wt-status" class="mt-1 text-sm font-semibold text-emerald-300">Не начат</div>
-
-            <div class="mt-2 text-xs text-white/80">Работа: <span id="wt-work-time" class="font-mono">00:00:00</span>
-            </div>
-            <div class="text-xs text-white/80">Пауза: <span id="wt-break-time" class="font-mono">00:00:00</span></div>
-
-            <div class="mt-3 flex flex-wrap gap-2">
-                <button id="wt-btn-start" type="button"
-                    class="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">
-                    Начать рабочий день
-                </button>
-
-                <button id="wt-btn-pause" type="button"
-                    class="hidden rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400">
-                    Поставить на паузу
-                </button>
-
-                <button id="wt-btn-resume" type="button"
-                    class="hidden rounded bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500">
-                    Снять паузу
-                </button>
-
-                <button id="wt-btn-end" type="button"
-                    class="hidden rounded bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-500">
-                    Закончить рабочий день
-                </button>
-
-                <button id="wt-btn-edit" type="button"
-                    class="hidden rounded border border-white/20 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/10">
-                    Редактировать
-                </button>
-            </div>
-        </div>
+        {{-- work-time widget moved to compact user popup (avatar) --}}
         {{-- Dashboard --}}
         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
             Dashboard
@@ -389,7 +348,7 @@
 
 
     <!-- Account / actions at bottom -->
-    <div class="px-4 py-3 border-t border-white/10">
+    <div class="px-4 py-3 border-t border-white/10 relative">
         <div class="font-medium truncate">{{ Auth::user()->name }}</div>
         <div class="mt-3 flex">
             <button title="Уведомления" class="w-1/3 flex items-center justify-center p-2 hover:bg-white/10 rounded">
@@ -401,15 +360,159 @@
                 </svg>
             </button>
 
-            <a href="{{ route('profile.edit') }}" title="Профиль"
+            <button id="user-avatar-btn" type="button" title="Профиль"
                 class="w-1/3 flex items-center justify-center p-2 hover:bg-white/10 rounded">
-                <!-- User Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                    class="bi bi-person" viewBox="0 0 16 16">
-                    <path
-                        d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4Zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10Z" />
-                </svg>
-            </a>
+                @if (Auth::user()->avatar)
+                    <img src="{{ asset('storage/' . Auth::user()->avatar) }}" alt="{{ Auth::user()->name }}"
+                        class="h-8 w-8 rounded-full object-cover" />
+                @else
+                    <div
+                        class="h-8 w-8 rounded-full bg-slate-600 flex items-center justify-center text-sm font-semibold text-white">
+                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>
+                @endif
+            </button>
+
+            <!-- Compact user popup (opens on avatar click) -->
+            <div id="user-popup" class="fixed z-[900] hidden w-72 rounded-xl bg-white p-4 text-gray-900 shadow-lg"
+                style="box-shadow: 0px 0px 10px 4px rgba(0, 0, 0, 0.25);">
+                <div class="flex items-center gap-3">
+                    @if (Auth::user()->avatar)
+                        <img src="{{ asset('storage/' . Auth::user()->avatar) }}" alt="{{ Auth::user()->name }}"
+                            class="h-14 w-14 rounded-full object-cover" />
+                    @else
+                        <div
+                            class="h-14 w-14 rounded-full bg-slate-600 flex items-center justify-center text-xl font-semibold text-white">
+                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>
+                    @endif
+                    <div>
+                        <div class="font-semibold">{{ Auth::user()->name }}</div>
+                        <div class="text-sm text-gray-500">{{ Auth::user()->position ?? '—' }}</div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <!-- moved (compact) work-time widget -->
+                    <div id="work-time-widget" class="w-full rounded-lg border border-gray-200 bg-gray-50 p-3"
+                        data-state-url="{{ route('work-time.state') }}"
+                        data-start-day-url="{{ route('work-time.start-day') }}"
+                        data-start-break-url="{{ route('work-time.start-break') }}"
+                        data-end-break-url="{{ route('work-time.end-break') }}"
+                        data-save-report-url="{{ route('work-time.save-report') }}"
+                        data-end-day-url="{{ route('work-time.end-day') }}"
+                        data-edit-day-url="{{ url('work-time/work-days') }}"
+                        data-add-break-url="{{ url('work-time/work-days') }}"
+                        data-update-break-url="{{ url('work-time/breaks') }}"
+                        data-delete-break-url="{{ url('work-time/breaks') }}">
+                        <div class="text-xs text-gray-500">Рабочий день</div>
+                        <div id="wt-status" class="mt-1 text-sm font-semibold text-emerald-600">Не начат</div>
+
+                        <div class="mt-2 text-xs text-gray-600">Работа: <span id="wt-work-time"
+                                class="font-mono">00:00:00</span>
+                        </div>
+                        <div class="text-xs text-gray-600">Пауза: <span id="wt-break-time"
+                                class="font-mono">00:00:00</span></div>
+
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button id="wt-btn-start" type="button"
+                                class="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">
+                                Начать рабочий день
+                            </button>
+
+                            <button id="wt-btn-pause" type="button"
+                                class="hidden rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400">
+                                Поставить на паузу
+                            </button>
+
+                            <button id="wt-btn-resume" type="button"
+                                class="hidden rounded bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500">
+                                Снять паузу
+                            </button>
+
+                            <button id="wt-btn-end" type="button"
+                                class="hidden rounded bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-500">
+                                Закончить рабочий день
+                            </button>
+
+                            <button id="wt-btn-edit" type="button"
+                                class="hidden rounded border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                                Редактировать
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 flex gap-2">
+                    <a href="{{ route('profile.edit') }}"
+                        class="flex-1 rounded border border-gray-200 px-3 py-1.5 text-sm text-center hover:bg-gray-50">Профиль</a>
+                    <form method="POST" action="{{ route('logout') }}" class="flex-1">
+                        @csrf
+                        <button type="submit"
+                            class="w-full rounded bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-rose-500">Выйти</button>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+                (function() {
+                    const btn = document.getElementById('user-avatar-btn');
+                    const popup = document.getElementById('user-popup');
+                    if (!btn || !popup) return;
+
+                    function placePopup() {
+                        const gap = 12;
+                        const pad = 12;
+                        const btnRect = btn.getBoundingClientRect();
+                        const popupWidth = popup.offsetWidth || 288;
+                        const popupHeight = popup.offsetHeight || 420;
+
+                        let left = btnRect.right + gap;
+                        if (left + popupWidth > window.innerWidth - pad) {
+                            left = Math.max(pad, btnRect.left - popupWidth - gap);
+                        }
+
+                        let top = btnRect.bottom - popupHeight;
+                        if (top < pad) {
+                            top = pad;
+                        }
+
+                        if (top + popupHeight > window.innerHeight - pad) {
+                            top = Math.max(pad, window.innerHeight - popupHeight - pad);
+                        }
+
+                        popup.style.left = `${left}px`;
+                        popup.style.top = `${top}px`;
+                    }
+
+                    document.addEventListener('click', function(e) {
+                        if (btn.contains(e.target)) {
+                            popup.classList.toggle('hidden');
+                            if (!popup.classList.contains('hidden')) {
+                                placePopup();
+                            }
+                            return;
+                        }
+                        if (!popup.contains(e.target)) {
+                            popup.classList.add('hidden');
+                        }
+                    });
+
+                    document.addEventListener('keydown', function(e) {
+                        if (e.key === 'Escape') popup.classList.add('hidden');
+                    });
+
+                    window.addEventListener('resize', function() {
+                        if (!popup.classList.contains('hidden')) {
+                            placePopup();
+                        }
+                    });
+
+                    window.addEventListener('scroll', function() {
+                        if (!popup.classList.contains('hidden')) {
+                            placePopup();
+                        }
+                    }, true);
+                })();
+            </script>
 
             <form method="POST" action="{{ route('logout') }}" class="w-1/3">
                 @csrf

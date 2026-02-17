@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -83,6 +84,11 @@ class UserController extends Controller
         $data = $request->validated();
 
         $data['password'] = Hash::make($data['password']);
+
+        // Avatar upload
+        if ($request->hasFile('avatar')) {
+            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
 
         // если не начальник — обнуляем индивидуальный оклад
         if (empty($data['is_department_head'])) {
@@ -161,6 +167,23 @@ class UserController extends Controller
             unset($data['password']);
         } else {
             $data['password'] = Hash::make($data['password']);
+        }
+
+        // Если загружен новый аватар — сохраним и удалим старый
+        if ($request->hasFile('avatar')) {
+            // удалим старый файл, если есть
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        // Возможность удалить текущий аватар через чекбокс
+        if (! empty($data['remove_avatar'])) {
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $data['avatar'] = null;
         }
 
         // Если не начальник — обнуляем индивидуальный оклад

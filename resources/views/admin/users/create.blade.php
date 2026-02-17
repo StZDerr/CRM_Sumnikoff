@@ -30,7 +30,7 @@
 
         {{-- Card --}}
         <div class="bg-white rounded-xl shadow-sm border">
-            <form action="{{ route('users.store') }}" method="POST" class="p-6 space-y-6">
+            <form action="{{ route('users.store') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
                 @csrf
 
                 {{-- Основные данные --}}
@@ -106,6 +106,28 @@
                             <label class="block text-sm font-medium mb-1">Дата рождения</label>
                             <input type="date" name="birth_date" value="{{ old('birth_date') }}"
                                 class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Должность</label>
+                            <input type="text" name="position" value="{{ old('position') }}"
+                                placeholder="Например: Старший маркетолог"
+                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Вид работы</label>
+                            <input type="text" name="work_type" value="{{ old('work_type') }}"
+                                placeholder="Офис / Удалённо / Гибрид"
+                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Аватар (изображение)</label>
+                            <input type="file" name="avatar" accept="image/*"
+                                class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            <div class="text-xs text-gray-500 mt-1">Файл будет сохранён в папке
+                                <code>storage/app/public/avatars</code>.</div>
                         </div>
                     </div>
                 </div>
