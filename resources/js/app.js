@@ -96,4 +96,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Инициализация Tom Select при загрузке страницы
     window.initTomSelect(document);
+
+    // --- Unread notifications badge polling (AJAX) ---
+    function initUnreadBadgePolling() {
+        const badge = document.getElementById("unread-notifications-badge");
+        if (!badge) return;
+
+        const fetchCount = () => {
+            window.axios
+                .get("/notifications/unread-count")
+                .then((resp) => {
+                    const n = resp?.data?.unread || 0;
+                    if (n > 0) {
+                        badge.textContent = n > 99 ? "99+" : String(n);
+                        badge.classList.remove("hidden");
+                    } else {
+                        badge.classList.add("hidden");
+                    }
+                })
+                .catch(() => {
+                    // silently ignore
+                });
+        };
+
+        // initial
+        fetchCount();
+        // poll every 10s
+        setInterval(fetchCount, 10000);
+
+        // allow manual refresh via custom event
+        document.addEventListener("notifications:changed", fetchCount);
+    }
+
+    initUnreadBadgePolling();
 });

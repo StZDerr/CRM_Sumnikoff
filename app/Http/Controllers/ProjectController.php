@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\ProjectMarketerHistory;
 use App\Models\Stage;
 use App\Models\User;
+use App\Services\ProjectNotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -265,6 +266,11 @@ class ProjectController extends Controller
 
         $project = Project::create($data);
 
+        app(ProjectNotificationService::class)->notifyProjectCreated(
+            $project,
+            auth()->id()
+        );
+
         // Синхронизируем этапы с порядком (если передали)
         if (! empty($data['stages'])) {
             $sync = [];
@@ -334,6 +340,9 @@ class ProjectController extends Controller
             'status' => 'nullable|string|in:in_progress,paused,stopped',
         ]);
 
+        $originalValues = $project->only(array_keys($data));
+        $oldMarketerId = $project->marketer_id;
+
         if (
             ($data['status'] == Project::STATUS_STOPPED || $data['status'] == Project::STATUS_PAUSED) &&
             empty($data['closed_at'])
@@ -341,7 +350,9 @@ class ProjectController extends Controller
             $data['closed_at'] = Carbon::now();
         }
         $data['updated_by'] = auth()->id();
-        // dd($data);
+
+        $notificationChanges = app(ProjectNotificationService::class)->formatTrackedChanges($originalValues, $data);
+
         $project->update($data);
 
         // Синхронизируем этапы (с порядком)
@@ -352,6 +363,20 @@ class ProjectController extends Controller
             }
             $project->stages()->sync($sync);
         }
+
+        $notificationService = app(ProjectNotificationService::class);
+        $notificationService->notifyMarketerChanged(
+            $project,
+            $oldMarketerId,
+            $project->marketer_id,
+            auth()->id()
+        );
+
+        $notificationService->notifyProjectUpdated(
+            $project,
+            $notificationChanges,
+            auth()->id()
+        );
 
         // Если изменилось contract_amount/contract_date/closed_at — пересчитать для проекта
         // if (array_key_exists('contract_amount', $data) || array_key_exists('contract_date', $data) || array_key_exists('closed_at', $data)) {

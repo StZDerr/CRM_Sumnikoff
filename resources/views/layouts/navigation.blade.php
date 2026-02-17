@@ -388,14 +388,21 @@
     <div class="px-4 py-3 border-t border-white/10 relative">
         <div class="font-medium truncate">{{ Auth::user()->name }}</div>
         <div class="mt-3 flex">
-            <button title="Уведомления" class="w-1/3 flex items-center justify-center p-2 hover:bg-white/10 rounded">
+            @php $unreadCount = auth()->user()->notifications()->whereNull('read_at')->count(); @endphp
+
+            <a href="{{ route('notifications.index') }}" title="Уведомления"
+                class="w-1/3 relative flex items-center justify-center p-2 hover:bg-white/10 rounded">
+
+                <span id="unread-notifications-badge"
+                    class="absolute -top-2 -left-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold leading-none text-white bg-rose-600 rounded-full shadow-sm {{ $unreadCount > 0 ? '' : 'hidden' }}">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>
+
                 <!-- Bell Icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118.6 14.6V11a6 6 0 10-12 0v3.6c0 .538-.214 1.055-.595 1.405L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-            </button>
+            </a>
 
             <button id="user-avatar-btn" type="button" title="Профиль"
                 class="w-1/3 flex items-center justify-center p-2 hover:bg-white/10 rounded ring-2 ring-red-500 ring-offset-1 ring-offset-gray-900 transition">

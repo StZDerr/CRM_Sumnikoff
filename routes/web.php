@@ -15,6 +15,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceStatusController;
 use App\Http\Controllers\LinkCardController;
 use App\Http\Controllers\MonthlyExpenseController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PaymentCategoryController;
@@ -304,6 +305,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('operation', [OperationController::class, 'index'])
         ->name('operation.index');
+
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::delete('notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
     // Получить счета проекта в JSON
     Route::get('projects/{project}/invoices', [InvoiceController::class, 'invoicesByProject'])

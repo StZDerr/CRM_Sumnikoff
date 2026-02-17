@@ -267,6 +267,11 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\ProjectMarketerHistory::class, 'user_id');
     }
 
+    public function notifications()
+    {
+        return $this->hasMany(UserNotification::class, 'user_id')->latest();
+    }
+
     /**
      * Сколько дней пользователь работал над проектами за период
      */
