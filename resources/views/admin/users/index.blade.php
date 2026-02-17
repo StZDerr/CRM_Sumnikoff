@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="max-w-7xl mx-auto">
+    <div class="max-w-8xl mx-auto">
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-semibold">Пользователи</h1>
             <div class="flex items-center gap-2">
@@ -67,9 +67,9 @@
 
                                 <td class="p-3">
                                     @php $__state = $workStates[$user->id] ?? 'idle'; @endphp
-                                    <div data-user-id="{{ $user->id }}"
-                                        class="js-user-state {{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center"
-                                        title="{{ $__state }}">
+                                    <div class="js-work-state-ring {{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center"
+                                        title="{{ $__state }}" data-user-id="{{ $user->id }}"
+                                        data-state="{{ $__state }}">
                                         @if ($user->avatar)
                                             <img src="{{ asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}"
                                                 class="w-8 h-8 rounded-full object-cover">
@@ -127,9 +127,9 @@
 
                                         <td class="p-3">
                                             @php $__state = $workStates[$user->id] ?? 'idle'; @endphp
-                                            <div data-user-id="{{ $user->id }}"
-                                                class="js-user-state {{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center"
-                                                title="{{ $__state }}">
+                                            <div class="js-work-state-ring {{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center"
+                                                title="{{ $__state }}" data-user-id="{{ $user->id }}"
+                                                data-state="{{ $__state }}">
                                                 @if ($user->avatar)
                                                     <img src="{{ asset('storage/' . $user->avatar) }}"
                                                         alt="{{ $user->name }}"
@@ -225,9 +225,9 @@
 
                                     <td class="p-3">
                                         @php $__state = $workStates[$user->id] ?? 'idle'; @endphp
-                                        <div data-user-id="{{ $user->id }}"
-                                            class="js-user-state {{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center"
-                                            title="{{ $__state }}">
+                                        <div class="js-work-state-ring {{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center"
+                                            title="{{ $__state }}" data-user-id="{{ $user->id }}"
+                                            data-state="{{ $__state }}">
                                             @if ($user->avatar)
                                                 <img src="{{ asset('storage/' . $user->avatar) }}"
                                                     alt="{{ $user->name }}" class="w-8 h-8 rounded-full object-cover">
@@ -390,6 +390,56 @@
             const cancelBtn = document.getElementById('vacation-cancel');
             const form = document.getElementById('vacation-form');
 
+            const stateColorByMode = {
+                working: 'ring-green-500',
+                paused: 'ring-yellow-400',
+                idle: 'ring-red-500',
+                open: 'ring-red-500',
+            };
+
+            function applyWorkState(userId, mode) {
+                const color = stateColorByMode[mode] || stateColorByMode.idle;
+                document.querySelectorAll(`.js-work-state-ring[data-user-id="${userId}"]`).forEach((node) => {
+                    node.classList.remove('ring-green-500', 'ring-yellow-400', 'ring-red-500');
+                    node.classList.add(color);
+                    node.dataset.state = mode;
+                    node.title = mode;
+                });
+            }
+
+            async function refreshWorkStates() {
+                const nodes = Array.from(document.querySelectorAll('.js-work-state-ring[data-user-id]'));
+                if (!nodes.length) return;
+
+                const ids = [...new Set(nodes.map((n) => n.dataset.userId).filter(Boolean))];
+                if (!ids.length) return;
+
+                const url = new URL('{{ route('users.workStates') }}', window.location.origin);
+                ids.forEach((id) => url.searchParams.append('ids[]', id));
+
+                try {
+                    const response = await fetch(url.toString(), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (!response.ok) return;
+
+                    const payload = await response.json();
+                    const states = payload?.states || {};
+
+                    Object.entries(states).forEach(([id, mode]) => {
+                        applyWorkState(id, mode);
+                    });
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
+            refreshWorkStates();
+            setInterval(refreshWorkStates, 15000);
+
             function loadUserVacations(userId) {
                 const container = document.getElementById('vacation-user-vacations');
                 if (!container) return;
@@ -486,52 +536,6 @@
                     alert('Ошибка при сохранении отпуска.');
                 }
             });
-
-            // Live update: периодически подтягиваем состояния пользователей и обновляем рамку аватаров
-            (function() {
-                const stateClassMap = {
-                    working: 'ring-green-500',
-                    paused: 'ring-yellow-400',
-                    idle: 'ring-red-500',
-                };
-
-                const stateLabel = {
-                    working: 'В работе',
-                    paused: 'На паузе',
-                    idle: 'Не в работе',
-                };
-
-                async function fetchWorkStates() {
-                    const elems = Array.from(document.querySelectorAll('.js-user-state[data-user-id]'));
-                    if (!elems.length) return;
-                    const ids = elems.map(e => e.dataset.userId).filter(Boolean);
-                    try {
-                        const res = await fetch('/users/work-states?ids=' + ids.join(','), {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
-                        if (!res.ok) return;
-                        const json = await res.json();
-
-                        elems.forEach(el => {
-                            const id = el.dataset.userId;
-                            const mode = (json[id] || json[String(id)] || 'idle');
-                            el.classList.remove('ring-green-500', 'ring-yellow-400',
-                            'ring-red-500');
-                            el.classList.add('ring-2', stateClassMap[mode] || stateClassMap.idle);
-                            el.title = stateLabel[mode] || mode;
-                        });
-                    } catch (err) {
-                        // молча логируем — live-обновление не критично
-                        console.error('fetchWorkStates error', err);
-                    }
-                }
-
-                // initial + interval
-                fetchWorkStates();
-                setInterval(fetchWorkStates, 5000);
-            })();
         });
     </script>
 @endpush

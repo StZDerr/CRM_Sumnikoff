@@ -8,6 +8,7 @@ use App\Models\ProjectMarketerHistory;
 use App\Models\Specialty;
 use App\Models\User;
 use App\Models\WorkDay;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,13 +23,51 @@ class UserController extends Controller
         $this->middleware('auth');
 
         // только admin
-        $this->middleware('admin')->except(['index', 'show']);
+        $this->middleware('admin')->except(['index', 'show', 'workStates']);
 
         // show: admin + PM
         $this->middleware('role:admin,project_manager')->only(['show']);
 
         // index: admin + PM + marketer
-        $this->middleware('role:admin,project_manager,marketer')->only(['index']);
+        $this->middleware('role:admin,project_manager,marketer')->only(['index', 'workStates']);
+    }
+
+    public function workStates(Request $request): JsonResponse
+    {
+        $ids = collect($request->input('ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return response()->json(['states' => []]);
+        }
+
+        $openDays = WorkDay::with(['sessions', 'breaks'])
+            ->whereIn('user_id', $ids->all())
+            ->where('is_closed', false)
+            ->get()
+            ->keyBy('user_id');
+
+        $states = [];
+        foreach ($ids as $userId) {
+            $mode = 'idle';
+            $day = $openDays->get($userId);
+            if ($day) {
+                $openBreak = $day->breaks->firstWhere('ended_at', null);
+                $openSession = $day->sessions->firstWhere('ended_at', null);
+                if ($openBreak) {
+                    $mode = 'paused';
+                } elseif ($openSession) {
+                    $mode = 'working';
+                }
+            }
+
+            $states[$userId] = $mode;
+        }
+
+        return response()->json(['states' => $states]);
     }
 
     public function index(Request $request): View
@@ -77,50 +116,6 @@ class UserController extends Controller
         $users = User::with('activeVacation')->orderBy('id', 'desc')->paginate(15);
 
         return view('admin.users.index', compact('groupedUsers', 'marketers', 'users', 'workStates'));
-    }
-
-    /**
-     * Возвращает состояния работы для переданных пользователей (map user_id => mode).
-     * Пример запроса: /users/work-states?ids=1,2,3
-     */
-    public function workStates(Request $request)
-    {
-        $ids = $request->query('ids');
-        if (is_string($ids)) {
-            $ids = array_filter(explode(',', $ids));
-        } elseif (! is_array($ids)) {
-            return response()->json([]);
-        }
-
-        $ids = array_map('intval', $ids);
-        if (empty($ids)) {
-            return response()->json([]);
-        }
-
-        $days = WorkDay::with(['sessions', 'breaks'])
-            ->whereIn('user_id', $ids)
-            ->where('is_closed', false)
-            ->orderBy('work_date', 'desc')
-            ->get()
-            ->unique('user_id')
-            ->keyBy('user_id');
-
-        $states = [];
-        foreach ($ids as $id) {
-            $states[$id] = 'idle';
-            $day = $days->get($id);
-            if ($day) {
-                $openBreak = $day->breaks->firstWhere('ended_at', null);
-                $openSession = $day->sessions->firstWhere('ended_at', null);
-                if ($openBreak) {
-                    $states[$id] = 'paused';
-                } elseif ($openSession) {
-                    $states[$id] = 'working';
-                }
-            }
-        }
-
-        return response()->json($states);
     }
 
     public function deleted(): View
