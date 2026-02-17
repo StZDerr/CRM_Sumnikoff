@@ -25,14 +25,25 @@
                 ];
                 $showExtra = auth()->user()->isAdmin() || auth()->user()->isProjectManager();
                 $isMarketerViewer = auth()->user()->isMarketer();
-                $colspan = $showExtra ? 6 : 3;
+                // теперь таблица содержит дополнительные колонки: Аватар и Вид работы
+                $colspan = $showExtra ? 8 : 5;
+
+                // классы подсветки аватара по состоянию работы
+                $stateColors = [
+                    'working' => 'ring-2 ring-green-500',
+                    'paused' => 'ring-2 ring-yellow-400',
+                    'idle' => 'ring-2 ring-red-500',
+                    'open' => 'ring-2 ring-red-500',
+                ];
             @endphp
 
             <table class="w-full text-sm">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="p-3 text-left">№</th>
+                        <th class="p-3 text-left">Аватар</th>
                         <th class="p-3 text-left">Имя</th>
+                        <th class="p-3 text-left">Вид работы</th>
                         @if ($showExtra)
                             <th class="p-3 text-left">Статус</th>
                             <th class="p-3 text-left">Роль</th>
@@ -48,8 +59,21 @@
                                 <td class="p-3">{{ ($users->firstItem() ?? 0) + $loop->iteration - 1 }}</td>
 
                                 <td class="p-3">
+                                    @php $__state = $workStates[$user->id] ?? 'idle'; @endphp
+                                    <div class="{{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center" title="{{ $__state }}">
+                                        @if ($user->avatar)
+                                            <img src="{{ asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}" class="w-8 h-8 rounded-full object-cover">
+                                        @else
+                                            <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-sm text-gray-400">—</div>
+                                        @endif
+                                    </div>
+                                </td>
+
+                                <td class="p-3">
                                     <span class="text-gray-900">{{ $user->name }}</span>
                                 </td>
+
+                                <td class="p-3 text-sm text-gray-600">{{ $user->work_type ?: '—' }}</td>
 
                                 <td class="p-3">
                                     @if ($user->socials->isNotEmpty())
@@ -67,11 +91,11 @@
                         @endforeach
                     @else
                         @if (!empty($groupedUsers) && $groupedUsers->isNotEmpty())
-                            @foreach ($groupedUsers as $role => $users)
+                            @foreach ($groupedUsers as $position => $users)
                                 @php $counter = $counter ?? 0; @endphp
                                 <tr class="bg-gray-100">
                                     <td colspan="{{ $colspan }}" class="p-3 font-medium text-sm">
-                                        {{ $roles[$role] ?? ucfirst($role) }} — {{ $users->count() }}
+                                        {{ $position ?: 'Без должности' }} — {{ $users->count() }}
                                     </td>
                                 </tr>
 
@@ -81,12 +105,25 @@
                                         <td class="p-3">{{ $counter }}</td>
 
                                         <td class="p-3">
+                                            @php $__state = $workStates[$user->id] ?? 'idle'; @endphp
+                                            <div class="{{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center" title="{{ $__state }}">
+                                                @if ($user->avatar)
+                                                    <img src="{{ asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}" class="w-8 h-8 rounded-full object-cover">
+                                                @else
+                                                    <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-sm text-gray-400">—</div>
+                                                @endif
+                                            </div>
+                                        </td>
+
+                                        <td class="p-3">
                                             @if ($isMarketerViewer)
                                                 <span class="text-gray-900">{{ $user->name }}</span>
                                             @else
                                                 <a href="{{ route('user.dashboard', $user) }}">{{ $user->name }}</a>
                                             @endif
                                         </td>
+
+                                        <td class="p-3 text-sm text-gray-600">{{ $user->work_type ?: '—' }}</td>
 
                                         @if ($showExtra)
                                             <td class="p-3">
@@ -151,12 +188,25 @@
                                     <td class="p-3">{{ ($users->firstItem() ?? 0) + $loop->iteration - 1 }}</td>
 
                                     <td class="p-3">
+                                        @php $__state = $workStates[$user->id] ?? 'idle'; @endphp
+                                        <div class="{{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center" title="{{ $__state }}">
+                                            @if ($user->avatar)
+                                                <img src="{{ asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}" class="w-8 h-8 rounded-full object-cover">
+                                            @else
+                                                <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-sm text-gray-400">—</div>
+                                            @endif
+                                        </div>
+                                    </td>
+
+                                    <td class="p-3">
                                         @if ($isMarketerViewer)
                                             <span class="text-gray-900">{{ $user->name }}</span>
                                         @else
                                             <a href="{{ route('user.dashboard', $user) }}">{{ $user->name }}</a>
                                         @endif
                                     </td>
+
+                                    <td class="p-3 text-sm text-gray-600">{{ $user->work_type ?: '—' }}</td>
 
                                     @if ($showExtra)
                                         <td class="p-3">

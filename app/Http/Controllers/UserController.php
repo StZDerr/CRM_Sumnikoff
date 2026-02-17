@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\ProjectMarketerHistory;
 use App\Models\Specialty;
 use App\Models\User;
+use App\Models\WorkDay;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,22 +33,50 @@ class UserController extends Controller
 
     public function index(Request $request): View
     {
-        // Группируем список: сначала по роли, затем по алфавиту внутри роли
+        // Группируем список: теперь по должности (position). Пользователи без должности попадают в группу 'Без должности'.
         $usersAll = User::with('activeVacation')
-            ->orderBy('role')
+            // сначала пользователи с заполненной должностью, затем без — чтобы группа "Без должности" шла последней
+            ->orderByRaw("CASE WHEN position IS NULL OR position = '' THEN 1 ELSE 0 END")
+            ->orderBy('position')
             ->orderBy('name')
             ->get();
 
-        // groupedUsers: ['admin' => Collection, 'marketer' => Collection, ...]
-        $groupedUsers = $usersAll->groupBy('role');
+        // groupedUsers: ['Должность A' => Collection, 'Без должности' => Collection, ...]
+        $groupedUsers = $usersAll->groupBy(fn($u) => $u->position ?: 'Без должности');
 
         // Для формы отпусков и других нужд
         $marketers = User::where('role', 'manager')->orderBy('name')->pluck('name', 'id');
 
+        // Получим открытые рабочие дни для пользователей (если есть) — используем для подсветки аватаров
+        $userIds = $usersAll->pluck('id')->toArray();
+        $openDays = WorkDay::with(['sessions', 'breaks'])
+            ->whereIn('user_id', $userIds)
+            ->where('is_closed', false)
+            ->get()
+            ->keyBy('user_id');
+
+        $workStates = [];
+        foreach ($usersAll as $u) {
+            $mode = 'idle';
+            $day = $openDays->get($u->id);
+            if ($day) {
+                $openBreak = $day->breaks->firstWhere('ended_at', null);
+                $openSession = $day->sessions->firstWhere('ended_at', null);
+                if ($openBreak) {
+                    $mode = 'paused';
+                } elseif ($openSession) {
+                    $mode = 'working';
+                } else {
+                    $mode = 'idle';
+                }
+            }
+            $workStates[$u->id] = $mode;
+        }
+
         // keep paginated collection for backwards compatibility (if needed)
         $users = User::with('activeVacation')->orderBy('id', 'desc')->paginate(15);
 
-        return view('admin.users.index', compact('groupedUsers', 'marketers', 'users'));
+        return view('admin.users.index', compact('groupedUsers', 'marketers', 'users', 'workStates'));
     }
 
     public function deleted(): View

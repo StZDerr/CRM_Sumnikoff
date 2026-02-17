@@ -243,16 +243,14 @@
                         class="w-full rounded bg-emerald-600 px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-500">Начать
                         рабочий день</button>
                     <button id="wt-btn-pause" type="button"
-                        class="w-full hidden rounded bg-amber-500 px-2 py-1 text-xs font-semibold text-white hover:bg-amber-400">Поставить
-                        на паузу</button>
+                        class="w-full hidden rounded bg-amber-500 px-2 py-1 text-xs font-semibold text-white hover:bg-amber-400">Пауза</button>
                     <button id="wt-btn-resume" type="button"
                         class="w-full hidden rounded bg-indigo-600 px-2 py-1 text-xs font-semibold text-white hover:bg-indigo-500">Снять
                         паузу</button>
                     <button id="wt-btn-end" type="button"
-                        class="w-full hidden rounded bg-rose-600 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-500">Закончить
-                        рабочий день</button>
+                        class="w-full hidden rounded bg-rose-600 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-500">Завершить</button>
                     <button id="wt-btn-edit" type="button"
-                        class="w-full hidden rounded border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50">Редактировать</button>
+                        class="col-span-2 w-full hidden rounded border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50">Редактировать</button>
                 </div>
             </div>
         </div>
