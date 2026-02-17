@@ -58,4 +58,13 @@ class OperationPermissionsTest extends TestCase
             ->assertDontSeeText('other')
             ->assertDontSeeText('Поступление');
     }
+
+    public function test_frontend_user_cannot_access_operations()
+    {
+        $frontend = User::factory()->create(['role' => User::ROLE_FRONTEND]);
+
+        $this->actingAs($frontend)
+            ->get(route('operation.index'))
+            ->assertStatus(403);
+    }
 }

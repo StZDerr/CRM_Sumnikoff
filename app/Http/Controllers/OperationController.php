@@ -15,10 +15,10 @@ class OperationController extends Controller
 {
     public function __construct()
     {
-        // Только авторизованные пользователи и запрет для роли "lawyer"
+        // Только авторизованные пользователи и запрет для ролей "lawyer" и "frontend" (верстальщики)
         $this->middleware('auth');
         $this->middleware(function ($request, $next) {
-            if (auth()->check() && auth()->user()->isLawyer()) {
+            if (auth()->check() && (auth()->user()->isLawyer() || auth()->user()->isFrontend())) {
                 abort(403, 'Доступ запрещён');
             }
 
