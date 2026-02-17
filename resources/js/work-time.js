@@ -69,26 +69,26 @@
     }
 
     function setButtonVisibility(mode, hasDay) {
-        btnStart.classList.add("hidden");
-        btnPause.classList.add("hidden");
-        btnResume.classList.add("hidden");
-        btnEnd.classList.add("hidden");
-        btnEdit.classList.add("hidden");
+        btnStart?.classList.add("hidden");
+        btnPause?.classList.add("hidden");
+        btnResume?.classList.add("hidden");
+        btnEnd?.classList.add("hidden");
+        btnEdit?.classList.add("hidden");
 
         if (!hasDay || mode === "idle") {
-            btnStart.classList.remove("hidden");
+            btnStart?.classList.remove("hidden");
             return;
         }
 
-        btnEnd.classList.remove("hidden");
-        btnEdit.classList.remove("hidden");
+        btnEnd?.classList.remove("hidden");
+        btnEdit?.classList.remove("hidden");
 
         if (mode === "working") {
-            btnPause.classList.remove("hidden");
+            btnPause?.classList.remove("hidden");
         } else if (mode === "paused") {
-            btnResume.classList.remove("hidden");
+            btnResume?.classList.remove("hidden");
         } else {
-            btnStart.classList.remove("hidden");
+            btnStart?.classList.remove("hidden");
         }
     }
 

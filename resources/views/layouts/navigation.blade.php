@@ -219,6 +219,45 @@
         @endif
     </nav>
 
+    @if (auth()->user()->work_time_widget === 'sidebar')
+        <div class="px-4 py-3">
+            <div id="work-time-widget" class="w-full rounded-lg border border-gray-200 bg-gray-50 p-3"
+                data-state-url="{{ route('work-time.state') }}" data-start-day-url="{{ route('work-time.start-day') }}"
+                data-start-break-url="{{ route('work-time.start-break') }}"
+                data-end-break-url="{{ route('work-time.end-break') }}"
+                data-save-report-url="{{ route('work-time.save-report') }}"
+                data-end-day-url="{{ route('work-time.end-day') }}" data-edit-day-url="{{ url('work-time/work-days') }}"
+                data-add-break-url="{{ url('work-time/work-days') }}"
+                data-update-break-url="{{ url('work-time/breaks') }}"
+                data-delete-break-url="{{ url('work-time/breaks') }}">
+                <div class="text-xs text-gray-400">Рабочий день</div>
+                <div id="wt-status" class="mt-1 text-sm font-semibold text-emerald-300">Не начат</div>
+
+                <div class="mt-2 text-xs text-gray-500">Работа: <span id="wt-work-time"
+                        class="font-mono">00:00:00</span></div>
+                <div class="text-xs text-gray-500">Пауза: <span id="wt-break-time" class="font-mono">00:00:00</span>
+                </div>
+
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <button id="wt-btn-start" type="button"
+                        class="w-full rounded bg-emerald-600 px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-500">Начать
+                        рабочий день</button>
+                    <button id="wt-btn-pause" type="button"
+                        class="w-full hidden rounded bg-amber-500 px-2 py-1 text-xs font-semibold text-white hover:bg-amber-400">Поставить
+                        на паузу</button>
+                    <button id="wt-btn-resume" type="button"
+                        class="w-full hidden rounded bg-indigo-600 px-2 py-1 text-xs font-semibold text-white hover:bg-indigo-500">Снять
+                        паузу</button>
+                    <button id="wt-btn-end" type="button"
+                        class="w-full hidden rounded bg-rose-600 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-500">Закончить
+                        рабочий день</button>
+                    <button id="wt-btn-edit" type="button"
+                        class="w-full hidden rounded border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50">Редактировать</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="border-t border-white/20 mx-4 my-3"></div>
 
     <div id="wt-end-modal" class="fixed inset-0 z-[1000] hidden">
@@ -390,56 +429,58 @@
                     </div>
                 </div>
 
-                <div class="mt-3">
-                    <!-- moved (compact) work-time widget -->
-                    <div id="work-time-widget" class="w-full rounded-lg border border-gray-200 bg-gray-50 p-3"
-                        data-state-url="{{ route('work-time.state') }}"
-                        data-start-day-url="{{ route('work-time.start-day') }}"
-                        data-start-break-url="{{ route('work-time.start-break') }}"
-                        data-end-break-url="{{ route('work-time.end-break') }}"
-                        data-save-report-url="{{ route('work-time.save-report') }}"
-                        data-end-day-url="{{ route('work-time.end-day') }}"
-                        data-edit-day-url="{{ url('work-time/work-days') }}"
-                        data-add-break-url="{{ url('work-time/work-days') }}"
-                        data-update-break-url="{{ url('work-time/breaks') }}"
-                        data-delete-break-url="{{ url('work-time/breaks') }}">
-                        <div class="text-xs text-gray-500">Рабочий день</div>
-                        <div id="wt-status" class="mt-1 text-sm font-semibold text-emerald-600">Не начат</div>
+                @if (auth()->user()->work_time_widget === 'popup')
+                    <div class="mt-3">
+                        <!-- moved (compact) work-time widget (popup) -->
+                        <div id="work-time-widget" class="w-full rounded-lg border border-gray-200 bg-gray-50 p-3"
+                            data-state-url="{{ route('work-time.state') }}"
+                            data-start-day-url="{{ route('work-time.start-day') }}"
+                            data-start-break-url="{{ route('work-time.start-break') }}"
+                            data-end-break-url="{{ route('work-time.end-break') }}"
+                            data-save-report-url="{{ route('work-time.save-report') }}"
+                            data-end-day-url="{{ route('work-time.end-day') }}"
+                            data-edit-day-url="{{ url('work-time/work-days') }}"
+                            data-add-break-url="{{ url('work-time/work-days') }}"
+                            data-update-break-url="{{ url('work-time/breaks') }}"
+                            data-delete-break-url="{{ url('work-time/breaks') }}">
+                            <div class="text-xs text-gray-500">Рабочий день</div>
+                            <div id="wt-status" class="mt-1 text-sm font-semibold text-emerald-600">Не начат</div>
 
-                        <div class="mt-2 text-xs text-gray-600">Работа: <span id="wt-work-time"
-                                class="font-mono">00:00:00</span>
-                        </div>
-                        <div class="text-xs text-gray-600">Пауза: <span id="wt-break-time"
-                                class="font-mono">00:00:00</span></div>
+                            <div class="mt-2 text-xs text-gray-600">Работа: <span id="wt-work-time"
+                                    class="font-mono">00:00:00</span>
+                            </div>
+                            <div class="text-xs text-gray-600">Пауза: <span id="wt-break-time"
+                                    class="font-mono">00:00:00</span></div>
 
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <button id="wt-btn-start" type="button"
-                                class="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">
-                                Начать рабочий день
-                            </button>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <button id="wt-btn-start" type="button"
+                                    class="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">
+                                    Начать рабочий день
+                                </button>
 
-                            <button id="wt-btn-pause" type="button"
-                                class="hidden rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400">
-                                Поставить на паузу
-                            </button>
+                                <button id="wt-btn-pause" type="button"
+                                    class="hidden rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400">
+                                    Поставить на паузу
+                                </button>
 
-                            <button id="wt-btn-resume" type="button"
-                                class="hidden rounded bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500">
-                                Снять паузу
-                            </button>
+                                <button id="wt-btn-resume" type="button"
+                                    class="hidden rounded bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500">
+                                    Снять паузу
+                                </button>
 
-                            <button id="wt-btn-end" type="button"
-                                class="hidden rounded bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-500">
-                                Закончить рабочий день
-                            </button>
+                                <button id="wt-btn-end" type="button"
+                                    class="hidden rounded bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-500">
+                                    Закончить рабочий день
+                                </button>
 
-                            <button id="wt-btn-edit" type="button"
-                                class="hidden rounded border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
-                                Редактировать
-                            </button>
+                                <button id="wt-btn-edit" type="button"
+                                    class="hidden rounded border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                                    Редактировать
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                @endif
 
                 <div class="mt-3 flex gap-2">
                     <a href="{{ route('profile.edit') }}"

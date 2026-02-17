@@ -48,6 +48,7 @@ class User extends Authenticatable
         'position', // Должность
         'work_type', // Вид работы
         'avatar', // Аватар
+        'work_time_widget', // where to show work-time widget: popup|sidebar
     ];
 
     protected $hidden = [
@@ -70,6 +71,7 @@ class User extends Authenticatable
             'position' => 'string', // Должность
             'work_type' => 'string', // Вид работы
             'avatar' => 'string', // Аватар
+            'work_time_widget' => 'string', // where to show work-time widget
         ];
     }
 

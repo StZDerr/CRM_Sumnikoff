@@ -64,6 +64,17 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-medium mb-1">Где показывать виджет рабочего дня</label>
+                    <select name="work_time_widget"
+                        class="w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="popup" @selected(old('work_time_widget', $user->work_time_widget ?? 'popup') === 'popup')>Всплывающее окно (по аватарке)</option>
+                        <option value="sidebar" @selected(old('work_time_widget', $user->work_time_widget ?? 'popup') === 'sidebar')>В сайдбаре (рядом с навигацией)</option>
+                    </select>
+                    <div class="text-xs text-gray-500 mt-1">Каждый пользователь может выбрать, где отображать свой
+                        рабочий день.</div>
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium mb-1">Аватар (изображение)</label>
 
                     <div class="flex items-center gap-4">

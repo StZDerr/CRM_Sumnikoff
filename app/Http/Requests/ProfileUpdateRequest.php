@@ -33,6 +33,7 @@ class ProfileUpdateRequest extends FormRequest
             'work_type' => ['nullable', 'string', 'max:255'],
             'avatar' => ['nullable', 'image', 'max:2048'], // max 2MB
             'remove_avatar' => ['nullable', 'boolean'],
+            'work_time_widget' => ['nullable', Rule::in(['popup', 'sidebar'])],
 
             'socials' => ['nullable', 'array'],
             'socials.*.platform' => ['nullable', Rule::in(['vk', 'telegram', 'maks'])],
