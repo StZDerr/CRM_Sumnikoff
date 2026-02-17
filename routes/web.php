@@ -47,6 +47,11 @@ Route::get('/welcome', [\App\Http\Controllers\DashboardController::class, 'welco
     ->name('welcome');
 
 Route::middleware('auth')->group(function () {
+    // Dev welcome page for front-end developers (controller action)
+    Route::get('/dev', [\App\Http\Controllers\DashboardController::class, 'dev'])
+        ->name('dev')
+        ->middleware('role:frontend');
+
     Route::prefix('work-time')->name('work-time.')->group(function () {
         Route::get('state', [WorkTimeController::class, 'state'])->name('state');
         Route::post('start-day', [WorkTimeController::class, 'startDay'])->name('start-day');

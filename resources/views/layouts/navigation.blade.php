@@ -460,12 +460,12 @@
                             <div class="mt-3 flex flex-wrap gap-2">
                                 <button id="wt-btn-start" type="button"
                                     class="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">
-                                    Начать рабочий день
+                                    Начать
                                 </button>
 
                                 <button id="wt-btn-pause" type="button"
                                     class="hidden rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400">
-                                    Поставить на паузу
+                                    Пауза
                                 </button>
 
                                 <button id="wt-btn-resume" type="button"
@@ -475,7 +475,7 @@
 
                                 <button id="wt-btn-end" type="button"
                                     class="hidden rounded bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-500">
-                                    Закончить рабочий день
+                                    Закончить
                                 </button>
 
                                 <button id="wt-btn-edit" type="button"

@@ -17,9 +17,14 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
+
+        // Если пользователь — верстальщик, показываем специальную dev-страницу
+        if ($user && $user->hasRole(User::ROLE_FRONTEND)) {
+            return redirect()->route('dev');
+        }
 
         // Если текущий пользователь — не admin, редиректим на отдельный экшен welcome
-        $user = auth()->user();
         if (! $user || ! $user->isAdmin()) {
             return redirect()->route('welcome');
         }
@@ -203,7 +208,7 @@ class DashboardController extends Controller
             ->pluck('total', 'project_id');
 
         // Calculate expected income, received and remaining per project
-        $expectedProjects->each(function ($proj) use ($receivedByProject, $start, $end) {
+        $expectedProjects->each(function ($proj) use ($receivedByProject) {
             $balance = (float) $proj->balance;
             $contract = (float) ($proj->contract_amount ?? 0);
 
@@ -611,6 +616,34 @@ class DashboardController extends Controller
     }
 
     /**
+     * Показывает страницу для верстальщиков (dev)
+     */
+    public function dev(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            abort(403);
+        }
+
+        // дополнительная проверка роли — дублирует middleware в маршруте
+        if (! $user->hasRole(User::ROLE_FRONTEND)) {
+            abort(403);
+        }
+
+        // Получаем те же данные, что и для welcome(), и передаём их в `dev` с флагом скрытия блока "Мои проекты"
+        $welcomeView = $this->welcome($request);
+
+        if ($welcomeView instanceof \Illuminate\View\View) {
+            $data = $welcomeView->getData();
+            $data['hide_projects'] = true;
+
+            return view('dev', $data);
+        }
+
+        return view('dev');
+    }
+
+    /**
      * Показывает welcome-страницу для не-admin пользователей (маркетологов/PM).
      */
     public function welcome(Request $request)
@@ -706,7 +739,7 @@ class DashboardController extends Controller
             ->whereNotIn('status', [\App\Models\Project::STATUS_PAUSED, \App\Models\Project::STATUS_STOPPED])
             ->where(function ($q) {
                 $q->whereNull('closed_at')
-                  ->orWhereDate('closed_at', '>=', Carbon::now()->toDateString());
+                    ->orWhereDate('closed_at', '>=', Carbon::now()->toDateString());
             })
             ->get();
 
@@ -725,7 +758,7 @@ class DashboardController extends Controller
             ->whereNotIn('status', [\App\Models\Project::STATUS_STOPPED])
             ->where(function ($q) {
                 $q->whereNull('closed_at')
-                  ->orWhereDate('closed_at', '>=', Carbon::now()->toDateString());
+                    ->orWhereDate('closed_at', '>=', Carbon::now()->toDateString());
             })
             ->count();
 

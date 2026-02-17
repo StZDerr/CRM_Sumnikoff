@@ -28,6 +28,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Redirect frontend developers to the dedicated dev page
+        if ($request->user()?->hasRole(\App\Models\User::ROLE_FRONTEND)) {
+            return redirect()->intended(route('dev', absolute: false));
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
