@@ -227,6 +227,9 @@ class AccountCredentialController extends Controller
 
     /**
      * Записать действие с доступом (AJAX)
+     *
+     * Дополнительно: если один пользователь просмотрел > 3 *уникальных* доступов за последний час,
+     * отправляем уведомления администраторам (чтобы заметили потенциальный инцидент).
      */
     public function accessLog(AccountCredential $accountCredential, Request $request)
     {
@@ -244,7 +247,60 @@ class AccountCredentialController extends Controller
             ]);
         } catch (\Exception $e) {
             \Log::warning('AccountCredential::accessLog - failed to write access log', ['id' => $accountCredential->id, 'action' => $request->action, 'error' => $e->getMessage()]);
+
             return response()->json(['ok' => false], 500);
+        }
+
+        // Проверка на подозрительную активность: считаем уникальные просм. доступов за последний час
+        try {
+            $actorId = auth()->id();
+            if ($actorId && in_array($request->action, ['view', 'reveal'], true)) {
+                $since = now()->subHour();
+
+                $uniqueCount = \App\Models\AccountCredentialLog::query()
+                    ->where('user_id', $actorId)
+                    ->whereIn('action', ['view', 'reveal'])
+                    ->where('created_at', '>=', $since)
+                    ->pluck('account_credential_id')
+                    ->unique()
+                    ->count();
+
+                // порог: больше 3 (т.е. 3 и выше)
+                if ($uniqueCount >= 3) {
+                    // не шлём дублирующие уведомления чаще, чем раз в час для этого пользователя
+                    $already = \App\Models\UserNotification::query()
+                        ->where('actor_id', $actorId)
+                        ->where('type', 'credential_views_alert')
+                        ->where('created_at', '>=', $since)
+                        ->exists();
+
+                    if (! $already) {
+                        $actor = auth()->user();
+                        $actorName = $actor->name ?? $actor->login ?? $actorId;
+
+                        $admins = \App\Models\User::admins()->get();
+                        foreach ($admins as $admin) {
+                            \App\Models\UserNotification::create([
+                                'user_id' => $admin->id,
+                                'actor_id' => $actorId,
+                                'type' => 'credential_views_alert',
+                                'title' => 'Подозрительная активность: просмотр доступов',
+                                'message' => sprintf('Пользователь %s (%s) просмотрел %d разных доступов за последний час.', $actorName, $actor->login ?? '-', $uniqueCount),
+                                'data' => [
+                                    'offending_user_id' => $actorId,
+                                    'count' => $uniqueCount,
+                                    'window_minutes' => 60,
+                                ],
+                            ]);
+                        }
+
+                        \Log::info('Security alert: credential views threshold exceeded', ['user_id' => $actorId, 'count' => $uniqueCount]);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // логируем, но не мешаем клиенту
+            \Log::warning('AccountCredential::accessLog - alert check failed', ['error' => $e->getMessage()]);
         }
 
         return response()->json(['ok' => true]);
