@@ -35,6 +35,13 @@
                     'idle' => 'ring-2 ring-red-500',
                     'open' => 'ring-2 ring-red-500',
                 ];
+
+                // маппинг платформ -> файл иконки (папка public/images/icon_social)
+                $socialIcons = [
+                    'vk' => 'VK.svg',
+                    'telegram' => 'TG.svg',
+                    'maks' => 'max.svg',
+                ];
             @endphp
 
             <table class="w-full text-sm">
@@ -60,11 +67,16 @@
 
                                 <td class="p-3">
                                     @php $__state = $workStates[$user->id] ?? 'idle'; @endphp
-                                    <div class="{{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center" title="{{ $__state }}">
+                                    <div data-user-id="{{ $user->id }}"
+                                        class="js-user-state {{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center"
+                                        title="{{ $__state }}">
                                         @if ($user->avatar)
-                                            <img src="{{ asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}" class="w-8 h-8 rounded-full object-cover">
+                                            <img src="{{ asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}"
+                                                class="w-8 h-8 rounded-full object-cover">
                                         @else
-                                            <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-sm text-gray-400">—</div>
+                                            <div
+                                                class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-sm text-gray-400">
+                                                —</div>
                                         @endif
                                     </div>
                                 </td>
@@ -79,8 +91,17 @@
                                     @if ($user->socials->isNotEmpty())
                                         <div class="flex flex-wrap items-center gap-2">
                                             @foreach ($user->socials->sortBy(fn($s) => ['vk' => 0, 'telegram' => 1, 'maks' => 2][$s->platform] ?? 99) as $social)
+                                                @php $icon = $socialIcons[$social->platform] ?? null; @endphp
                                                 <a href="{{ $social->url }}" target="_blank"
-                                                    class="text-blue-600 underline flex items-center gap-1">{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}</a>
+                                                    class="inline-flex items-center"
+                                                    title="{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}"
+                                                    aria-label="{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}">
+                                                    @if ($icon)
+                                                        <img src="{{ asset('images/icon_social/' . $icon) }}"
+                                                            alt="{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}"
+                                                            class="w-6 h-6">
+                                                    @endif
+                                                </a>
                                             @endforeach
                                         </div>
                                     @else
@@ -106,11 +127,17 @@
 
                                         <td class="p-3">
                                             @php $__state = $workStates[$user->id] ?? 'idle'; @endphp
-                                            <div class="{{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center" title="{{ $__state }}">
+                                            <div data-user-id="{{ $user->id }}"
+                                                class="js-user-state {{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center"
+                                                title="{{ $__state }}">
                                                 @if ($user->avatar)
-                                                    <img src="{{ asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}" class="w-8 h-8 rounded-full object-cover">
+                                                    <img src="{{ asset('storage/' . $user->avatar) }}"
+                                                        alt="{{ $user->name }}"
+                                                        class="w-8 h-8 rounded-full object-cover">
                                                 @else
-                                                    <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-sm text-gray-400">—</div>
+                                                    <div
+                                                        class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-sm text-gray-400">
+                                                        —</div>
                                                 @endif
                                             </div>
                                         </td>
@@ -171,8 +198,17 @@
                                             @if ($user->socials->isNotEmpty())
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     @foreach ($user->socials->sortBy(fn($s) => ['vk' => 0, 'telegram' => 1, 'maks' => 2][$s->platform] ?? 99) as $social)
+                                                        @php $icon = $socialIcons[$social->platform] ?? null; @endphp
                                                         <a href="{{ $social->url }}" target="_blank"
-                                                            class="text-blue-600 underline flex items-center gap-1">{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}</a>
+                                                            class="inline-flex items-center"
+                                                            title="{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}"
+                                                            aria-label="{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}">
+                                                            @if ($icon)
+                                                                <img src="{{ asset('images/icon_social/' . $icon) }}"
+                                                                    alt="{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}"
+                                                                    class="w-6 h-6 inline-block">
+                                                            @endif
+                                                        </a>
                                                     @endforeach
                                                 </div>
                                             @else
@@ -189,11 +225,16 @@
 
                                     <td class="p-3">
                                         @php $__state = $workStates[$user->id] ?? 'idle'; @endphp
-                                        <div class="{{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center" title="{{ $__state }}">
+                                        <div data-user-id="{{ $user->id }}"
+                                            class="js-user-state {{ $stateColors[$__state] ?? $stateColors['idle'] }} rounded-full p-0.5 inline-flex items-center justify-center"
+                                            title="{{ $__state }}">
                                             @if ($user->avatar)
-                                                <img src="{{ asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}" class="w-8 h-8 rounded-full object-cover">
+                                                <img src="{{ asset('storage/' . $user->avatar) }}"
+                                                    alt="{{ $user->name }}" class="w-8 h-8 rounded-full object-cover">
                                             @else
-                                                <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-sm text-gray-400">—</div>
+                                                <div
+                                                    class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-sm text-gray-400">
+                                                    —</div>
                                             @endif
                                         </div>
                                     </td>
@@ -253,8 +294,16 @@
                                         @if ($user->socials->isNotEmpty())
                                             <div class="flex flex-wrap items-center gap-2">
                                                 @foreach ($user->socials->sortBy(fn($s) => ['vk' => 0, 'telegram' => 1, 'maks' => 2][$s->platform] ?? 99) as $social)
+                                                    @php $icon = $socialIcons[$social->platform] ?? null; @endphp
                                                     <a href="{{ $social->url }}" target="_blank"
-                                                        class="text-blue-600 underline flex items-center gap-1">{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}</a>
+                                                        class="text-blue-600 underline flex items-center gap-2">
+                                                        @if ($icon)
+                                                            <img src="{{ asset('images/icon_social/' . $icon) }}"
+                                                                alt="{{ $social->platform }}"
+                                                                class="w-6 h-6 inline-block">
+                                                        @endif
+                                                        <span>{{ ['vk' => 'ВК', 'telegram' => 'ТГ', 'maks' => 'МАКС'][$social->platform] ?? ucfirst($social->platform) }}</span>
+                                                    </a>
                                                 @endforeach
                                             </div>
                                         @else
@@ -437,6 +486,52 @@
                     alert('Ошибка при сохранении отпуска.');
                 }
             });
+
+            // Live update: периодически подтягиваем состояния пользователей и обновляем рамку аватаров
+            (function() {
+                const stateClassMap = {
+                    working: 'ring-green-500',
+                    paused: 'ring-yellow-400',
+                    idle: 'ring-red-500',
+                };
+
+                const stateLabel = {
+                    working: 'В работе',
+                    paused: 'На паузе',
+                    idle: 'Не в работе',
+                };
+
+                async function fetchWorkStates() {
+                    const elems = Array.from(document.querySelectorAll('.js-user-state[data-user-id]'));
+                    if (!elems.length) return;
+                    const ids = elems.map(e => e.dataset.userId).filter(Boolean);
+                    try {
+                        const res = await fetch('/users/work-states?ids=' + ids.join(','), {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        if (!res.ok) return;
+                        const json = await res.json();
+
+                        elems.forEach(el => {
+                            const id = el.dataset.userId;
+                            const mode = (json[id] || json[String(id)] || 'idle');
+                            el.classList.remove('ring-green-500', 'ring-yellow-400',
+                            'ring-red-500');
+                            el.classList.add('ring-2', stateClassMap[mode] || stateClassMap.idle);
+                            el.title = stateLabel[mode] || mode;
+                        });
+                    } catch (err) {
+                        // молча логируем — live-обновление не критично
+                        console.error('fetchWorkStates error', err);
+                    }
+                }
+
+                // initial + interval
+                fetchWorkStates();
+                setInterval(fetchWorkStates, 5000);
+            })();
         });
     </script>
 @endpush

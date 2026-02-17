@@ -79,6 +79,50 @@ class UserController extends Controller
         return view('admin.users.index', compact('groupedUsers', 'marketers', 'users', 'workStates'));
     }
 
+    /**
+     * Возвращает состояния работы для переданных пользователей (map user_id => mode).
+     * Пример запроса: /users/work-states?ids=1,2,3
+     */
+    public function workStates(Request $request)
+    {
+        $ids = $request->query('ids');
+        if (is_string($ids)) {
+            $ids = array_filter(explode(',', $ids));
+        } elseif (! is_array($ids)) {
+            return response()->json([]);
+        }
+
+        $ids = array_map('intval', $ids);
+        if (empty($ids)) {
+            return response()->json([]);
+        }
+
+        $days = WorkDay::with(['sessions', 'breaks'])
+            ->whereIn('user_id', $ids)
+            ->where('is_closed', false)
+            ->orderBy('work_date', 'desc')
+            ->get()
+            ->unique('user_id')
+            ->keyBy('user_id');
+
+        $states = [];
+        foreach ($ids as $id) {
+            $states[$id] = 'idle';
+            $day = $days->get($id);
+            if ($day) {
+                $openBreak = $day->breaks->firstWhere('ended_at', null);
+                $openSession = $day->sessions->firstWhere('ended_at', null);
+                if ($openBreak) {
+                    $states[$id] = 'paused';
+                } elseif ($openSession) {
+                    $states[$id] = 'working';
+                }
+            }
+        }
+
+        return response()->json($states);
+    }
+
     public function deleted(): View
     {
         $deletedUsers = User::onlyTrashed()

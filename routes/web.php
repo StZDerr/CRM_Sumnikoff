@@ -185,6 +185,10 @@ Route::middleware('auth')->group(function () {
     Route::post('vacations/{vacation}/end', [VacationController::class, 'end'])->name('vacations.end');
 
     Route::get('users/{user}/dashboard', [UserController::class, 'userDashboard'])->name('user.dashboard');
+
+    // Поддержка live-статов пользователей (возвращает map user_id => mode)
+    Route::get('users/work-states', [UserController::class, 'workStates'])->name('users.workStates');
+
     Route::get('reg/domains', [RegDomainController::class, 'index'])
         ->name('domains.index');
     Route::get('reg/domains/create', [RegDomainController::class, 'create'])
