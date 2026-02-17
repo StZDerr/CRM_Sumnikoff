@@ -26,7 +26,7 @@
                 $showExtra = auth()->user()->isAdmin() || auth()->user()->isProjectManager();
                 $isMarketerViewer = auth()->user()->isMarketer();
                 // теперь таблица содержит дополнительные колонки: Аватар и Вид работы
-                $colspan = $showExtra ? 8 : 5;
+                $colspan = $showExtra ? 7 : 5;
 
                 // классы подсветки аватара по состоянию работы
                 $stateColors = [
@@ -52,7 +52,6 @@
                         <th class="p-3 text-left">Имя</th>
                         <th class="p-3 text-left">Вид работы</th>
                         @if ($showExtra)
-                            <th class="p-3 text-left">Статус</th>
                             <th class="p-3 text-left">Роль</th>
                             <th class="p-3 text-left">Действия</th>
                         @endif
@@ -153,20 +152,6 @@
                                         <td class="p-3 text-sm text-gray-600">{{ $user->work_type ?: '—' }}</td>
 
                                         @if ($showExtra)
-                                            <td class="p-3">
-                                                @if ($user->activeVacation)
-                                                    <span
-                                                        class="inline-flex items-center px-2 py-1 rounded text-yellow-800 bg-yellow-100 text-sm font-medium">В
-                                                        отпуске с {{ $user->activeVacation->start_date->format('d.m.Y') }}
-                                                        по
-                                                        {{ $user->activeVacation->end_date->format('d.m.Y') }}</span>
-                                                @else
-                                                    <span
-                                                        class="inline-flex items-center px-2 py-1 rounded text-green-800 bg-green-100 text-sm font-medium">В
-                                                        работе</span>
-                                                @endif
-                                            </td>
-
                                             <td class="p-3">{{ $roles[$user->role] ?? $user->role }}</td>
 
                                             <td class="p-3 flex gap-2">
@@ -250,19 +235,6 @@
                                     <td class="p-3 text-sm text-gray-600">{{ $user->work_type ?: '—' }}</td>
 
                                     @if ($showExtra)
-                                        <td class="p-3">
-                                            @if ($user->activeVacation)
-                                                <span
-                                                    class="inline-flex items-center px-2 py-1 rounded text-yellow-800 bg-yellow-100 text-sm font-medium">В
-                                                    отпуске с {{ $user->activeVacation->start_date->format('d.m.Y') }} по
-                                                    {{ $user->activeVacation->end_date->format('d.m.Y') }}</span>
-                                            @else
-                                                <span
-                                                    class="inline-flex items-center px-2 py-1 rounded text-green-800 bg-green-100 text-sm font-medium">В
-                                                    работе</span>
-                                            @endif
-                                        </td>
-
                                         <td class="p-3">{{ $roles[$user->role] ?? $user->role }}</td>
 
                                         <td class="p-3 flex gap-2">
