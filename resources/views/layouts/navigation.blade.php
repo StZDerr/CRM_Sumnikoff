@@ -156,7 +156,7 @@
             <x-nav-link :href="route('domains.index')" :active="request()->routeIs('domains.*')">
                 Домены
             </x-nav-link>
-        @elseif (auth()->user()->isProjectManager() || auth()->user()->isMarketer())
+        @elseif (auth()->user()->isProjectManager() || auth()->user()->isMarketer() || auth()->user()->isFrontend())
             {{-- НЕ admin: обычная кнопка --}}
             @if (auth()->user()->isProjectManager())
                 <x-nav-link :href="route('account-credentials.itSumnikoff')" :active="request()->routeIs('account-credentials.itSumnikoff')">

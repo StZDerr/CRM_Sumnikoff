@@ -637,6 +637,13 @@ class DashboardController extends Controller
             $data = $welcomeView->getData();
             $data['hide_projects'] = true;
 
+            // Добавляем данные, необходимые для модального окна "Оплата доменов/хостинга"
+            $data['domainHostingCategories'] = \App\Models\ExpenseCategory::where('is_domains_hosting', true)->ordered()->get();
+            $data['paymentMethods'] = \App\Models\PaymentMethod::orderBy('title')->get();
+            $data['bankAccounts'] = \App\Models\BankAccount::orderBy('title')->get();
+            // Для страницы dev — показываем ВСЕ домены (чтобы верстальщик мог оплатить любой домен)
+            $data['domainsForModal'] = \App\Models\Domain::orderBy('name')->get();
+
             return view('dev', $data);
         }
 
