@@ -377,6 +377,18 @@ class AccountCredentialController extends Controller
             abort(403);
         }
 
+        // Логируем факт просмотра
+        try {
+            $accountCredential->logs()->create([
+                'user_id' => auth()->id(),
+                'action' => 'view',
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::warning('AccountCredential::showItSumnikoff - failed to write access log', ['id' => $accountCredential->id, 'error' => $e->getMessage()]);
+        }
+
         return view('admin.account_credentials.showItSumnikoff', compact('accountCredential'));
     }
 

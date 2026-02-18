@@ -29,11 +29,11 @@
                         <td class="p-3">{{ $cred->name }}</td>
                         <td class="p-3">
                             <button type="button" class="text-gray-800 hover:text-indigo-700 underline"
-                                data-copy-text="{{ $cred->login }}">{{ $cred->login ?: '—' }}</button>
+                                data-copy-text="{{ $cred->login }}" data-credential-id="{{ $cred->id }}">{{ $cred->login ?: '—' }}</button>
                         </td>
                         <td class="p-3">
                             <button type="button" class="text-gray-500 hover:text-gray-800 underline" data-password-toggle
-                                data-password="{{ $cred->password }}">••••••••</button>
+                                data-password="{{ $cred->password }}" data-credential-id="{{ $cred->id }}">••••••••</button>
                         </td>
                         <td class="p-3">{{ $cred->status == 'active' ? 'Действующий' : 'Stop List' }}</td>
                         <td class="p-3 space-x-2">
@@ -68,6 +68,7 @@
 
     <script>
         const toast = document.getElementById('copyToast');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         function showToast(text) {
             if (!toast) return;
@@ -98,13 +99,39 @@
             }
         }
 
-        document.querySelectorAll('[data-copy-text]').forEach(btn => btn.addEventListener('click', () => copyText(btn
-            .dataset.copyText || '')));
+        async function sendAccessLog(credentialId, action, context = null) {
+            if (!credentialId || !action) return;
+            try {
+                await fetch(`/account-credentials/${credentialId}/access-log`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ action, context })
+                });
+            } catch (e) {
+                console.warn('access-log error', e);
+            }
+        }
+
+        document.querySelectorAll('[data-copy-text]').forEach(btn => btn.addEventListener('click', () => {
+            const val = btn.dataset.copyText || '';
+            const id = btn.dataset.credentialId || null;
+            if (!val) return;
+            copyText(val);
+            if (id) sendAccessLog(id, 'copy_login');
+        }));
+
         document.querySelectorAll('[data-password-toggle]').forEach(btn => btn.addEventListener('click', () => {
+            const id = btn.dataset.credentialId || null;
+
             if (btn.dataset.revealed === '1') {
                 const val = btn.dataset.password || '';
                 if (!val) return;
                 copyText(val);
+                if (id) sendAccessLog(id, 'copy_password');
                 return;
             }
             if (!confirm('Открыть пароль?')) return;
@@ -112,6 +139,7 @@
             btn.classList.remove('text-gray-500');
             btn.classList.add('text-gray-900');
             btn.dataset.revealed = '1';
+            if (id) sendAccessLog(id, 'reveal');
         }));
     </script>
 @endsection

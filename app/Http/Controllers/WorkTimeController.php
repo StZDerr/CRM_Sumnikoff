@@ -217,8 +217,25 @@ class WorkTimeController extends Controller
         }
 
         $newEndedAt = Carbon::parse($data['ended_at']);
+
+        // server-side validation: ended_at cannot be in the future
+        if ($newEndedAt->gt(now())) {
+            return response()->json([
+                'message' => 'Время окончания не может быть позже текущего момента.',
+                'errors' => [
+                    'ended_at' => ['Время окончания не может быть позже текущего момента.'],
+                ],
+            ], 422);
+        }
+
+        // server-side validation: ended_at cannot be earlier than session start
         if ($newEndedAt->lt($session->started_at)) {
-            $newEndedAt = $session->started_at->copy();
+            return response()->json([
+                'message' => 'Время окончания не может быть раньше начала рабочего дня.',
+                'errors' => [
+                    'ended_at' => ['Время окончания не может быть раньше начала рабочего дня.'],
+                ],
+            ], 422);
         }
 
         $oldStartedAt = $session->started_at;
@@ -229,6 +246,14 @@ class WorkTimeController extends Controller
             'minutes' => $session->started_at->diffInMinutes($newEndedAt),
         ]);
 
+        // prepend service log "С <old> на <new>" to user's comment
+        $service = sprintf(
+            'С %s на %s',
+            $oldEndedAt ? $oldEndedAt->format('d.m.Y H:i') : '—',
+            $newEndedAt->format('d.m.Y H:i')
+        );
+        $fullComment = trim($service . ($data['comment'] ? ' — ' . $data['comment'] : ''));
+
         $this->logEdit(
             $request->user()->id,
             $session,
@@ -236,7 +261,65 @@ class WorkTimeController extends Controller
             $oldEndedAt,
             $session->started_at,
             $session->ended_at,
-            $data['comment']
+            $fullComment
+        );
+
+        // mark day as closed when editing the day's end
+        $workDay->update(['is_closed' => true]);
+
+        $this->recalculateDayTotals($workDay);
+        $workDay->refresh();
+
+        // after closing, there is no open day for the user
+        $openDay = $this->getOpenDay($request->user()->id);
+
+        return response()->json($this->buildState($openDay));
+    }
+
+    public function editDayStart(Request $request, WorkDay $workDay)
+    {
+        $data = $request->validate([
+            'started_at' => ['required', 'date'],
+            'comment' => ['required', 'string', 'min:3'],
+        ]);
+
+        $this->ensureOwner($request->user()->id, $workDay->user_id);
+
+        // edit the earliest session (start of the day)
+        $session = $workDay->sessions()->orderBy('started_at')->first();
+        if (! $session) {
+            return response()->json(['message' => 'Нет сессии для редактирования.'], 422);
+        }
+
+        $newStartedAt = Carbon::parse($data['started_at']);
+        if ($session->ended_at && $newStartedAt->gt($session->ended_at)) {
+            $newStartedAt = $session->ended_at->copy();
+        }
+
+        $oldStartedAt = $session->started_at;
+        $oldEndedAt = $session->ended_at;
+
+        $session->update([
+            'started_at' => $newStartedAt,
+            'minutes' => $session->ended_at ? $newStartedAt->diffInMinutes($session->ended_at) : $session->minutes,
+        ]);
+
+        // prepend service log "С <old> на <new>" to user's comment
+        $service = sprintf(
+            'С %s на %s',
+            $oldStartedAt ? $oldStartedAt->format('d.m.Y H:i') : '—',
+            $newStartedAt->format('d.m.Y H:i')
+        );
+        $fullComment = trim($service . ($data['comment'] ? ' — ' . $data['comment'] : ''));
+
+        $this->logEdit(
+            $request->user()->id,
+            $session,
+            $oldStartedAt,
+            $oldEndedAt,
+            $session->started_at,
+            $session->ended_at,
+            $fullComment
         );
 
         $this->recalculateDayTotals($workDay);
@@ -485,6 +568,8 @@ class WorkTimeController extends Controller
                 'work_date' => optional($day->work_date)->format('Y-m-d'),
                 'report' => $day->report,
                 'is_closed' => $day->is_closed,
+                // first open session start (may be null)
+                'started_at' => optional(optional($openSession)->started_at)->format('Y-m-d\\TH:i'),
                 'suggested_end_at' => now()->format('Y-m-d\\TH:i'),
             ],
             'breaks' => $day->breaks->map(function (WorkBreak $break) {

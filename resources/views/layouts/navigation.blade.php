@@ -227,6 +227,7 @@
                 data-end-break-url="{{ route('work-time.end-break') }}"
                 data-save-report-url="{{ route('work-time.save-report') }}"
                 data-end-day-url="{{ route('work-time.end-day') }}" data-edit-day-url="{{ url('work-time/work-days') }}"
+                data-edit-day-start-url="{{ url('work-time/work-days') }}"
                 data-add-break-url="{{ url('work-time/work-days') }}"
                 data-update-break-url="{{ url('work-time/breaks') }}"
                 data-delete-break-url="{{ url('work-time/breaks') }}">
@@ -307,10 +308,29 @@
                 <div class="mb-4 text-lg font-semibold">Редактирование времени</div>
 
                 <div class="rounded-lg border p-4">
+                    <div class="mb-2 text-sm font-semibold">Редактировать начало дня</div>
+                    <div class="grid gap-2 md:grid-cols-3">
+                        <input id="wt-edit-day-started-at" type="datetime-local"
+                            class="rounded border-gray-300 text-sm" />
+                        <input id="wt-edit-day-comment-start" type="text"
+                            class="rounded border-gray-300 text-sm md:col-span-2"
+                            placeholder="Комментарий, почему меняете время" />
+                    </div>
+                    <div class="mt-2 flex justify-end">
+                        <button id="wt-edit-day-start-save" type="button"
+                            class="rounded bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500">Сохранить
+                            начало</button>
+                    </div>
+                </div>
+
+                <div class="rounded-lg border p-4">
                     <div class="mb-2 text-sm font-semibold">Редактировать окончание дня</div>
                     <div class="grid gap-2 md:grid-cols-3">
-                        <input id="wt-edit-day-ended-at" type="datetime-local"
-                            class="rounded border-gray-300 text-sm" />
+                        <div>
+                            <input id="wt-edit-day-ended-at" type="datetime-local"
+                                class="rounded border-gray-300 text-sm w-full" />
+                            <div id="wt-edit-end-error" class="mt-1 text-sm text-rose-600 hidden"></div>
+                        </div>
                         <input id="wt-edit-day-comment" type="text"
                             class="rounded border-gray-300 text-sm md:col-span-2"
                             placeholder="Комментарий, почему меняете время" />
@@ -445,6 +465,7 @@
                             data-save-report-url="{{ route('work-time.save-report') }}"
                             data-end-day-url="{{ route('work-time.end-day') }}"
                             data-edit-day-url="{{ url('work-time/work-days') }}"
+                            data-edit-day-start-url="{{ url('work-time/work-days') }}"
                             data-add-break-url="{{ url('work-time/work-days') }}"
                             data-update-break-url="{{ url('work-time/breaks') }}"
                             data-delete-break-url="{{ url('work-time/breaks') }}">

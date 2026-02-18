@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
         Route::post('end-day', [WorkTimeController::class, 'endDay'])->name('end-day');
 
         Route::patch('work-days/{workDay}/end-time', [WorkTimeController::class, 'editDayEnd'])->name('work-days.end-time');
+        Route::patch('work-days/{workDay}/start-time', [WorkTimeController::class, 'editDayStart'])->name('work-days.start-time');
         Route::post('work-days/{workDay}/breaks', [WorkTimeController::class, 'addBreak'])->name('work-days.breaks.store');
 
         Route::patch('breaks/{workBreak}', [WorkTimeController::class, 'updateBreak'])->name('breaks.update');

@@ -10,6 +10,7 @@
         saveReport: container.dataset.saveReportUrl,
         endDay: container.dataset.endDayUrl,
         editDayEnd: container.dataset.editDayUrl,
+        editDayStart: container.dataset.editDayStartUrl,
         addBreak: container.dataset.addBreakUrl,
         updateBreak: container.dataset.updateBreakUrl,
         deleteBreak: container.dataset.deleteBreakUrl,
@@ -43,6 +44,15 @@
     );
 
     const editModal = document.getElementById("wt-edit-modal");
+    const editDayStartedAtInput = document.getElementById(
+        "wt-edit-day-started-at",
+    );
+    const editDayCommentStartInput = document.getElementById(
+        "wt-edit-day-comment-start",
+    );
+    const editDayStartSaveBtn = document.getElementById(
+        "wt-edit-day-start-save",
+    );
     const editDayEndedAtInput = document.getElementById("wt-edit-day-ended-at");
     const editDayCommentInput = document.getElementById("wt-edit-day-comment");
     const editDaySaveBtn = document.getElementById("wt-edit-day-save");
@@ -55,6 +65,9 @@
 
     const editsList = document.getElementById("wt-edits-list");
 
+    // inline error node for edit-end validation
+    const editDayEndError = document.getElementById("wt-edit-end-error");
+
     let currentState = null;
     let workSeconds = 0;
     let breakSeconds = 0;
@@ -64,11 +77,42 @@
     // remember previous work_day id so we can reset dirty when day changes
     let previousWorkDayId = null;
 
+    // modal-wide dirty flag: when true, do NOT overwrite any inputs inside the Edit modal
+    let modalDirty = false;
+
     if (endReportInput) {
         endReportInput.addEventListener("input", () => {
             reportDirty = true;
         });
     }
+
+    // mark modal as dirty when any input inside it changes (delegated)
+    if (editModal) {
+        editModal.addEventListener("input", (e) => {
+            modalDirty = true;
+            // clear specific end-time inline error when user edits the end or start field
+            if ((e.target === editDayEndedAtInput || e.target === editDayStartedAtInput) && editDayEndError) {
+                editDayEndError.classList.add("hidden");
+                editDayEndError.textContent = "";
+            }
+        });
+    }
+
+    // mark modal as dirty for dynamic breaks inputs
+    if (breaksList) {
+        breaksList.addEventListener("input", (e) => {
+            const row = e.target.closest("[data-id]");
+            if (row) modalDirty = true;
+        });
+    }
+
+    // add-break inputs should also mark modal as dirty
+    if (addBreakStart)
+        addBreakStart.addEventListener("input", () => (modalDirty = true));
+    if (addBreakEnd)
+        addBreakEnd.addEventListener("input", () => (modalDirty = true));
+    if (addBreakComment)
+        addBreakComment.addEventListener("input", () => (modalDirty = true));
 
     // server polling control — keep UI smooth locally but re-sync from API frequently when active
     let serverPollId = null;
@@ -217,9 +261,16 @@
             endReportInput.value = state?.work_day?.report || "";
         }
 
-        editDayEndedAtInput.value = state?.work_day?.suggested_end_at || "";
-        renderBreaks();
-        renderEdits();
+        const editOpen = editModal && !editModal.classList.contains("hidden");
+        // when edit modal is open and user is actively editing, skip overwriting modal inputs/breaks
+        if (!editOpen || !modalDirty) {
+            editDayStartedAtInput &&
+                (editDayStartedAtInput.value =
+                    state?.work_day?.started_at || "");
+            editDayEndedAtInput.value = state?.work_day?.suggested_end_at || "";
+            renderBreaks();
+            renderEdits();
+        }
 
         // remember currently open work_day id
         previousWorkDayId = state?.work_day?.id || null;
@@ -240,7 +291,11 @@
 
         if (!response.ok) {
             const message = json?.message || "Не удалось выполнить действие.";
-            throw new Error(message);
+            const err = new Error(message);
+            // attach status and validation errors (if any) for callers
+            err.status = response.status;
+            err.errors = json?.errors || null;
+            throw err;
         }
 
         return json;
@@ -267,6 +322,8 @@
 
     function openEditModal() {
         if (!currentState?.work_day) return;
+        // ensure modal is fresh when opened
+        modalDirty = false;
         editModal.classList.remove("hidden");
         renderBreaks();
         renderEdits();
@@ -274,6 +331,8 @@
 
     function closeEditModal() {
         editModal.classList.add("hidden");
+        // clear edit flags so polling can update modal next time
+        modalDirty = false;
     }
 
     function openConfirmModal() {
@@ -391,6 +450,30 @@
             alert("Добавьте комментарий к изменению.");
             return;
         }
+        // client-side validation: ended_at must not be earlier than start
+        if (
+            editDayEndedAtInput &&
+            editDayStartedAtInput &&
+            editDayEndedAtInput.value &&
+            editDayStartedAtInput.value
+        ) {
+            const ended = new Date(editDayEndedAtInput.value);
+            const started = new Date(editDayStartedAtInput.value);
+            if (ended < started) {
+                if (editDayEndError) {
+                    editDayEndError.textContent = 'Время окончания не может быть раньше начала рабочего дня.';
+                    editDayEndError.classList.remove('hidden');
+                } else {
+                    alert('Время окончания не может быть раньше начала рабочего дня.');
+                }
+                return;
+            }
+        }
+        // clear previous inline error
+        if (typeof editDayEndError !== "undefined" && editDayEndError) {
+            editDayEndError.classList.add("hidden");
+            editDayEndError.textContent = "";
+        }
 
         try {
             const state = await apiCall(
@@ -402,11 +485,56 @@
                 },
             );
             editDayCommentInput.value = "";
+            // saved — clear modal dirty so server response can be applied
+            modalDirty = false;
             renderState(state);
+            // if day was closed by this action, close the edit modal
+            if (!state?.work_day || state?.work_day?.is_closed) {
+                closeEditModal();
+            }
         } catch (e) {
+            // show server-side validation for ended_at inside modal (if present)
+            if (e?.status === 422 && e?.errors && e.errors.ended_at) {
+                if (typeof editDayEndError !== "undefined" && editDayEndError) {
+                    editDayEndError.textContent = e.errors.ended_at.join(", ");
+                    editDayEndError.classList.remove("hidden");
+                    return;
+                }
+            }
+
             alert(e.message);
         }
     });
+
+    // save start-of-day edit
+    if (editDayStartSaveBtn) {
+        editDayStartSaveBtn.addEventListener("click", async () => {
+            if (!currentState?.work_day?.id) return;
+
+            const comment = editDayCommentStartInput.value.trim();
+            if (!comment) {
+                alert("Добавьте комментарий к изменению.");
+                return;
+            }
+
+            try {
+                const state = await apiCall(
+                    `${routes.editDayStart}/${currentState.work_day.id}/start-time`,
+                    "PATCH",
+                    {
+                        started_at: editDayStartedAtInput.value,
+                        comment,
+                    },
+                );
+                editDayCommentStartInput.value = "";
+                // saved — clear modal dirty so server response can be applied
+                modalDirty = false;
+                renderState(state);
+            } catch (e) {
+                alert(e.message);
+            }
+        });
+    }
 
     addBreakSaveBtn.addEventListener("click", async () => {
         if (!currentState?.work_day?.id) return;
@@ -430,6 +558,8 @@
             addBreakStart.value = "";
             addBreakEnd.value = "";
             addBreakComment.value = "";
+            // saved new break — clear modal dirty so server value is rendered
+            modalDirty = false;
             renderState(state);
         } catch (e) {
             alert(e.message);
@@ -477,6 +607,8 @@
                     },
                 );
             }
+            // user made changes to breaks — clear modal dirty so server response is applied
+            modalDirty = false;
             renderState(state);
         } catch (e) {
             alert(e.message);
