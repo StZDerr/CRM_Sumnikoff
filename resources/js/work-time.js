@@ -91,7 +91,11 @@
         editModal.addEventListener("input", (e) => {
             modalDirty = true;
             // clear specific end-time inline error when user edits the end or start field
-            if ((e.target === editDayEndedAtInput || e.target === editDayStartedAtInput) && editDayEndError) {
+            if (
+                (e.target === editDayEndedAtInput ||
+                    e.target === editDayStartedAtInput) &&
+                editDayEndError
+            ) {
                 editDayEndError.classList.add("hidden");
                 editDayEndError.textContent = "";
             }
@@ -461,10 +465,13 @@
             const started = new Date(editDayStartedAtInput.value);
             if (ended < started) {
                 if (editDayEndError) {
-                    editDayEndError.textContent = 'Время окончания не может быть раньше начала рабочего дня.';
-                    editDayEndError.classList.remove('hidden');
+                    editDayEndError.textContent =
+                        "Время окончания не может быть раньше начала рабочего дня.";
+                    editDayEndError.classList.remove("hidden");
                 } else {
-                    alert('Время окончания не может быть раньше начала рабочего дня.');
+                    alert(
+                        "Время окончания не может быть раньше начала рабочего дня.",
+                    );
                 }
                 return;
             }
