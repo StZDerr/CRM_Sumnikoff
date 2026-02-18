@@ -273,7 +273,7 @@
 
                 <div class="mt-4 flex justify-end gap-2">
                     <button type="button" data-wt-close-end="1"
-                        class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">Выйти</button>
+                        class="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">Закрыть</button>
                     <button id="wt-save-report" type="button"
                         class="rounded bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500">Сохранить
                         инфу</button>

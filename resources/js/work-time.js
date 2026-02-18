@@ -59,6 +59,31 @@
     let workSeconds = 0;
     let breakSeconds = 0;
 
+    // track unsaved local edits for the "Что сделано за день" field
+    let reportDirty = false;
+    // remember previous work_day id so we can reset dirty when day changes
+    let previousWorkDayId = null;
+
+    if (endReportInput) {
+        endReportInput.addEventListener('input', () => {
+            reportDirty = true;
+        });
+    }
+
+    // server polling control — keep UI smooth locally but re-sync from API frequently when active
+    let serverPollId = null;
+    const FAST_POLL_MS = 5000;   // poll every 5s while working/paused
+    const SLOW_POLL_MS = 30000;  // poll every 30s when idle
+
+    function setPollingIntervalForMode(mode) {
+        if (serverPollId) {
+            clearInterval(serverPollId);
+            serverPollId = null;
+        }
+        const ms = mode === 'working' || mode === 'paused' ? FAST_POLL_MS : SLOW_POLL_MS;
+        serverPollId = setInterval(refreshState, ms);
+    }
+
     function formatSeconds(seconds) {
         const total = Math.max(0, Math.floor(Number(seconds || 0)));
         const h = String(Math.floor(total / 3600)).padStart(2, "0");
@@ -174,12 +199,27 @@
 
         setButtonVisibility(mode, Boolean(state?.work_day));
 
+        // ensure server polling matches current mode (work/paused -> faster polling)
+        setPollingIntervalForMode(mode);
+
         endAtInput.value = state?.work_day?.suggested_end_at || "";
-        endReportInput.value = state?.work_day?.report || "";
+
+        // reset dirty if the open work_day changed
+        if (state?.work_day?.id !== previousWorkDayId) {
+            reportDirty = false;
+        }
+
+        // do NOT overwrite user's unsaved input
+        if (!reportDirty) {
+            endReportInput.value = state?.work_day?.report || "";
+        }
 
         editDayEndedAtInput.value = state?.work_day?.suggested_end_at || "";
         renderBreaks();
         renderEdits();
+
+        // remember currently open work_day id
+        previousWorkDayId = state?.work_day?.id || null; 
     }
 
     async function apiCall(url, method = "GET", payload = null) {
@@ -259,6 +299,8 @@
                 ended_at: endAtInput.value,
                 report: endReportInput.value.trim(),
             });
+            // saved/ended the day — clear local dirty flag so server value can be applied
+            reportDirty = false;
             closeConfirmModal();
             closeEndModal();
             renderState(state);
@@ -329,6 +371,8 @@
             const state = await apiCall(routes.saveReport, "POST", {
                 report: endReportInput.value.trim(),
             });
+            // report saved — clear dirty so server value will be used
+            reportDirty = false;
             renderState(state);
             alert("Информация сохранена");
         } catch (e) {
@@ -436,6 +480,7 @@
         }
     });
 
+    // local per-second UI update (keeps display smooth) — actual values are periodically synced from server
     setInterval(() => {
         if (!currentState) return;
         if (currentState.mode === "working") {
@@ -449,6 +494,19 @@
         breakTimeEl.textContent = formatSeconds(breakSeconds);
     }, 1000);
 
+    // initial state fetch and start polling
     refreshState();
-    setInterval(refreshState, 30000);
+
+    // refresh immediately when page becomes visible or gains focus (handles sleep/resume)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            refreshState();
+        }
+    });
+    window.addEventListener('focus', refreshState);
+
+    // clear polling on unload
+    window.addEventListener('beforeunload', () => {
+        if (serverPollId) clearInterval(serverPollId);
+    });
 })();
