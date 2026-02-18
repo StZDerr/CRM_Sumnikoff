@@ -81,7 +81,14 @@
                                         {{ $domain->renew_price !== null ? number_format((float) $domain->renew_price, 0, '.', ' ') . ' ' . $currencySymbol : '—' }}
                                     </td>
                                     <td class="py-2 pr-4 {{ $domain->project ? '' : 'text-red-600' }}">
-                                        {{ $domain->project?->title ?? '—' }}
+                                        @if ($domain->project)
+                                            <a href="{{ route('projects.show', $domain->project) }}"
+                                                class="text-indigo-600 hover:underline">
+                                                {{ $domain->project->title }}
+                                            </a>
+                                        @else
+                                            —
+                                        @endif
                                     </td>
                                     <td class="py-2 pr-4">
                                         {{ $domain->provider === 'reg_ru' ? 'REG.RU' : 'Вручную' }}

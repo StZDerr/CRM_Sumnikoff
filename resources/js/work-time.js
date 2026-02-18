@@ -65,22 +65,25 @@
     let previousWorkDayId = null;
 
     if (endReportInput) {
-        endReportInput.addEventListener('input', () => {
+        endReportInput.addEventListener("input", () => {
             reportDirty = true;
         });
     }
 
     // server polling control — keep UI smooth locally but re-sync from API frequently when active
     let serverPollId = null;
-    const FAST_POLL_MS = 5000;   // poll every 5s while working/paused
-    const SLOW_POLL_MS = 30000;  // poll every 30s when idle
+    const FAST_POLL_MS = 5000; // poll every 5s while working/paused
+    const SLOW_POLL_MS = 30000; // poll every 30s when idle
 
     function setPollingIntervalForMode(mode) {
         if (serverPollId) {
             clearInterval(serverPollId);
             serverPollId = null;
         }
-        const ms = mode === 'working' || mode === 'paused' ? FAST_POLL_MS : SLOW_POLL_MS;
+        const ms =
+            mode === "working" || mode === "paused"
+                ? FAST_POLL_MS
+                : SLOW_POLL_MS;
         serverPollId = setInterval(refreshState, ms);
     }
 
@@ -219,7 +222,7 @@
         renderEdits();
 
         // remember currently open work_day id
-        previousWorkDayId = state?.work_day?.id || null; 
+        previousWorkDayId = state?.work_day?.id || null;
     }
 
     async function apiCall(url, method = "GET", payload = null) {
@@ -498,15 +501,15 @@
     refreshState();
 
     // refresh immediately when page becomes visible or gains focus (handles sleep/resume)
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
             refreshState();
         }
     });
-    window.addEventListener('focus', refreshState);
+    window.addEventListener("focus", refreshState);
 
     // clear polling on unload
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener("beforeunload", () => {
         if (serverPollId) clearInterval(serverPollId);
     });
 })();
