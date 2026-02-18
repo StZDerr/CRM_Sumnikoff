@@ -110,19 +110,17 @@
 
         {{-- Проекты --}}
         @php
-            $activeProjects = request()->routeIs(
-                'projects.*',
-                'calendar.*',
-                'stages.*',
-
-                'importances.*',
-            );
+            $activeProjects = request()->routeIs('projects.*', 'calendar.*', 'stages.*', 'avito.*', 'importances.*');
         @endphp
         @if (auth()->user()->isAdmin())
             {{-- ADMIN: выпадающий список --}}
             <x-buttons-dropdawn :active="$activeProjects" title="Проекты">
                 <x-dropdown-link :href="route('projects.index')" :active="request()->routeIs('projects.index')">
                     Проекты
+                </x-dropdown-link>
+
+                <x-dropdown-link :href="route('avito.index')" :active="request()->routeIs('avito.*')">
+                    Авито
                 </x-dropdown-link>
 
                 <x-dropdown-link :href="route('projects.arrears')" :active="request()->routeIs('projects.arrears')">
@@ -169,6 +167,10 @@
             </x-nav-link>
             <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
                 Проекты
+            </x-nav-link>
+
+            <x-nav-link :href="route('avito.index')" :active="request()->routeIs('avito.*')">
+                Авито
             </x-nav-link>
         @else
             <x-nav-link :href="route('lawyer.projects.index')" :active="request()->routeIs('lawyer.projects.index')">

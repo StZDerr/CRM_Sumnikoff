@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountCredentialController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AvitoController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CampaignSourceController;
@@ -47,6 +48,13 @@ Route::get('/welcome', [\App\Http\Controllers\DashboardController::class, 'welco
     ->name('welcome');
 
 Route::middleware('auth')->group(function () {
+
+    Route::get('avito', [AvitoController::class, 'index'])->name('avito.index');
+    Route::post('avito/accounts', [AvitoController::class, 'store'])->name('avito.accounts.store');
+    Route::post('avito/accounts/{avitoAccount}/sync', [AvitoController::class, 'sync'])->name('avito.accounts.sync');
+    Route::post('avito/accounts/sync-all', [AvitoController::class, 'syncAll'])->name('avito.accounts.sync-all');
+    Route::post('avito/accounts/{avitoAccount}/attach-project', [AvitoController::class, 'attachProject'])->name('avito.accounts.attach-project');
+
     // Dev welcome page for front-end developers (controller action)
     Route::get('/dev', [\App\Http\Controllers\DashboardController::class, 'dev'])
         ->name('dev')
