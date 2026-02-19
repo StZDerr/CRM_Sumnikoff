@@ -54,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::post('avito/accounts/{avitoAccount}/sync', [AvitoController::class, 'sync'])->name('avito.accounts.sync');
     Route::post('avito/accounts/sync-all', [AvitoController::class, 'syncAll'])->name('avito.accounts.sync-all');
     Route::post('avito/accounts/{avitoAccount}/attach-project', [AvitoController::class, 'attachProject'])->name('avito.accounts.attach-project');
+    Route::post('avito/accounts/{avitoAccount}/notification-settings', [AvitoController::class, 'updateNotificationSettings'])->name('avito.accounts.notification-settings');
 
     // Dev welcome page for front-end developers (controller action)
     Route::get('/dev', [\App\Http\Controllers\DashboardController::class, 'dev'])

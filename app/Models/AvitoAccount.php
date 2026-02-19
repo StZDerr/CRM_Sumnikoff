@@ -16,6 +16,8 @@ class AvitoAccount extends Model
         'oauth_data',
         'profile_data',
         'stats_data',
+        'notification_settings',
+        'notification_state',
         'last_synced_at',
         'is_active',
     ];
@@ -24,6 +26,8 @@ class AvitoAccount extends Model
         'oauth_data' => 'encrypted:array',
         'profile_data' => 'encrypted:array',
         'stats_data' => 'encrypted:array',
+        'notification_settings' => 'encrypted:array',
+        'notification_state' => 'encrypted:array',
         'is_active' => 'boolean',
         'last_synced_at' => 'datetime',
     ];

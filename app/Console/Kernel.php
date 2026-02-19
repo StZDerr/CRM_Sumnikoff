@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\UpdateProjectDebts::class,
         \App\Console\Commands\PauseProjectsOnCloseDate::class,
         \App\Console\Commands\AutoCloseWorkDays::class,
+        \App\Console\Commands\SyncAvitoAccounts::class,
     ];
 
     /**
@@ -38,6 +39,12 @@ class Kernel extends ConsoleKernel
         $schedule->command('worktime:auto-close')
             ->dailyAt('00:00')
             ->appendOutputTo(storage_path('logs/auto_close_work_days.log'));
+
+        // Автосинхронизация Avito-аккаунтов и проверка пороговых уведомлений
+        $schedule->command('avito:sync-accounts')
+            ->everyTenMinutes()
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/avito_sync_accounts.log'));
 
     }
 

@@ -83,12 +83,12 @@
                                         </span>
                                     </div>
                                 @else
-                                        <div class="mt-2">
-                                            <button type="button"
-                                                class="attach-project-open px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs"
-                                                data-account-id="{{ $account->id }}"
-                                                data-account-label="{{ $account->label }}">Привязать проект</button>
-                                        </div>
+                                    <div class="mt-2">
+                                        <button type="button"
+                                            class="attach-project-open px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs"
+                                            data-account-id="{{ $account->id }}"
+                                            data-account-label="{{ $account->label }}">Привязать проект</button>
+                                    </div>
                                 @endif
 
                                 <div class="text-xs text-gray-400 mt-1">
@@ -223,6 +223,51 @@
                                 {{ data_get($stats, 'error') }}
                             </div>
                         @endif
+
+                        <div class="mt-4 border border-gray-100 rounded-lg">
+                            <button type="button"
+                                class="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-600 toggle-alert-settings"
+                                data-account-id="{{ $account->id }}" aria-expanded="false">
+                                <span>Уведомления</span>
+                                <span class="text-gray-400">Показать</span>
+                            </button>
+
+                            <div id="alert-settings-{{ $account->id }}" class="hidden border-t border-gray-100 px-3 py-3">
+                                @php
+                                    $notificationSettings = $account->notification_settings ?? [];
+                                    $minAdvanceSetting = data_get($notificationSettings, 'min_advance');
+                                    $maxDailySpendingSetting = data_get($notificationSettings, 'max_daily_spending');
+                                @endphp
+
+                                <form method="POST" action="{{ route('avito.accounts.notification-settings', $account) }}"
+                                    class="space-y-3">
+                                    @csrf
+
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Аванс: порог (₽)</label>
+                                        <input name="min_advance" type="number" min="0" step="0.01"
+                                            value="{{ old('min_advance', $minAdvanceSetting) }}"
+                                            class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none"
+                                            placeholder="Например, 5000" />
+                                        <div class="mt-1 text-[11px] text-gray-400">Уведомление придёт, если аванс станет ниже порога.</div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Траты за день: порог (₽)</label>
+                                        <input name="max_daily_spending" type="number" min="0" step="0.01"
+                                            value="{{ old('max_daily_spending', $maxDailySpendingSetting) }}"
+                                            class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none"
+                                            placeholder="Например, 15000" />
+                                        <div class="mt-1 text-[11px] text-gray-400">Уведомление придёт, если траты за день превысят порог.</div>
+                                    </div>
+
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button type="submit"
+                                            class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs">Сохранить</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="border-t border-gray-100 px-5 py-3 text-xs text-gray-400">
@@ -278,36 +323,36 @@
             </div>
         </dialog>
 
-            <dialog id="attach-project-modal" class="rounded-2xl p-0 w-full max-w-md backdrop:bg-black/40">
-                <div class="bg-white rounded-2xl overflow-hidden">
-                    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                        <h2 id="attach-project-title" class="text-lg font-semibold text-gray-800">Привязать проект</h2>
-                        <button id="close-attach-project-modal" type="button"
-                            class="text-gray-400 hover:text-gray-600">✕</button>
+        <dialog id="attach-project-modal" class="rounded-2xl p-0 w-full max-w-md backdrop:bg-black/40">
+            <div class="bg-white rounded-2xl overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h2 id="attach-project-title" class="text-lg font-semibold text-gray-800">Привязать проект</h2>
+                    <button id="close-attach-project-modal" type="button"
+                        class="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+
+                <form id="attach-project-form" method="POST" action="#" class="p-5 space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Выберите проект</label>
+                        <select name="project_id" id="attach-project-select" required
+                            class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none">
+                            <option value="">— выбрать проект —</option>
+                            @foreach ($projects as $project)
+                                <option value="{{ $project->id }}">{{ $project->title }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
-                    <form id="attach-project-form" method="POST" action="#" class="p-5 space-y-4">
-                        @csrf
-                        <div>
-                            <label class="block text-sm text-gray-600 mb-1">Выберите проект</label>
-                            <select name="project_id" id="attach-project-select" required
-                                class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none">
-                                <option value="">— выбрать проект —</option>
-                                @foreach ($projects as $project)
-                                    <option value="{{ $project->id }}">{{ $project->title }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="flex items-center justify-end gap-2 pt-2">
-                            <button id="cancel-attach-project-modal" type="button"
-                                class="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600">Отмена</button>
-                            <button type="submit"
-                                class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm">Сохранить</button>
-                        </div>
-                    </form>
-                </div>
-            </dialog>
+                    <div class="flex items-center justify-end gap-2 pt-2">
+                        <button id="cancel-attach-project-modal" type="button"
+                            class="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600">Отмена</button>
+                        <button type="submit"
+                            class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </dialog>
     </div>
 
     <script>
@@ -345,45 +390,45 @@
         })();
     </script>
 
-        <script>
-            (function() {
-                const attachModal = document.getElementById('attach-project-modal');
-                const attachForm = document.getElementById('attach-project-form');
-                const attachSelect = document.getElementById('attach-project-select');
-                const openBtns = document.querySelectorAll('.attach-project-open');
-                const closeBtn = document.getElementById('close-attach-project-modal');
-                const cancelBtn = document.getElementById('cancel-attach-project-modal');
-                const title = document.getElementById('attach-project-title');
+    <script>
+        (function() {
+            const attachModal = document.getElementById('attach-project-modal');
+            const attachForm = document.getElementById('attach-project-form');
+            const attachSelect = document.getElementById('attach-project-select');
+            const openBtns = document.querySelectorAll('.attach-project-open');
+            const closeBtn = document.getElementById('close-attach-project-modal');
+            const cancelBtn = document.getElementById('cancel-attach-project-modal');
+            const title = document.getElementById('attach-project-title');
 
-                if (!attachModal || !attachForm) return;
+            if (!attachModal || !attachForm) return;
 
-                openBtns.forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const accountId = btn.getAttribute('data-account-id');
-                        const accountLabel = btn.getAttribute('data-account-label');
-                        attachForm.action = `/avito/accounts/${accountId}/attach-project`;
-                        title.textContent = `Привязать проект — ${accountLabel}`;
-                        attachSelect.value = '';
-                        attachModal.showModal();
-                    });
+            openBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const accountId = btn.getAttribute('data-account-id');
+                    const accountLabel = btn.getAttribute('data-account-label');
+                    attachForm.action = `/avito/accounts/${accountId}/attach-project`;
+                    title.textContent = `Привязать проект — ${accountLabel}`;
+                    attachSelect.value = '';
+                    attachModal.showModal();
                 });
+            });
 
-                closeBtn?.addEventListener('click', () => attachModal.close());
-                cancelBtn?.addEventListener('click', () => attachModal.close());
+            closeBtn?.addEventListener('click', () => attachModal.close());
+            cancelBtn?.addEventListener('click', () => attachModal.close());
 
-                attachModal.addEventListener('click', (event) => {
-                    const rect = attachModal.getBoundingClientRect();
-                    const isInside = (
-                        event.clientX >= rect.left &&
-                        event.clientX <= rect.right &&
-                        event.clientY >= rect.top &&
-                        event.clientY <= rect.bottom
-                    );
+            attachModal.addEventListener('click', (event) => {
+                const rect = attachModal.getBoundingClientRect();
+                const isInside = (
+                    event.clientX >= rect.left &&
+                    event.clientX <= rect.right &&
+                    event.clientY >= rect.top &&
+                    event.clientY <= rect.bottom
+                );
 
-                    if (!isInside) attachModal.close();
-                });
-            })();
-        </script>
+                if (!isInside) attachModal.close();
+            });
+        })();
+    </script>
 
     <script>
         (function() {
@@ -397,6 +442,22 @@
                     const isHidden = container.classList.toggle('hidden');
                     btn.setAttribute('aria-expanded', (!isHidden).toString());
                     btn.textContent = isHidden ? 'Показать' : 'Скрыть';
+                });
+            });
+
+            document.querySelectorAll('.toggle-alert-settings').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-account-id');
+                    const container = document.getElementById('alert-settings-' + id);
+                    if (!container) return;
+
+                    const isHidden = container.classList.toggle('hidden');
+                    btn.setAttribute('aria-expanded', (!isHidden).toString());
+
+                    const label = btn.querySelector('span:last-child');
+                    if (label) {
+                        label.textContent = isHidden ? 'Показать' : 'Скрыть';
+                    }
                 });
             });
         })();
