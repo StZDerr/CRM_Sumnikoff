@@ -13,10 +13,10 @@
                     </button>
                 </form>
 
-                <button id="open-avito-modal" type="button"
-                    class="px-4 py-2 rounded-full bg-indigo-600 text-white text-sm shadow">
-                    Добавить аккаунт
-                </button>
+                    <button id="open-avito-modal" type="button"
+                        class="px-4 py-2 rounded-full bg-indigo-600 text-white text-sm shadow">
+                        Добавить аккаунт
+                    </button>
             </div>
         </div>
 
@@ -243,7 +243,6 @@
             {{ $accounts->links() }}
         </div>
 
-        @if (auth()->user()?->isAdmin())
             <dialog id="avito-modal" class="rounded-2xl p-0 w-full max-w-md backdrop:bg-black/40">
                 <div class="bg-white rounded-2xl overflow-hidden">
                     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -280,7 +279,6 @@
                     </form>
                 </div>
             </dialog>
-        @endif
 
         {{-- Attach project modal (available to admin / project_manager) --}}
         @if (auth()->user()?->isAdmin() || auth()->user()?->isProjectManager())
@@ -317,7 +315,6 @@
         @endif
     </div>
 
-    @if (auth()->user()?->isAdmin())
         <script>
             (function() {
                 const modal = document.getElementById('avito-modal');
@@ -352,7 +349,6 @@
                 @endif
             })();
         </script>
-    @endif
 
     @if (auth()->user()?->isAdmin() || auth()->user()?->isProjectManager())
         <script>

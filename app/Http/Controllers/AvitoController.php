@@ -36,10 +36,6 @@ class AvitoController extends Controller
 
     public function store(Request $request, AvitoApiService $avitoApiService): RedirectResponse
     {
-        if (! auth()->user()?->isAdmin()) {
-            abort(403, 'Только администратор может добавлять аккаунты Avito');
-        }
-
         $data = $request->validate([
             'label' => ['required', 'string', 'max:255'],
             'project_id' => ['nullable', 'exists:projects,id'],
