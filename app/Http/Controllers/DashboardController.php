@@ -387,22 +387,31 @@ class DashboardController extends Controller
             ->whereRaw('DATE(COALESCE(payment_date, payments.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
             ->sum('usn_amount');
 
-        // Count barter/own/commercial projects for all time (always current total)
-        $barterCount = \App\Models\Project::where('payment_type', 'barter')->count();
-        $ownCount = \App\Models\Project::where('payment_type', 'own')->count();
-        $commercialCount = \App\Models\Project::where('payment_type', 'paid')->count();
+        // Count barter/own/commercial projects for all time (exclude paused/stopped)
+        $barterCount = \App\Models\Project::where('payment_type', 'barter')
+            ->whereNotIn('status', [\App\Models\Project::STATUS_PAUSED, \App\Models\Project::STATUS_STOPPED])
+            ->count();
+        $ownCount = \App\Models\Project::where('payment_type', 'own')
+            ->whereNotIn('status', [\App\Models\Project::STATUS_PAUSED, \App\Models\Project::STATUS_STOPPED])
+            ->count();
+        $commercialCount = \App\Models\Project::where('payment_type', 'paid')
+            ->whereNotIn('status', [\App\Models\Project::STATUS_PAUSED, \App\Models\Project::STATUS_STOPPED])
+            ->count();
 
         $barterProjects = \App\Models\Project::where('payment_type', 'barter')
+            ->whereNotIn('status', [\App\Models\Project::STATUS_PAUSED, \App\Models\Project::STATUS_STOPPED])
             ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
             ->orderBy('title')
             ->get();
 
         $ownProjects = \App\Models\Project::where('payment_type', 'own')
+            ->whereNotIn('status', [\App\Models\Project::STATUS_PAUSED, \App\Models\Project::STATUS_STOPPED])
             ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
             ->orderBy('title')
             ->get();
 
         $commercialProjects = \App\Models\Project::where('payment_type', 'paid')
+            ->whereNotIn('status', [\App\Models\Project::STATUS_PAUSED, \App\Models\Project::STATUS_STOPPED])
             ->select(['id', 'title', 'contract_amount', 'created_at', 'closed_at'])
             ->orderBy('title')
             ->get();
