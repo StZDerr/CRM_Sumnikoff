@@ -183,6 +183,24 @@ class BeelineCallRecordSyncService
         $department = (string) config('services.beeline_cloudpbx.sync_department', 'Отдел продаж ИТ');
 
         $maxKnownId = (int) (BeelineCallRecord::query()->max('beeline_id_int') ?? 0);
+
+        if ($maxKnownId <= 0) {
+            $result = $this->sync(
+                null,
+                null,
+                $dateFrom,
+                null,
+                $maxPages,
+                $downloadRecordFiles,
+                $department,
+            );
+
+            $result['checked_only'] = false;
+            $result['reason'] = 'bootstrap_full_sync';
+
+            return $result;
+        }
+
         $cursor = $maxKnownId > 0 ? $maxKnownId : null;
 
         $firstBatch = $this->beelineCloudPbxService->getRecords($cursor, null, null, null);
@@ -200,8 +218,6 @@ class BeelineCallRecordSyncService
             ];
         }
 
-        $firstScoped = collect($firstBatch)->first(fn (array $record) => $this->isRecordInScope($record, $dateFrom, $department));
-
         $firstRecordId = (string) data_get($firstBatch, '0.id', '');
         if ($firstRecordId !== '' && BeelineCallRecord::query()->where('beeline_id', $firstRecordId)->exists()) {
             return [
@@ -210,20 +226,6 @@ class BeelineCallRecordSyncService
                 'first_id' => $firstRecordId,
                 'pages' => 1,
                 'processed' => 0,
-                'inserted' => 0,
-                'skipped' => 0,
-                'files_downloaded' => 0,
-                'files_skipped' => 0,
-                'files_failed' => 0,
-            ];
-        }
-
-        if (! $firstScoped) {
-            return [
-                'checked_only' => true,
-                'reason' => 'no_data_in_scope',
-                'pages' => 1,
-                'processed' => count($firstBatch),
                 'inserted' => 0,
                 'skipped' => 0,
                 'files_downloaded' => 0,
@@ -488,8 +490,9 @@ class BeelineCallRecordSyncService
     protected function isRecordInScope(array $record, ?string $dateFrom, ?string $department): bool
     {
         if ($department !== null && $department !== '') {
-            $dep = (string) data_get($record, 'abonent.department', '');
-            if ($dep !== $department) {
+            $dep = trim((string) data_get($record, 'abonent.department', ''));
+            $expectedDepartment = trim((string) $department);
+            if (mb_strtolower($dep) !== mb_strtolower($expectedDepartment)) {
                 return false;
             }
         }
