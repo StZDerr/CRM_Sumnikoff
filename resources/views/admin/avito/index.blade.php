@@ -13,12 +13,10 @@
                     </button>
                 </form>
 
-                @if (auth()->user()?->isAdmin())
-                    <button id="open-avito-modal" type="button"
-                        class="px-4 py-2 rounded-full bg-indigo-600 text-white text-sm shadow">
-                        Добавить аккаунт
-                    </button>
-                @endif
+                <button id="open-avito-modal" type="button"
+                    class="px-4 py-2 rounded-full bg-indigo-600 text-white text-sm shadow">
+                    Добавить аккаунт
+                </button>
             </div>
         </div>
 
