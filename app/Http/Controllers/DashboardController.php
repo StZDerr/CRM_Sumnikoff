@@ -594,6 +594,8 @@ class DashboardController extends Controller
                     ->orWhereNotIn('projects.payment_type', ['barter', 'own'])
                     ->orWhere('expense_categories.is_domains_hosting', true);
             })
+            // don't include expenses from categories marked as "exclude_from_totals"
+            ->where('expense_categories.exclude_from_totals', false)
             ->whereRaw('DATE(COALESCE(expense_date, expenses.created_at)) between ? and ?', [$start->toDateString(), $end->toDateString()])
             ->orderByDesc('expenses.expense_date')
             ->orderByDesc('expenses.created_at')
