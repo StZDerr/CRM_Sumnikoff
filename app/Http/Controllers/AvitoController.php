@@ -15,8 +15,20 @@ class AvitoController extends Controller
     {
         $this->middleware('auth');
 
+        // Ограничиваем доступ к Avito: только admin, project_manager и marketer.
+        // Доступ верстальщикам и дизайнерам — запрещён.
         $this->middleware(function ($request, $next) {
-            if (auth()->check() && auth()->user()->isLawyer()) {
+            if (! auth()->check()) {
+                return $next($request);
+            }
+
+            $user = auth()->user();
+
+            if (! in_array($user->role, [
+                \App\Models\User::ROLE_ADMIN,
+                \App\Models\User::ROLE_PROJECT_MANAGER,
+                \App\Models\User::ROLE_MARKETER,
+            ], true)) {
                 abort(403, 'Доступ запрещён');
             }
 
@@ -27,6 +39,11 @@ class AvitoController extends Controller
     public function index(): View
     {
         $accounts = AvitoAccount::with(['project.marketer'])
+            ->when(auth()->user()->isMarketer(), function ($q) {
+                $q->whereHas('project', function ($q2) {
+                    $q2->where('marketer_id', auth()->id());
+                });
+            })
             ->orderByDesc('id')
             ->paginate(12);
 
@@ -164,4 +181,3 @@ class AvitoController extends Controller
         return redirect()->route('avito.index')->with('success', "Настройки уведомлений для аккаунта {$avitoAccount->label} сохранены.");
     }
 }
-

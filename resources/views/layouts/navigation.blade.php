@@ -161,8 +161,8 @@
                     Домены
                 </x-dropdown-link>
             </x-buttons-dropdawn>
-        @elseif (auth()->user()->isProjectManager() || auth()->user()->isMarketer() || auth()->user()->isFrontend())
-            {{-- НЕ admin: обычная кнопка --}}
+        @elseif (auth()->user()->isProjectManager() || auth()->user()->isMarketer())
+            {{-- НЕ admin: обычная кнопка (верстальщики не видят Авито) --}}
             @if (auth()->user()->isProjectManager())
                 <x-nav-link :href="route('account-credentials.itSumnikoff')" :active="request()->routeIs('account-credentials.itSumnikoff')">
                     Доступы Наши
