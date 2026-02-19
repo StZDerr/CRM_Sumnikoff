@@ -5,9 +5,21 @@ namespace App\Services;
 use App\Models\AvitoAccount;
 use App\Models\User;
 use App\Models\UserNotification;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AvitoNotificationService
 {
+    public function sendTestTelegramMessage(?string $message = null): array
+    {
+        $text = trim((string) $message);
+        if ($text === '') {
+            $text = '🧪 Тестовое сообщение Avito-бота '.now()->format('d.m.Y H:i:s');
+        }
+
+        return $this->sendTelegramMessage($text);
+    }
+
     public function processThresholdAlerts(AvitoAccount $account): void
     {
         $settings = $account->notification_settings ?? [];
@@ -20,7 +32,7 @@ class AvitoNotificationService
 
         $stats = $account->stats_data ?? [];
         $advance = (float) data_get($stats, 'advance', 0);
-        $spendingToday = (float) data_get($stats, 'spending_today', 0);
+        $spendingPerDay = (float) data_get($stats, 'spending_per_day', data_get($stats, 'spending_today', 0));
 
         $state = $account->notification_state ?? [];
 
@@ -38,10 +50,10 @@ class AvitoNotificationService
         }
 
         if ($maxDailySpending !== null) {
-            $isBreached = $spendingToday > $maxDailySpending;
+            $isBreached = $spendingPerDay >= $maxDailySpending;
 
             if ($isBreached) {
-                $this->sendHighSpendingAlert($account, $spendingToday, $maxDailySpending);
+                $this->sendHighSpendingAlert($account, $spendingPerDay, $maxDailySpending);
                 $state['spending_alert_last_sent_at'] = now()->toDateTimeString();
             }
 
@@ -56,6 +68,19 @@ class AvitoNotificationService
 
     protected function sendLowAdvanceAlert(AvitoAccount $account, float $currentAdvance, float $threshold): void
     {
+        $account->loadMissing('project.marketer');
+        $responsibleName = $this->resolveResponsibleName($account);
+
+        $telegramMessage = sprintf(
+            "Ответственная: %s\n⚠️ ВНИМАНИЕ! У вас Аванс по аккаунту «%s» ниже порога: %s ₽ < %s ₽.",
+            $responsibleName,
+            $account->label,
+            $this->formatMoney($currentAdvance),
+            $this->formatMoney($threshold)
+        );
+
+        $this->sendTelegramMessage($telegramMessage);
+
         $this->sendToRecipients(
             $account,
             type: 'avito.advance.low',
@@ -78,12 +103,25 @@ class AvitoNotificationService
 
     protected function sendHighSpendingAlert(AvitoAccount $account, float $spendingToday, float $threshold): void
     {
+        $account->loadMissing('project.marketer');
+        $responsibleName = $this->resolveResponsibleName($account);
+
+        $telegramMessage = sprintf(
+            "Ответственная: %s\n⚠️ ВНИМАНИЕ! У вас Траты/день по аккаунту «%s» выше порога: %s ₽ > %s ₽.",
+            $responsibleName,
+            $account->label,
+            $this->formatMoney($spendingToday),
+            $this->formatMoney($threshold)
+        );
+
+        $this->sendTelegramMessage($telegramMessage);
+
         $this->sendToRecipients(
             $account,
             type: 'avito.spending.high',
             title: 'Превышение трат Avito за день',
             message: sprintf(
-                'Траты за день по аккаунту «%s» превысили порог: %s ₽ > %s ₽.',
+                'Траты/день по аккаунту «%s» достигли/превысили порог: %s ₽ >= %s ₽.',
                 $account->label,
                 $this->formatMoney($spendingToday),
                 $this->formatMoney($threshold)
@@ -91,7 +129,7 @@ class AvitoNotificationService
             data: [
                 'event' => 'avito_spending_high',
                 'avito_account_id' => $account->id,
-                'metric' => 'spending_today',
+                'metric' => 'spending_per_day',
                 'current_value' => $spendingToday,
                 'threshold_value' => $threshold,
             ]
@@ -154,5 +192,66 @@ class AvitoNotificationService
     protected function formatMoney(float $amount): string
     {
         return number_format($amount, 2, ',', ' ');
+    }
+
+    protected function resolveResponsibleName(AvitoAccount $account): string
+    {
+        $name = trim((string) data_get($account, 'project.marketer.name', ''));
+
+        return $name !== '' ? $name : 'не назначена';
+    }
+
+    protected function sendTelegramMessage(string $message): array
+    {
+        $token = (string) config('avito.telegram.bot_token');
+        $chatId = (string) config('avito.telegram.chat_id');
+        $threadId = config('avito.telegram.message_thread_id');
+
+        if ($token === '' || $chatId === '') {
+            return [
+                'sent' => false,
+                'error' => 'Не заполнены AVITO_TELEGRAM_BOT_TOKEN или AVITO_TELEGRAM_CHAT_ID в .env',
+            ];
+        }
+
+        try {
+            $payload = [
+                'chat_id' => $chatId,
+                'text' => $message,
+            ];
+
+            if ($threadId !== null && $threadId !== '' && is_numeric($threadId)) {
+                $payload['message_thread_id'] = (int) $threadId;
+            }
+
+            $response = Http::asForm()->post("https://api.telegram.org/bot{$token}/sendMessage", $payload);
+
+            if (! $response->ok()) {
+                Log::warning('Avito telegram notification failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return [
+                    'sent' => false,
+                    'status' => $response->status(),
+                    'error' => $response->body(),
+                ];
+            }
+
+            return [
+                'sent' => true,
+                'status' => $response->status(),
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Avito telegram notification exception', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'sent' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
     }
 }

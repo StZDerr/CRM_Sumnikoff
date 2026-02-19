@@ -249,7 +249,8 @@
                                             value="{{ old('min_advance', $minAdvanceSetting) }}"
                                             class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none"
                                             placeholder="Например, 5000" />
-                                        <div class="mt-1 text-[11px] text-gray-400">Уведомление придёт, если аванс станет ниже порога.</div>
+                                        <div class="mt-1 text-[11px] text-gray-400">Уведомление придёт, если аванс станет
+                                            ниже порога.</div>
                                     </div>
 
                                     <div>
@@ -258,7 +259,8 @@
                                             value="{{ old('max_daily_spending', $maxDailySpendingSetting) }}"
                                             class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none"
                                             placeholder="Например, 15000" />
-                                        <div class="mt-1 text-[11px] text-gray-400">Уведомление придёт, если траты за день превысят порог.</div>
+                                        <div class="mt-1 text-[11px] text-gray-400">Уведомление придёт, если траты за день
+                                            превысят порог.</div>
                                     </div>
 
                                     <div class="flex items-center justify-end gap-2">
