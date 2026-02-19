@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'beeline_cloudpbx' => [
+        'base_url' => env('BEELINE_CLOUDPBX_BASE_URL', 'https://cloudpbx.beeline.ru'),
+        'api_token' => env('BEELINE_CLOUDPBX_API_TOKEN', ''),
+        'sync_date_from' => env('BEELINE_SYNC_DATE_FROM', '2026-02-19 00:00:00'),
+        'sync_department' => env('BEELINE_SYNC_DEPARTMENT', 'Отдел продаж ИТ'),
+    ],
+
 ];

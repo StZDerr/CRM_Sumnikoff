@@ -35,6 +35,11 @@
             <x-nav-link :href="route('account-credentials.itSumnikoff')" :active="request()->routeIs('account-credentials.itSumnikoff')">
                 Доступы Наши
             </x-nav-link>
+
+            <x-nav-link :href="route('bilain.index')" :active="request()->routeIs('bilain.*')">
+                Билайн
+            </x-nav-link>
+
             <x-nav-link :href="route('specialties.index')" :active="request()->routeIs('specialties.*')">
                 Специальности
             </x-nav-link>

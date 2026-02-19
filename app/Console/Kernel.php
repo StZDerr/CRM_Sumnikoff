@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\PauseProjectsOnCloseDate::class,
         \App\Console\Commands\AutoCloseWorkDays::class,
         \App\Console\Commands\SyncAvitoAccounts::class,
+        \App\Console\Commands\SyncBeelineCallRecords::class,
     ];
 
     /**
@@ -45,6 +46,12 @@ class Kernel extends ConsoleKernel
             ->everyTenMinutes()
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/avito_sync_accounts.log'));
+
+        // Автосинхронизация записей звонков Beeline (каждую минуту, инкрементально)
+        $schedule->command('beeline:sync-records --mode=incremental')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/beeline_sync_records.log'));
 
     }
 

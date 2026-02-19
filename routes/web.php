@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountCredentialController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AvitoController;
 use App\Http\Controllers\BankAccountController;
+use App\Http\Controllers\BilainController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CampaignSourceController;
 use App\Http\Controllers\CampaignStatusController;
@@ -50,11 +51,17 @@ Route::get('/welcome', [\App\Http\Controllers\DashboardController::class, 'welco
 Route::middleware('auth')->group(function () {
 
     Route::get('avito', [AvitoController::class, 'index'])->name('avito.index');
+
     Route::post('avito/accounts', [AvitoController::class, 'store'])->name('avito.accounts.store');
     Route::post('avito/accounts/{avitoAccount}/sync', [AvitoController::class, 'sync'])->name('avito.accounts.sync');
     Route::post('avito/accounts/sync-all', [AvitoController::class, 'syncAll'])->name('avito.accounts.sync-all');
     Route::post('avito/accounts/{avitoAccount}/attach-project', [AvitoController::class, 'attachProject'])->name('avito.accounts.attach-project');
     Route::post('avito/accounts/{avitoAccount}/notification-settings', [AvitoController::class, 'updateNotificationSettings'])->name('avito.accounts.notification-settings');
+
+    Route::get('bilain', [BilainController::class, 'index'])->name('bilain.index');
+    Route::get('bilain/records', [BilainController::class, 'records'])->name('bilain.records');
+    Route::get('bilain/records/{record}/stream', [BilainController::class, 'streamStoredRecordFile'])->name('bilain.records.stream');
+    Route::get('bilain/records/{record}/file', [BilainController::class, 'downloadStoredRecordFile'])->name('bilain.records.file');
 
     // Dev welcome page for front-end developers (controller action)
     Route::get('/dev', [\App\Http\Controllers\DashboardController::class, 'dev'])
