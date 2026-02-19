@@ -13,10 +13,10 @@
                     </button>
                 </form>
 
-                    <button id="open-avito-modal" type="button"
-                        class="px-4 py-2 rounded-full bg-indigo-600 text-white text-sm shadow">
-                        Добавить аккаунт
-                    </button>
+                <button id="open-avito-modal" type="button"
+                    class="px-4 py-2 rounded-full bg-indigo-600 text-white text-sm shadow">
+                    Добавить аккаунт
+                </button>
             </div>
         </div>
 
@@ -83,14 +83,12 @@
                                         </span>
                                     </div>
                                 @else
-                                    @if (auth()->user()?->isAdmin() || auth()->user()?->isProjectManager())
                                         <div class="mt-2">
                                             <button type="button"
                                                 class="attach-project-open px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs"
                                                 data-account-id="{{ $account->id }}"
                                                 data-account-label="{{ $account->label }}">Привязать проект</button>
                                         </div>
-                                    @endif
                                 @endif
 
                                 <div class="text-xs text-gray-400 mt-1">
@@ -243,45 +241,43 @@
             {{ $accounts->links() }}
         </div>
 
-            <dialog id="avito-modal" class="rounded-2xl p-0 w-full max-w-md backdrop:bg-black/40">
-                <div class="bg-white rounded-2xl overflow-hidden">
-                    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                        <h2 class="text-lg font-semibold text-gray-800">Добавить аккаунт Avito</h2>
-                        <button id="close-avito-modal" type="button" class="text-gray-400 hover:text-gray-600">✕</button>
+        <dialog id="avito-modal" class="rounded-2xl p-0 w-full max-w-md backdrop:bg-black/40">
+            <div class="bg-white rounded-2xl overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-800">Добавить аккаунт Avito</h2>
+                    <button id="close-avito-modal" type="button" class="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+
+                <form method="POST" action="{{ route('avito.accounts.store') }}" class="p-5 space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Название в CRM</label>
+                        <input name="label" type="text" value="{{ old('label') }}" required
+                            class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none" />
                     </div>
 
-                    <form method="POST" action="{{ route('avito.accounts.store') }}" class="p-5 space-y-4">
-                        @csrf
-                        <div>
-                            <label class="block text-sm text-gray-600 mb-1">Название в CRM</label>
-                            <input name="label" type="text" value="{{ old('label') }}" required
-                                class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none" />
-                        </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Client ID</label>
+                        <input name="client_id" type="text" value="{{ old('client_id') }}" required
+                            class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none" />
+                    </div>
 
-                        <div>
-                            <label class="block text-sm text-gray-600 mb-1">Client ID</label>
-                            <input name="client_id" type="text" value="{{ old('client_id') }}" required
-                                class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none" />
-                        </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Client Secret</label>
+                        <input name="client_secret" type="password" value="{{ old('client_secret') }}" required
+                            class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none" />
+                    </div>
 
-                        <div>
-                            <label class="block text-sm text-gray-600 mb-1">Client Secret</label>
-                            <input name="client_secret" type="password" value="{{ old('client_secret') }}" required
-                                class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none" />
-                        </div>
+                    <div class="flex items-center justify-end gap-2 pt-2">
+                        <button id="cancel-avito-modal" type="button"
+                            class="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600">Отмена</button>
+                        <button type="submit"
+                            class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </dialog>
 
-                        <div class="flex items-center justify-end gap-2 pt-2">
-                            <button id="cancel-avito-modal" type="button"
-                                class="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600">Отмена</button>
-                            <button type="submit"
-                                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Сохранить</button>
-                        </div>
-                    </form>
-                </div>
-            </dialog>
-
-        {{-- Attach project modal (available to admin / project_manager) --}}
-        @if (auth()->user()?->isAdmin() || auth()->user()?->isProjectManager())
             <dialog id="attach-project-modal" class="rounded-2xl p-0 w-full max-w-md backdrop:bg-black/40">
                 <div class="bg-white rounded-2xl overflow-hidden">
                     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -312,45 +308,43 @@
                     </form>
                 </div>
             </dialog>
-        @endif
     </div>
 
-        <script>
-            (function() {
-                const modal = document.getElementById('avito-modal');
-                const openBtn = document.getElementById('open-avito-modal');
-                const closeBtn = document.getElementById('close-avito-modal');
-                const cancelBtn = document.getElementById('cancel-avito-modal');
+    <script>
+        (function() {
+            const modal = document.getElementById('avito-modal');
+            const openBtn = document.getElementById('open-avito-modal');
+            const closeBtn = document.getElementById('close-avito-modal');
+            const cancelBtn = document.getElementById('cancel-avito-modal');
 
-                if (!modal || !openBtn) {
-                    return;
+            if (!modal || !openBtn) {
+                return;
+            }
+
+            openBtn.addEventListener('click', () => modal.showModal());
+            closeBtn?.addEventListener('click', () => modal.close());
+            cancelBtn?.addEventListener('click', () => modal.close());
+
+            modal.addEventListener('click', (event) => {
+                const rect = modal.getBoundingClientRect();
+                const isInside = (
+                    event.clientX >= rect.left &&
+                    event.clientX <= rect.right &&
+                    event.clientY >= rect.top &&
+                    event.clientY <= rect.bottom
+                );
+
+                if (!isInside) {
+                    modal.close();
                 }
+            });
 
-                openBtn.addEventListener('click', () => modal.showModal());
-                closeBtn?.addEventListener('click', () => modal.close());
-                cancelBtn?.addEventListener('click', () => modal.close());
+            @if ($errors->any())
+                modal.showModal();
+            @endif
+        })();
+    </script>
 
-                modal.addEventListener('click', (event) => {
-                    const rect = modal.getBoundingClientRect();
-                    const isInside = (
-                        event.clientX >= rect.left &&
-                        event.clientX <= rect.right &&
-                        event.clientY >= rect.top &&
-                        event.clientY <= rect.bottom
-                    );
-
-                    if (!isInside) {
-                        modal.close();
-                    }
-                });
-
-                @if ($errors->any())
-                    modal.showModal();
-                @endif
-            })();
-        </script>
-
-    @if (auth()->user()?->isAdmin() || auth()->user()?->isProjectManager())
         <script>
             (function() {
                 const attachModal = document.getElementById('attach-project-modal');
@@ -390,7 +384,6 @@
                 });
             })();
         </script>
-    @endif
 
     <script>
         (function() {

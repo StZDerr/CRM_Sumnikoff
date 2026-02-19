@@ -123,11 +123,6 @@ class AvitoController extends Controller
 
     public function attachProject(Request $request, AvitoAccount $avitoAccount)
     {
-        // allow admin and project manager to bind
-        if (! auth()->user()?->isAdmin() && ! auth()->user()?->isProjectManager()) {
-            abort(403, 'Доступ запрещён');
-        }
-
         $data = $request->validate([
             'project_id' => ['required', 'exists:projects,id'],
         ]);
