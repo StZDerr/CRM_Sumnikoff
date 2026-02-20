@@ -71,6 +71,8 @@
     let currentState = null;
     let workSeconds = 0;
     let breakSeconds = 0;
+    // remaining time until (first session started_at + 9 hours) in seconds
+    let remainingSeconds = 9 * 3600;
 
     // track unsaved local edits for the "Что сделано за день" field
     let reportDirty = false;
@@ -142,6 +144,11 @@
         const s = String(total % 60).padStart(2, "0");
 
         return `${h}:${m}:${s}`;
+    }
+
+    function updateRemainingDisplay(sec) {
+        const txt = formatSeconds(sec ?? 0);
+        document.querySelectorAll('#wt-remaining-time').forEach((el) => (el.textContent = txt));
     }
 
     function setButtonVisibility(mode, hasDay) {
@@ -275,6 +282,21 @@
             renderBreaks();
             renderEdits();
         }
+
+        // remaining time: use first-session start (if provided by server) + 9 hours
+        const DAY_TARGET_SECONDS = 9 * 3600;
+        if (state?.work_day?.started_at) {
+            const startedAt = new Date(state.work_day.started_at);
+            if (!isNaN(startedAt)) {
+                const targetMs = startedAt.getTime() + DAY_TARGET_SECONDS * 1000;
+                remainingSeconds = Math.max(0, Math.ceil((targetMs - Date.now()) / 1000));
+            } else {
+                remainingSeconds = DAY_TARGET_SECONDS;
+            }
+        } else {
+            remainingSeconds = DAY_TARGET_SECONDS;
+        }
+        updateRemainingDisplay(remainingSeconds);
 
         // remember currently open work_day id
         previousWorkDayId = state?.work_day?.id || null;
@@ -632,8 +654,14 @@
             breakSeconds += 1;
         }
 
+        // decrement remaining counter every second
+        if (typeof remainingSeconds !== 'undefined' && remainingSeconds > 0) {
+            remainingSeconds = Math.max(0, remainingSeconds - 1);
+        }
+
         workTimeEl.textContent = formatSeconds(workSeconds);
         breakTimeEl.textContent = formatSeconds(breakSeconds);
+        updateRemainingDisplay(remainingSeconds);
     }, 1000);
 
     // initial state fetch and start polling

@@ -32,6 +32,7 @@ class SendAvitoAlerts extends Command
 
         if ($accounts->isEmpty()) {
             $this->info('Нет активных аккаунтов.');
+
             return self::SUCCESS;
         }
 
@@ -63,7 +64,7 @@ class SendAvitoAlerts extends Command
             }
         }
 
-        if ($sendSummary && !empty($summaryLines)) {
+        if ($sendSummary && ! empty($summaryLines)) {
             $text = sprintf(
                 "📊 Сводка Avito — %s\n\n%s",
                 now()->timezone('Europe/Moscow')->format('d.m.Y H:i'),

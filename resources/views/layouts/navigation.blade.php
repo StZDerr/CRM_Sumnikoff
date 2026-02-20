@@ -249,6 +249,8 @@
                 <div class="text-xs text-gray-500">Пауза: <span id="wt-break-time" class="font-mono">00:00:00</span>
                 </div>
 
+                <div class="text-xs text-gray-500">Осталось работать: <span id="wt-remaining-time" class="font-mono">09:00:00</span></div>
+
                 <div class="mt-3 grid grid-cols-2 gap-2">
                     <button id="wt-btn-start" type="button"
                         class="w-full rounded bg-emerald-600 px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-500">Начать
@@ -487,6 +489,10 @@
                             </div>
                             <div class="text-xs text-gray-600">Пауза: <span id="wt-break-time"
                                     class="font-mono">00:00:00</span></div>
+
+                            <div class="text-xs text-gray-600">Осталось работать: <span id="wt-remaining-time" class="font-mono">09:00:00</span></div>
+
+
 
                             <div class="mt-3 flex flex-wrap gap-2">
                                 <button id="wt-btn-start" type="button"

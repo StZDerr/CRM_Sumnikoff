@@ -518,20 +518,51 @@ class WorkTimeController extends Controller
         $openSession = $day->sessions->firstWhere('ended_at', null);
         $openBreak = $day->breaks->firstWhere('ended_at', null);
 
-        $workSeconds = (int) $day->sessions
-            ->filter(fn ($s) => $s->ended_at)
-            ->sum(fn ($s) => $s->started_at && $s->ended_at ? $s->started_at->diffInSeconds($s->ended_at) : 0);
+        // earliest session of the day (time when user came)
+        $firstSession = $day->sessions->sortBy('started_at')->first();
 
-        $breakSeconds = (int) $day->breaks
-            ->filter(fn ($b) => $b->ended_at)
-            ->sum(fn ($b) => $b->started_at && $b->ended_at ? $b->started_at->diffInSeconds($b->ended_at) : 0);
+        // Build arrays of intervals for breaks (use `now()` for open breaks)
+        $breakIntervals = $day->breaks->map(function ($b) {
+            $start = $b->started_at;
+            $end = $b->ended_at ?? now();
+            if (! $start || ! $end) return null;
+            return [ 'start' => $start->copy(), 'end' => $end->copy() ];
+        })->filter()->values();
 
-        if ($openSession && $openSession->started_at) {
-            $workSeconds += $openSession->started_at->diffInSeconds(now());
-        }
+        // total break seconds (closed + open)
+        $breakSeconds = (int) $breakIntervals->sum(function ($i) {
+            return $i['start']->diffInSeconds($i['end']);
+        });
 
-        if ($openBreak && $openBreak->started_at) {
-            $breakSeconds += $openBreak->started_at->diffInSeconds(now());
+        // Calculate work seconds per session but subtract any overlapping break intervals.
+        $workSeconds = 0;
+        foreach ($day->sessions as $s) {
+            if (! $s->started_at) continue;
+            $sStart = $s->started_at->copy();
+            $sEnd = $s->ended_at ? $s->ended_at->copy() : now()->copy();
+
+            // base session length
+            $sessionSeconds = $sStart->diffInSeconds($sEnd);
+
+            // subtract overlapping breaks
+            foreach ($breakIntervals as $bi) {
+                $bStart = $bi['start'];
+                $bEnd = $bi['end'];
+
+                // no overlap
+                if ($bEnd->lte($sStart) || $bStart->gte($sEnd)) {
+                    continue;
+                }
+
+                $overlapStart = $sStart->gt($bStart) ? $sStart : $bStart;
+                $overlapEnd = $sEnd->lt($bEnd) ? $sEnd : $bEnd;
+
+                if ($overlapEnd->gt($overlapStart)) {
+                    $sessionSeconds -= $overlapStart->diffInSeconds($overlapEnd);
+                }
+            }
+
+            $workSeconds += max(0, (int) $sessionSeconds);
         }
 
         $mode = 'open';
@@ -568,8 +599,8 @@ class WorkTimeController extends Controller
                 'work_date' => optional($day->work_date)->format('Y-m-d'),
                 'report' => $day->report,
                 'is_closed' => $day->is_closed,
-                // first open session start (may be null)
-                'started_at' => optional(optional($openSession)->started_at)->format('Y-m-d\\TH:i'),
+                // first session start (time when user came) — use earliest session
+                'started_at' => optional(optional($firstSession)->started_at)->format('Y-m-d\\TH:i'),
                 'suggested_end_at' => now()->format('Y-m-d\\TH:i'),
             ],
             'breaks' => $day->breaks->map(function (WorkBreak $break) {
