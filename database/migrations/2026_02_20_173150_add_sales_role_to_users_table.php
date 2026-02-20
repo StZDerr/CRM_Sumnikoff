@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Добавляем в enum новую опцию 'sales' (оставляем и 'lawyer' на случай, если позже добавится отдельная миграция)
+        // Добавляем новую опцию enum 'lawyer' в поле role
         Schema::table('users', function (Blueprint $table) {
             $table->enum('role', [
                 'admin',
@@ -20,7 +20,7 @@ return new class extends Migration
                 'frontend',
                 'designer',
                 'lawyer',
-                'lawyer',
+                'sales',
             ])->default('frontend')->change();
         });
     }
@@ -37,6 +37,7 @@ return new class extends Migration
                 'marketer',
                 'frontend',
                 'designer',
+                'lawyer',
             ])->default('frontend')->change();
         });
     }

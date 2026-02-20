@@ -30,7 +30,13 @@
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <div class="font-medium text-gray-900">{{ $source->name }}</div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="font-medium text-gray-900">{{ $source->name }}</div>
+                                        @if ($source->is_lead_source)
+                                            <span
+                                                class="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Лид</span>
+                                        @endif
+                                    </div>
                                     <div class="text-xs text-gray-500">{{ $source->slug ?? '-' }}</div>
                                 </div>
                                 <div class="text-sm text-gray-400">#{{ $source->sort_order }}</div>

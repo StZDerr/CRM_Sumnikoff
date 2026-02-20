@@ -32,6 +32,7 @@ class CampaignSourceController extends Controller
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:campaign_sources,slug',
             'sort_order' => 'nullable|integer|min:1',
+            'is_lead_source' => 'nullable|boolean',
         ]);
 
         if (empty($data['slug'])) {
@@ -69,6 +70,7 @@ class CampaignSourceController extends Controller
             'name' => 'required|string|max:255',
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('campaign_sources', 'slug')->ignore($campaignSource->id)],
             'sort_order' => 'nullable|integer|min:1',
+            'is_lead_source' => 'nullable|boolean',
         ]);
 
         if (empty($data['slug'])) {

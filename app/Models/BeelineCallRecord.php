@@ -36,6 +36,7 @@ class BeelineCallRecord extends Model
         'record_file_downloaded_at',
         'record_file_error',
         'synced_at',
+        'phone_lead_id',
     ];
 
     protected $casts = [
@@ -44,4 +45,9 @@ class BeelineCallRecord extends Model
         'record_file_downloaded_at' => 'datetime',
         'synced_at' => 'datetime',
     ];
+
+    public function phoneLead()
+    {
+        return $this->belongsTo(PhoneLead::class);
+    }
 }

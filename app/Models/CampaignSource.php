@@ -14,16 +14,19 @@ class CampaignSource extends Model
         'name',
         'slug',
         'sort_order',
+        'is_lead_source', // пометка: источник для лидов / отдела продаж
     ];
 
     /** Приведения типов */
     protected $casts = [
         'sort_order' => 'integer',
+        'is_lead_source' => 'boolean',
     ];
 
     /** Значения по умолчанию */
     protected $attributes = [
         'sort_order' => 0,
+        'is_lead_source' => false,
     ];
 
     /** Устанавливаем sort_order = max + 1 при создании (если не указан) */
@@ -41,6 +44,12 @@ class CampaignSource extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order', 'asc');
+    }
+
+    /** Scope: только источники для лидов / отдела продаж */
+    public function scopeForLeads($query)
+    {
+        return $query->where('is_lead_source', true);
     }
 
     /**

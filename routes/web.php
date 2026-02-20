@@ -15,6 +15,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ImportanceController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceStatusController;
+use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LinkCardController;
 use App\Http\Controllers\MonthlyExpenseController;
 use App\Http\Controllers\NotificationController;
@@ -59,10 +60,22 @@ Route::middleware('auth')->group(function () {
     Route::post('avito/accounts/{avitoAccount}/notification-settings', [AvitoController::class, 'updateNotificationSettings'])->name('avito.accounts.notification-settings');
     Route::delete('avito/accounts/{avitoAccount}', [AvitoController::class, 'destroy'])->name('avito.accounts.destroy');
 
-    Route::get('bilain', [BilainController::class, 'index'])->name('bilain.index');
-    Route::get('bilain/records', [BilainController::class, 'records'])->name('bilain.records');
-    Route::get('bilain/records/{record}/stream', [BilainController::class, 'streamStoredRecordFile'])->name('bilain.records.stream');
-    Route::get('bilain/records/{record}/file', [BilainController::class, 'downloadStoredRecordFile'])->name('bilain.records.file');
+    // sales department pages – only sales users and admins can access
+    Route::middleware('role:sales,admin')->group(function () {
+        Route::get('lead', [LeadController::class, 'index'])->name('lead.index');
+        Route::post('lead/store', [LeadController::class, 'storeQuickLead'])->name('lead.store');
+        Route::get('lead/{phoneLead}', [LeadController::class, 'show'])->name('lead.show');
+        Route::patch('lead/{phoneLead}', [LeadController::class, 'update'])->name('lead.update');
+        Route::post('lead/columns', [LeadController::class, 'storeColumn'])->name('lead.columns.store');
+        Route::post('lead/topics', [LeadController::class, 'storeTopic'])->name('lead.topics.store');
+        Route::post('lead/campaign-sources', [LeadController::class, 'storeCampaignSource'])->name('lead.campaign-sources.store');
+        Route::post('lead/reorder', [LeadController::class, 'reorder'])->name('lead.reorder');
+
+        Route::get('bilain', [BilainController::class, 'index'])->name('bilain.index');
+        Route::get('bilain/records', [BilainController::class, 'records'])->name('bilain.records');
+        Route::get('bilain/records/{record}/stream', [BilainController::class, 'streamStoredRecordFile'])->name('bilain.records.stream');
+        Route::get('bilain/records/{record}/file', [BilainController::class, 'downloadStoredRecordFile'])->name('bilain.records.file');
+    });
 
     // Dev welcome page for front-end developers (controller action)
     Route::get('/dev', [\App\Http\Controllers\DashboardController::class, 'dev'])

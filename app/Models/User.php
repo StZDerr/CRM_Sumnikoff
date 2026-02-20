@@ -24,6 +24,8 @@ class User extends Authenticatable
 
     public const ROLE_DESIGNER = 'designer';
 
+    public const ROLE_SALES = 'sales';
+
     public const ROLES = [
         self::ROLE_ADMIN,
         self::ROLE_PROJECT_MANAGER,
@@ -31,6 +33,7 @@ class User extends Authenticatable
         self::ROLE_FRONTEND,
         self::ROLE_DESIGNER,
         self::ROLE_LAWYER,
+        self::ROLE_SALES,
     ];
 
     protected $fillable = [
@@ -114,6 +117,11 @@ class User extends Authenticatable
     public function isDesigner(): bool
     {
         return $this->hasRole(self::ROLE_DESIGNER);
+    }
+
+    public function isSales(): bool
+    {
+        return $this->hasRole(self::ROLE_SALES);
     }
 
     // ===== Scope’ы =====

@@ -25,6 +25,15 @@
     <x-input-error :messages="$errors->get('sort_order')" class="mt-2" />
 </div>
 
+<!-- Is lead source -->
+<div class="flex items-center gap-3">
+    <input type="hidden" name="is_lead_source" value="0" />
+    <input id="is_lead_source" type="checkbox" name="is_lead_source" value="1" class="h-4 w-4"
+        @checked(old('is_lead_source', $campaignSource->is_lead_source ?? false)) />
+    <label for="is_lead_source" class="text-sm text-gray-700">Источник для лидов / отдела продаж</label>
+    <x-input-error :messages="$errors->get('is_lead_source')" class="mt-2" />
+</div>
+
 <!-- Actions -->
 <div class="flex items-center gap-3 mt-4">
     <x-primary-button>{{ $submit ?? 'Сохранить' }}</x-primary-button>

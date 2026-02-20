@@ -148,7 +148,9 @@
 
     function updateRemainingDisplay(sec) {
         const txt = formatSeconds(sec ?? 0);
-        document.querySelectorAll('#wt-remaining-time').forEach((el) => (el.textContent = txt));
+        document
+            .querySelectorAll("#wt-remaining-time")
+            .forEach((el) => (el.textContent = txt));
     }
 
     function setButtonVisibility(mode, hasDay) {
@@ -288,8 +290,12 @@
         if (state?.work_day?.started_at) {
             const startedAt = new Date(state.work_day.started_at);
             if (!isNaN(startedAt)) {
-                const targetMs = startedAt.getTime() + DAY_TARGET_SECONDS * 1000;
-                remainingSeconds = Math.max(0, Math.ceil((targetMs - Date.now()) / 1000));
+                const targetMs =
+                    startedAt.getTime() + DAY_TARGET_SECONDS * 1000;
+                remainingSeconds = Math.max(
+                    0,
+                    Math.ceil((targetMs - Date.now()) / 1000),
+                );
             } else {
                 remainingSeconds = DAY_TARGET_SECONDS;
             }
@@ -655,7 +661,7 @@
         }
 
         // decrement remaining counter every second
-        if (typeof remainingSeconds !== 'undefined' && remainingSeconds > 0) {
+        if (typeof remainingSeconds !== "undefined" && remainingSeconds > 0) {
             remainingSeconds = Math.max(0, remainingSeconds - 1);
         }
 
