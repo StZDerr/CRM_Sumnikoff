@@ -20,14 +20,14 @@ class AvitoNotificationService
         return $this->sendTelegramMessage($text);
     }
 
-    public function processThresholdAlerts(AvitoAccount $account): void
+    public function processThresholdAlerts(AvitoAccount $account): int
     {
         $settings = $account->notification_settings ?? [];
         $minAdvance = $this->normalizeThreshold(data_get($settings, 'min_advance'));
         $maxDailySpending = $this->normalizeThreshold(data_get($settings, 'max_daily_spending'));
 
         if ($minAdvance === null && $maxDailySpending === null) {
-            return;
+            return 0;
         }
 
         $stats = $account->stats_data ?? [];
@@ -35,6 +35,7 @@ class AvitoNotificationService
         $spendingPerDay = (float) data_get($stats, 'spending_per_day', data_get($stats, 'spending_today', 0));
 
         $state = $account->notification_state ?? [];
+        $sent = 0;
 
         if ($minAdvance !== null) {
             $isBreached = $advance < $minAdvance;
@@ -42,6 +43,7 @@ class AvitoNotificationService
             if ($isBreached) {
                 $this->sendLowAdvanceAlert($account, $advance, $minAdvance);
                 $state['advance_alert_last_sent_at'] = now()->toDateTimeString();
+                $sent++;
             }
 
             $state['advance_alert_active'] = $isBreached;
@@ -55,6 +57,7 @@ class AvitoNotificationService
             if ($isBreached) {
                 $this->sendHighSpendingAlert($account, $spendingPerDay, $maxDailySpending);
                 $state['spending_alert_last_sent_at'] = now()->toDateTimeString();
+                $sent++;
             }
 
             $state['spending_alert_active'] = $isBreached;
@@ -64,6 +67,13 @@ class AvitoNotificationService
 
         $account->notification_state = $state;
         $account->save();
+
+        return $sent;
+    }
+
+    public function sendSummaryTelegram(string $text): array
+    {
+        return $this->sendTelegramMessage($text);
     }
 
     protected function sendLowAdvanceAlert(AvitoAccount $account, float $currentAdvance, float $threshold): void
