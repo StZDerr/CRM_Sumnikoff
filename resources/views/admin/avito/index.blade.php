@@ -97,12 +97,25 @@
                                 </div>
                             </div>
 
-                            <form method="POST" action="{{ route('avito.accounts.sync', $account) }}">
-                                @csrf
-                                <button class="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-medium">
-                                    Обновить
-                                </button>
-                            </form>
+                            <div class="flex items-center gap-2">
+                                <form method="POST" action="{{ route('avito.accounts.sync', $account) }}">
+                                    @csrf
+                                    <button
+                                        class="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-medium">
+                                        Обновить
+                                    </button>
+                                </form>
+
+                                @if (auth()->user()->isAdmin())
+                                    <form method="POST" action="{{ route('avito.accounts.destroy', $account) }}"
+                                        onsubmit="return confirm('Удалить аккаунт Avito? Это действие необратимо.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button
+                                            class="px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-medium hover:bg-red-700 transition">Удалить</button>
+                                    </form>
+                                @endif
+                            </div>
                         </div>
 
                         <div class="mt-4 grid grid-cols-3 gap-4 text-sm text-gray-500">
@@ -127,7 +140,7 @@
                                     {{ number_format((float) data_get($stats, 'spending_today', 0), 2, ',', ' ') }} ₽
                                 </div>
                                 <div class="mt-1 text-[11px] text-gray-400">
-                                    Размещение:
+                                    Разовые размещения:
                                     {{ number_format((float) data_get($stats, 'spending_placement_today', 0), 2, ',', ' ') }}
                                     ₽
                                 </div>

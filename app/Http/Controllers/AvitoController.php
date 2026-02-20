@@ -40,8 +40,11 @@ class AvitoController extends Controller
     {
         $accounts = AvitoAccount::with(['project.marketer'])
             ->when(auth()->user()->isMarketer(), function ($q) {
-                $q->whereHas('project', function ($q2) {
-                    $q2->where('marketer_id', auth()->id());
+                // Маркетолог видит свои аккаунты и аккаунты без привязки к проекту (project_id IS NULL)
+                $q->where(function ($q2) {
+                    $q2->whereHas('project', function ($q3) {
+                        $q3->where('marketer_id', auth()->id());
+                    })->orWhereNull('project_id');
                 });
             })
             ->orderByDesc('id')
@@ -179,5 +182,18 @@ class AvitoController extends Controller
         $avitoAccount->save();
 
         return redirect()->route('avito.index')->with('success', "Настройки уведомлений для аккаунта {$avitoAccount->label} сохранены.");
+    }
+
+    public function destroy(AvitoAccount $avitoAccount): RedirectResponse
+    {
+        // Только администраторы могут удалять аккаунты Avito
+        if (! auth()->user()->isAdmin()) {
+            abort(403, 'Доступ запрещён');
+        }
+
+        $label = $avitoAccount->label;
+        $avitoAccount->delete();
+
+        return redirect()->route('avito.index')->with('success', "Аккаунт Avito {$label} удалён.");
     }
 }

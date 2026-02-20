@@ -58,6 +58,7 @@ class AvitoApiService
 
         $balance = $this->resolveBalance($token, $userId);
         $operations = $this->getOperationsHistory($token, now()->subDays(14), now());
+        $recentOperations = array_slice($operations, 0, 30);
         $cpaBalance = $this->getCpaBalanceInfo($token);
         $statsError = null;
 
@@ -80,7 +81,9 @@ class AvitoApiService
         $ctrValue = $viewsCount > 0 ? round(($contactsCount / $viewsCount) * 100, 2) : 0;
 
         $spending = $this->calculateTodaySpendingBreakdown($operations);
-        $spendingToday = (float) data_get($spending, 'total', 0);
+        $placementSpendingToday = (float) data_get($spending, 'placement', 0);
+        $viewsSpendingToday = (float) data_get($spending, 'views', 0);
+        $spendingToday = $placementSpendingToday + $viewsSpendingToday;
 
         $costPerContact = 0.0;
         if ($contactsCount > 0) {
@@ -105,15 +108,15 @@ class AvitoApiService
             'contacts_today' => $contactsCount,
             'ctr' => $ctrValue,
             'spending_today' => round($spendingToday, 2),
-            'spending_placement_today' => round((float) data_get($spending, 'placement', 0), 2),
-            'spending_views_today' => round((float) data_get($spending, 'views', 0), 2),
+            'spending_placement_today' => round($placementSpendingToday, 2),
+            'spending_views_today' => round($viewsSpendingToday, 2),
             'spending_other_today' => round((float) data_get($spending, 'other', 0), 2),
-            'spending_source' => 'operations_history',
+            'spending_source' => 'operations_history_placement_plus_views',
             // average daily spending (7-day rolling)
             'spending_per_day' => round($this->calculateAverageDailySpending($operations, 7), 2),
             'spending_period_days' => 7,
             'cost_per_contact' => round($costPerContact, 2),
-            'operations' => $operations,
+            'operations' => $recentOperations,
             'synced_at' => now()->toDateTimeString(),
             'error' => $statsError,
         ];
@@ -268,7 +271,6 @@ class AvitoApiService
             })
             ->sortByDesc('updated_at')
             ->values()
-            ->take(30)
             ->all();
     }
 
@@ -390,7 +392,9 @@ class AvitoApiService
 
             $bucket = $this->detectSpendingBucket($operation);
             $totals[$bucket] += $amount;
-            $totals['total'] += $amount;
+            if ($bucket === 'placement' || $bucket === 'views') {
+                $totals['total'] += $amount;
+            }
         }
 
         foreach ($totals as $key => $value) {
@@ -403,14 +407,16 @@ class AvitoApiService
     protected function resolveOperationAmount(array $operation): float
     {
         $total = (float) data_get($operation, 'amount_total', 0);
-        if ($total > 0) {
-            return $total;
+        if ($total !== 0.0) {
+            return abs($total);
         }
 
         $rub = (float) data_get($operation, 'amount_rub', 0);
         $bonus = (float) data_get($operation, 'amount_bonus', 0);
 
-        return max(0, $rub + $bonus);
+        $sum = $rub + $bonus;
+
+        return $sum !== 0.0 ? abs($sum) : 0.0;
     }
 
     protected function isCreditOperation(string $opType, string $opName): bool
@@ -444,6 +450,9 @@ class AvitoApiService
         if (
             str_contains($haystack, 'целев') ||
             str_contains($haystack, 'просмотр') ||
+            str_contains($haystack, 'click') ||
+            str_contains($haystack, 'package') ||
+            str_contains($haystack, 'target') ||
             str_contains($haystack, 'клик') ||
             str_contains($haystack, 'действ') ||
             str_contains($haystack, 'cpa') ||
@@ -482,6 +491,11 @@ class AvitoApiService
                 $opName = mb_strtolower((string) data_get($operation, 'operation_name', ''));
 
                 if ($this->isCreditOperation($opType, $opName)) {
+                    continue;
+                }
+
+                $bucket = $this->detectSpendingBucket($operation);
+                if ($bucket !== 'placement' && $bucket !== 'views') {
                     continue;
                 }
 
