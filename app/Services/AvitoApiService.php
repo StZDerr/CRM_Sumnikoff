@@ -58,9 +58,9 @@ class AvitoApiService
 
         $balance = $this->resolveBalance($token, $userId);
         $operations = $this->getOperationsHistory($token, now()->subDays(14), now());
-        $recentOperations = array_slice($operations, 0, 30);
         $cpaBalance = $this->getCpaBalanceInfo($token);
         $statsError = null;
+        $spendingV2Error = null;
 
         try {
             $todayStats = $this->getTodayStats($token, $userId);
@@ -76,14 +76,29 @@ class AvitoApiService
             }
         }
 
+        // Получаем расходы из Stats V2 API (не из операций)
+        try {
+            $spendingV2 = $this->getSpendingStatsV2($token, $userId, 7);
+        } catch (\RuntimeException $e) {
+            if (str_contains($e->getMessage(), 'HTTP 429')) {
+                $spendingV2 = [
+                    'spending_today' => (float) data_get($previousStats, 'spending_today', 0),
+                    'presence_spending_today' => (float) data_get($previousStats, 'spending_presence_today', 0),
+                    'promo_spending_today' => (float) data_get($previousStats, 'spending_promo_today', 0),
+                    'avg_daily_spending' => (float) data_get($previousStats, 'spending_per_day', 0),
+                    'period_days' => (int) data_get($previousStats, 'spending_period_days', 7),
+                ];
+                $spendingV2Error = 'Лимит Avito API по статистике расходов (stats/v2, HTTP 429). Показаны последние сохранённые значения.';
+            } else {
+                throw $e;
+            }
+        }
+
         $viewsCount = (int) data_get($todayStats, 'views', 0);
         $contactsCount = (int) data_get($todayStats, 'contacts', 0);
         $ctrValue = $viewsCount > 0 ? round(($contactsCount / $viewsCount) * 100, 2) : 0;
 
-        $spending = $this->calculateTodaySpendingBreakdown($operations);
-        $placementSpendingToday = (float) data_get($spending, 'placement', 0);
-        $viewsSpendingToday = (float) data_get($spending, 'views', 0);
-        $spendingToday = $placementSpendingToday + $viewsSpendingToday;
+        $spendingToday = (float) data_get($spendingV2, 'spending_today', 0);
 
         $costPerContact = 0.0;
         if ($contactsCount > 0) {
@@ -97,6 +112,8 @@ class AvitoApiService
 
         $advanceValue = $cpaBalanceValue ?? $cpaAdvancePeriod ?? $bonus;
 
+        $combinedError = implode(' ', array_filter([$statsError, $spendingV2Error])) ?: null;
+
         $stats = [
             // Сумма на аккаунте = реальный баланс + аванс(бонус)
             'wallet' => round($real, 2),
@@ -107,18 +124,18 @@ class AvitoApiService
             'views_today' => $viewsCount,
             'contacts_today' => $contactsCount,
             'ctr' => $ctrValue,
+            // Расходы из Stats V2 API (не из операций)
             'spending_today' => round($spendingToday, 2),
-            'spending_placement_today' => round($placementSpendingToday, 2),
-            'spending_views_today' => round($viewsSpendingToday, 2),
-            'spending_other_today' => round((float) data_get($spending, 'other', 0), 2),
-            'spending_source' => 'operations_history_placement_plus_views',
-            // average daily spending (7-day rolling)
-            'spending_per_day' => round($this->calculateAverageDailySpending($operations, 7), 2),
-            'spending_period_days' => 7,
+            'spending_presence_today' => round((float) data_get($spendingV2, 'presence_spending_today', 0), 2),
+            'spending_promo_today' => round((float) data_get($spendingV2, 'promo_spending_today', 0), 2),
+            'spending_source' => 'stats_v2',
+            // Средние расходы за период (из Stats V2)
+            'spending_per_day' => round((float) data_get($spendingV2, 'avg_daily_spending', 0), 2),
+            'spending_period_days' => (int) data_get($spendingV2, 'period_days', 7),
             'cost_per_contact' => round($costPerContact, 2),
-            'operations' => $recentOperations,
+            'operations' => $operations,
             'synced_at' => now()->toDateTimeString(),
-            'error' => $statsError,
+            'error' => $combinedError,
         ];
 
         return [
@@ -240,6 +257,86 @@ class AvitoApiService
         ];
     }
 
+    /**
+     * Получение статистики расходов через Stats V2 API.
+     *
+     * Метрики приходят в копейках, конвертируем в рубли.
+     * Лимит: 1 запрос в минуту на этот endpoint.
+     *
+     * @param  int  $periodDays  Количество дней периода (включая сегодня)
+     */
+    public function getSpendingStatsV2(string $accessToken, int $userId, int $periodDays = 7): array
+    {
+        $today = now()->format('Y-m-d');
+        $dateFrom = now()->subDays(max(0, $periodDays - 1))->format('Y-m-d');
+
+        $response = Http::withToken($accessToken)
+            ->acceptJson()
+            ->timeout(30)
+            ->post($this->baseUrl()."/stats/v2/accounts/{$userId}/items", [
+                'dateFrom' => $dateFrom,
+                'dateTo' => $today,
+                'grouping' => 'day',
+                'metrics' => ['presenceSpending', 'promoSpending', 'spending'],
+                'limit' => 1000,
+                'offset' => 0,
+            ]);
+
+        if (! $response->ok()) {
+            throw new \RuntimeException('Ошибка получения статистики расходов Avito (stats/v2): HTTP '.$response->status());
+        }
+
+        $payload = $response->json() ?? [];
+        $groupings = (array) data_get($payload, 'result.groupings', []);
+
+        // Ответ Stats V2: groupings — массив объектов:
+        //   { id: <unix_timestamp_utc>, type: "dates", metrics: [{slug: "spending", value: <kopecks>}, ...] }
+        // ВАЖНО: id — это UTC-полночь, поэтому сравниваем по дате (Y-m-d), а не по timestamp.
+        $todayDate = now()->format('Y-m-d');
+
+        $todaySpending = 0.0;
+        $todayPresence = 0.0;
+        $todayPromo = 0.0;
+        $totalSpending = 0.0;
+
+        foreach ($groupings as $entry) {
+            $entryTimestamp = (int) data_get($entry, 'id', 0);
+            $entryDate = Carbon::createFromTimestamp($entryTimestamp, 'UTC')->format('Y-m-d');
+            $metrics = (array) data_get($entry, 'metrics', []);
+
+            // Парсим массив метрик [{slug, value}, ...] в плоский массив slug => value
+            $metricsMap = [];
+            foreach ($metrics as $metric) {
+                $slug = (string) data_get($metric, 'slug', '');
+                if ($slug !== '') {
+                    $metricsMap[$slug] = (float) data_get($metric, 'value', 0);
+                }
+            }
+
+            $spending = ($metricsMap['spending'] ?? 0) / 100;       // копейки → рубли
+            $presenceSpending = ($metricsMap['presenceSpending'] ?? 0) / 100;
+            $promoSpending = ($metricsMap['promoSpending'] ?? 0) / 100;
+
+            $totalSpending += $spending;
+
+            if ($entryDate === $todayDate) {
+                $todaySpending = $spending;
+                $todayPresence = $presenceSpending;
+                $todayPromo = $promoSpending;
+            }
+        }
+
+        $avgDailySpending = $periodDays > 0 ? round($totalSpending / $periodDays, 2) : 0.0;
+
+        return [
+            'spending_today' => round($todaySpending, 2),
+            'presence_spending_today' => round($todayPresence, 2),
+            'promo_spending_today' => round($todayPromo, 2),
+            'avg_daily_spending' => $avgDailySpending,
+            'period_days' => $periodDays,
+        ];
+    }
+
     public function getOperationsHistory(string $accessToken, Carbon $from, Carbon $to): array
     {
         $response = Http::withToken($accessToken)
@@ -271,6 +368,7 @@ class AvitoApiService
             })
             ->sortByDesc('updated_at')
             ->values()
+            ->take(30)
             ->all();
     }
 
@@ -392,9 +490,7 @@ class AvitoApiService
 
             $bucket = $this->detectSpendingBucket($operation);
             $totals[$bucket] += $amount;
-            if ($bucket === 'placement' || $bucket === 'views') {
-                $totals['total'] += $amount;
-            }
+            $totals['total'] += $amount;
         }
 
         foreach ($totals as $key => $value) {
@@ -407,16 +503,14 @@ class AvitoApiService
     protected function resolveOperationAmount(array $operation): float
     {
         $total = (float) data_get($operation, 'amount_total', 0);
-        if ($total !== 0.0) {
-            return abs($total);
+        if ($total > 0) {
+            return $total;
         }
 
         $rub = (float) data_get($operation, 'amount_rub', 0);
         $bonus = (float) data_get($operation, 'amount_bonus', 0);
 
-        $sum = $rub + $bonus;
-
-        return $sum !== 0.0 ? abs($sum) : 0.0;
+        return max(0, $rub + $bonus);
     }
 
     protected function isCreditOperation(string $opType, string $opName): bool
@@ -450,9 +544,6 @@ class AvitoApiService
         if (
             str_contains($haystack, 'целев') ||
             str_contains($haystack, 'просмотр') ||
-            str_contains($haystack, 'click') ||
-            str_contains($haystack, 'package') ||
-            str_contains($haystack, 'target') ||
             str_contains($haystack, 'клик') ||
             str_contains($haystack, 'действ') ||
             str_contains($haystack, 'cpa') ||
@@ -491,11 +582,6 @@ class AvitoApiService
                 $opName = mb_strtolower((string) data_get($operation, 'operation_name', ''));
 
                 if ($this->isCreditOperation($opType, $opName)) {
-                    continue;
-                }
-
-                $bucket = $this->detectSpendingBucket($operation);
-                if ($bucket !== 'placement' && $bucket !== 'views') {
                     continue;
                 }
 

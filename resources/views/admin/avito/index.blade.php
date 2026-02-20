@@ -140,13 +140,13 @@
                                     {{ number_format((float) data_get($stats, 'spending_today', 0), 2, ',', ' ') }} ₽
                                 </div>
                                 <div class="mt-1 text-[11px] text-gray-400">
-                                    Разовые размещения:
-                                    {{ number_format((float) data_get($stats, 'spending_placement_today', 0), 2, ',', ' ') }}
+                                    Размещения и цел. действия:
+                                    {{ number_format((float) data_get($stats, 'spending_presence_today', 0), 2, ',', ' ') }}
                                     ₽
                                 </div>
                                 <div class="text-[11px] text-gray-400">
-                                    Целевые просмотры:
-                                    {{ number_format((float) data_get($stats, 'spending_views_today', 0), 2, ',', ' ') }} ₽
+                                    Продвижение:
+                                    {{ number_format((float) data_get($stats, 'spending_promo_today', 0), 2, ',', ' ') }} ₽
                                 </div>
                             </div>
                         </div>
